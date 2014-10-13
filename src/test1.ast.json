@@ -1,0 +1,141 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 80,
+  "body": [
+    {
+      "type": "FunctionDeclaration",
+      "start": 0,
+      "end": 48,
+      "id": {
+        "type": "Identifier",
+        "start": 9,
+        "end": 15,
+        "name": "addFoo"
+      },
+      "params": [],
+      "body": {
+        "type": "BlockStatement",
+        "start": 18,
+        "end": 48,
+        "body": [
+          {
+            "type": "ExpressionStatement",
+            "start": 24,
+            "end": 46,
+            "expression": {
+              "type": "AssignmentExpression",
+              "start": 24,
+              "end": 45,
+              "operator": "=",
+              "left": {
+                "type": "MemberExpression",
+                "start": 24,
+                "end": 29,
+                "object": {
+                  "type": "Identifier",
+                  "start": 24,
+                  "end": 25,
+                  "name": "t"
+                },
+                "property": {
+                  "type": "Identifier",
+                  "start": 26,
+                  "end": 29,
+                  "name": "foo"
+                },
+                "computed": false
+              },
+              "right": {
+                "type": "FunctionExpression",
+                "start": 32,
+                "end": 45,
+                "id": null,
+                "params": [],
+                "body": {
+                  "type": "BlockStatement",
+                  "start": 43,
+                  "end": 45,
+                  "body": []
+                },
+                "expression": false
+              }
+            }
+          }
+        ]
+      },
+      "expression": false
+    },
+    {
+      "type": "VariableDeclaration",
+      "start": 50,
+      "end": 61,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 54,
+          "end": 60,
+          "id": {
+            "type": "Identifier",
+            "start": 54,
+            "end": 55,
+            "name": "t"
+          },
+          "init": {
+            "type": "ObjectExpression",
+            "start": 58,
+            "end": 60,
+            "properties": []
+          }
+        }
+      ],
+      "kind": "var"
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 62,
+      "end": 71,
+      "expression": {
+        "type": "CallExpression",
+        "start": 62,
+        "end": 70,
+        "callee": {
+          "type": "Identifier",
+          "start": 62,
+          "end": 68,
+          "name": "addFoo"
+        },
+        "arguments": []
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 72,
+      "end": 80,
+      "expression": {
+        "type": "CallExpression",
+        "start": 72,
+        "end": 79,
+        "callee": {
+          "type": "MemberExpression",
+          "start": 72,
+          "end": 77,
+          "object": {
+            "type": "Identifier",
+            "start": 72,
+            "end": 73,
+            "name": "t"
+          },
+          "property": {
+            "type": "Identifier",
+            "start": 74,
+            "end": 77,
+            "name": "foo"
+          },
+          "computed": false
+        },
+        "arguments": []
+      }
+    }
+  ]
+}
