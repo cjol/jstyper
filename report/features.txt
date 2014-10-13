@@ -1,0 +1,23 @@
+type inference of primitives
+type inference of object literals (construct a type judgement directly from an object)
+type inference by assignment and by usage
+	- usage as parameters of typed functions
+	- usage as parameters of builtin operations (some of these will be tricky because of JS type conversions)
+Coping with full range of control operators (seq, if, while, exceptions)
+type inference of functions
+type inference of arrays
+type inference of variadic functions
+Coping with dynamic object protocol changes
+Addition of properties
+Deletion of properties
+Modification of properties (just deletion + addition?)
+Coping with recursive objects
+
+
+Typing functions:
+	self-contained block
+	all references to content outside the function
+		(e.g. function call, variable outside of scope)
+		check if it is statically typeable
+			if it is, do so
+			if not, wrap it with an object which has the required type and passes on all accesses to the inner object (after checking such an access is possible?)
