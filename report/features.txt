@@ -21,3 +21,11 @@ Typing functions:
 		check if it is statically typeable
 			if it is, do so
 			if not, wrap it with an object which has the required type and passes on all accesses to the inner object (after checking such an access is possible?)
+
+
+Introduction
+============
+Static type systems can offer a number of advantages over their dynamic counterparts, including earlier detection of certain programming errors, better development tools and potential for compiler optimisations. Proponents of dynamically typed languages argue that static type systems are too inflexible and interfere with natural thought processes of the developer. 
+
+
+[1] https://www.ics.uci.edu/~lopes/teaching/inf212W12/readings/rdl04meijer.pdf
