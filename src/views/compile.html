@@ -1,0 +1,82 @@
+<html>
+<head>
+	<!-- Include required JS files -->
+	<script type="text/javascript" src="shCore.js"></script>
+	<script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+	<script type="text/javascript" src="shBrushJScript.js"></script>
+	<script src="codemirror.js"></script>
+	<script src="javascript.js"></script>
+	<link href="shCore.css" rel="stylesheet" type="text/css" />
+	<link href="shThemeDefault.css" rel="stylesheet" type="text/css" />
+	<link rel="stylesheet" href="codemirror.css">
+	<link rel="stylesheet" href="mdn-like.css">
+	<style type="text/css">
+		body {
+			padding:0;
+			margin:0;
+		}
+		#compiler > div {
+			width: 50%;
+			float:left;
+			height:100%;
+		}
+		.CodeMirror {
+			height:100%;
+		}
+		.CodeMirror:last-child, .CodeMirror:last-child .CodeMirror-gutter {
+			background-color:#ddd;
+		}
+	</style>
+</head>
+<body>
+	<div id="compiler">
+		<textarea id="from"><%- from %></textarea>
+
+		<textarea id="to"><%- to %></textarea>
+
+	</div>
+	<script type="text/javascript">
+		var from = CodeMirror.fromTextArea($("#from")[0],{
+			theme:"mdn-like",
+			lineNumbers: true,
+			indentUnit: 4,
+			indentWithTabs: true
+		});
+		var to = CodeMirror.fromTextArea($("#to")[0],{
+			readOnly:true,
+			theme:"mdn-like",
+			lineNumbers: true,
+			indentUnit: 4,
+			indentWithTabs: true
+		});
+		
+		function compile(src, callback) {
+			$.ajax({
+			  type: "POST",
+			  url: "/compile",
+			  contentType: "text/plain",
+			  dataType: "text",
+			  data: src,
+			  success: function(data) {
+			  	callback(data);
+			  },
+			  error: function(e) {
+			  	callback(e.responseText);
+			  	// console.log(arguments);
+			  },
+			  complete: function() {
+			  }
+			});
+		}
+
+		var compileTimeout;
+		from.on("change", function() {
+			window.clearTimeout(compileTimeout);
+			compileTimeout = window.setTimeout(function() {
+				compile(from.getValue(), function(result) {
+					to.setValue(result);
+				});
+			},1000);
+		});
+	</script>
+</body>

@@ -1,0 +1,192 @@
+% Draft #1
+
+\documentclass{article}
+\usepackage[T1]{fontenc}
+\usepackage[super]{nth}
+\usepackage[all]{nowidow}
+\begin{document}
+
+	\vfil 
+	\centerline{\large Computer Science Project Proposal}
+	\vspace{0.4in}
+	\centerline{\Large Building a Gradual Type System for JavaScript }
+	\vspace{0.4in}
+	\centerline{\large Christopher J.O. Little, Emmanuel College}
+	\vspace{0.3in}
+	\centerline{\large \today}
+	\vspace{0.3in}
+
+	\noindent{\bf Project Supervisor:} Dr Kathryn E. Gray
+	\vspace{0.2in}
+
+	\noindent{\bf Director of Studies:} Dr Jonathan Hayman
+	\vspace{0.2in}\noindent 
+	
+	\noindent{\bf Project Overseers:} Dr~Markus~Kuhn \& Dr~Neal~Lathia
+
+
+	\section{Introduction}\label{introduction}
+
+		Static type systems can offer a number of advantages over their dynamic counterparts, including earlier detection of certain programming errors, better development tools and potential for compiler optimisations. Proponents of dynamically typed languages may argue that static type systems are too inflexible and interfere with the natural thought processes of the developer.
+		
+		JavaScript is a dynamic language with little to no built-in support for types. A few projects have attempted to integrate optional explicit type annotations to dialects of ECMAScript (JScript.NET, ActionScript 3.0, ECMAScript 4 and more recently TypeScript), but the requirement for explicit type annotations limits the utility of these for existing JavaScript projects. Often this requirement is relaxed such that type annotations are optional, but in these cases it is not evident to the developer which parts of the codebase are type-safe, and which have not been checked.
+
+		Both of these problems could be resolved with a gradual type inferring system. Gradual typing is a modern technique allowing safe interoperability between typed and untyped portions of a single program. The technique allows us to guarantee that only dynamic properties of the code are able to cause runtime errors, retaining the utility of statically type-checking part of the code. \cite{felleisen06,findler07}
+
+		Using type inference means no extensions to the language are required, such that the system could be used to retrospectively analyse existing code. Due to the highly dynamic nature of JavaScript, it will not always be possible to statically determine the type of an expression. This is where the gradual typing nature of the system becomes critical - we can safely assert that not only are the statically analysed portions of the program free of type errors, they are also guaranteed to remain so even after interaction with potentially untyped code.
+
+	\section{Starting Point}\label{starting-point}
+
+		I am comfortable writing programs in JavaScript and familiar with many of the semantic quirks of the language. Many of the concepts required for the execution of this project were introduced in the Part IB courses Compiler Construction and Semantics. The Part II courses on Optimising Compilers and Types will also be useful.
+
+		I have already done some preparatory reading in this area, on types in general \cite{types1}, on the design and semantics of JavaScript \cite{js1,js2}, and specifically on gradual typing \cite{gradual1,gradual2} and on TypeScript \cite{typescript}, a recent project by Microsoft extending the JavaScript language with type annotations.
+
+		For the implementation of the project, it will be necessary to construct an abstract syntax tree from JavaScript source, and, after modification of the tree, reconstruct the JavaScript source code. Since the parsing and reconstruction of JavaScript is not of particular relevance to the core focus of this project, and in order to integrate with existing solutions in the world of JavaScript, I will use an existing system for this - UglifyJS.
+
+		UglifyJS is a tool for minification and compression of JavaScript code, itself written in JavaScript. It uses a recursive descent parser to construct an abstract syntax tree from JavaScript source code, then modifies the tree (renaming identifiers and similar) before reconstructing minimal source code.
+		 % is this really resursive descent?!
+
+	\section{Resources}\label{resources}
+
+		For this project I will mainly use my own machines - either a desktop (Ubuntu 14.04, 3.6GHz i7, 8GB RAM, 2x 1TB HDD) or laptop (Windows 8.1, 1.8GHz i7, 8GB RAM, 1TB HDD) as convenient. I will use Git for version control, with remotes set up on Github and on a VPS hosted by BHost for backup purposes. I require no additional special resources.
+				
+	\section{Work to be Done}\label{work-to-be-done}
+
+		The project can be broken into the following components:
+		\begin{enumerate}\def\labelenumi{\arabic{enumi}.}
+		 \item Definition of a formal type system along with an operational semantics for the subset of JavaScript which is supported. The system will have the following properties to prove:   
+			
+			\emph{Progress}: If an expression is well-typed, then either it can reduce further to a new expression, or it is a value (and cannot reduce further). 
+
+			\emph{Type Preservation}: If an expression e is well-typed and reduces in some number of steps to another expression, then that expression is also well-typed.
+			
+			\emph{Decidability of Type Checking}: It is decidable for any expression in the language whether or not it has a given type.
+			
+			\emph{Type inference}: It is possible to find a type for any expression in the language, or to show that no such type exists.
+
+		 In addition, it will be necessary to prove that any runtime errors which do arise have been caused by untyped code.
+		 
+		 \item Implementation of a static type checker for the above type system. This will need to include a type inference algorithm in order to make any deductions about the types of JavaScript objects. This algorithm could be based upon a variation of the Hindley-Milner algorithm.
+		 
+		 \item Implementation of a source-to-source compiler to implement gradual typing, allowing code which has had its type checked by the above type checker to safely interface with unchecked code. The compiler will inject two kinds of wrappers around objects to achieve this. Guard wrappers protect a well-typed object from untyped code by performing dynamic type checks on parameters passed to its methods, or creating a mimic wrapper for the parameter. It will also create guard wrappers for return values (which are well-typed). Mimic wrappers protect well-typed code from an untyped object by checking for the existence of the object's properties and methods when these are requested, and checking return types or creating a mimic wrapper around the return value when this is not possible. They will also create guard wrappers around parameters (which are well-typed and entering untyped code). The operation of this compiler will be validated by running it on a series of test cases, and also on some existing production code. These test cases will be written alongside the type checker.
+		\end{enumerate}
+
+	\section{Success Criteria}\label{success-criteria}
+
+		The project will be considered a success if the following points have been achieved:
+
+		\begin{enumerate} 
+			\item The design of an operational semantics and type system for a subset of JavaScript including: 
+			\begin{enumerate}
+
+				\item Primitives, constants and object literals  
+				\item The following control flow statements   
+				% potentially also others wouldn't be too hard from https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Statements 
+				% these were just the "main" ones   
+				\begin{enumerate}    
+					\item seq ( ... ; ... )   
+					\item block ( \{ ... \} )    
+					\item if ... else    
+					\item while    
+					\item for     
+					\item continue    
+					\item break    
+				\end{enumerate}  
+				\item Assignment via =, and all shorthand assignment operators (such  as +=)  
+				\item Arithmetic operators +, -, *, /  
+				\item Logical operators !, \&\&, ||  
+				\item String concatenation with +  
+				\item Function definition 
+			\end{enumerate} 
+			
+			\item An implementation of a type checker for a subset of JavaScript defined by the list above. 
+
+			\item An implementation of a source-to-source compiler injecting code to provide type-safe wrappers around dynamic type-unsafe objects.
+		\end{enumerate}
+
+		Evaluation of the design of my type system will be achieved through a formal proof of soundness. Evaluation of the implementation will be through testing to monitor performance and memory overhead.
+
+	\section{Possible Extensions}\label{possible-extensions}
+
+		Arrays in JavaScript pose a difficult problem, since the types of their contents are unrestricted. My project will thus be limited to programs which do not include arrays, but it would in principle be possible to extend the type system to handle them. This extension would also allow handling of variadic functions, which access their actual parameters through the \texttt{arguments} array.
+
+		A common idiom in JavaScript is to initialise an object with certain properties and methods, but then to modify the object later on, either adding or removing properties. This kind of behaviour is difficult to support in a static type system, but could be supported with gradual typing.
+
+		Objects in JavaScript can be created by a literal object initialiser, or in a more object-oriented style with the \texttt{new} keyword. Using \texttt{new} with a constructor creates a new object following an inheritance chain and binds the special \texttt{this} variable to the new object. The inheritance involved in this method complicates typing, but this would be a valuable extension to my project, as \texttt{new} is a common way to initialise objects.
+
+		It would also be informative to run the project on larger JavaScript programs, in order to measure the impact of the compiler on performance and memory in the presence of a larger codebase. An extension might thus be to run the compiler on at least a portion of Mozilla's SunSpider JavaScript benchmark series.
+
+	\section{Timetable}\label{timetable}
+
+		\subsection*{Weeks 1 \& 2 (\nth{24} Oct -- \nth{6} Nov)}
+		Continue learning about techniques used in gradual typing, and implementations of Hindley-Milner. Prepare an initial design for the type system such that most of the core features of my subset of  JavaScript have a defined operational semantics and type judgement.
+
+		\subsection*{Weeks 3 \& 4 (\nth{7} Nov -- \nth{20} Nov)}
+		Create a trivial implementation of the type checker which simply rejects everything, and a trivial compiler which generates an AST and re-generates source code from it. Complete type system if required.
+
+		\subsection*{Weeks 5 \& 6 (\nth{21} Nov -- \nth{4} Dec)}
+		Extend the type checker and compiler allowing primitives and constants. Prove safety and write test cases for these new cases. Begin extension for variable initialisation and assignment.
+
+		\subsection*{Weeks 7 \& 8 (\nth{5} Dec -- \nth{18} Dec)}
+		Complete extension for assignment, and add extension for object literals. Prove safety and write test cases for this extension.
+
+		\subsection*{Weeks 9 \& 10 (\nth{19} Dec -- \nth{1} Jan)}
+		Extend to support all control flow statements. Prove safety and write test cases for this  extension.
+
+		\subsection*{Weeks 11 \& 12 (\nth{2} Jan -- \nth{15} Jan)}
+		Ensure development is on schedule, and prepare progress report. 
+
+		\subsection*{Weeks 13 \& 14 (\nth{16} Jan -- \nth{29} Jan)}
+		Extend the type checker and compiler for function definitions and arithmetic and logical operators. Prove safety and write test cases for this extension. By this point, all core features of the project should be implemented.
+
+		\subsection*{Weeks 15 \& 16 (\nth{30} Jan -- \nth{12} Feb)}
+		Finalise development and fix any bugs. Complete test harness.
+
+		\subsection*{Weeks 17 \& 18 (\nth{13} Feb -- \nth{26} Feb)}
+		Evaluate performance and additional memory overhead of compiled  JavaScript. Complete the proofs of soundness if not yet done.
+
+		\subsection*{Weeks 19 -- 23 (\nth{27} Feb -- \nth{26} Mar)}
+		Write dissertation and refine after feedback before submission. Prepare plan for tackling any extension work.
+		
+		\subsection*{Weeks 24 -- 28 (\nth{27} Mar -- \nth{23} Apr)}
+		Extend project as far as possible, and update dissertation as appropriate.
+
+
+	\begin{thebibliography}{9}
+
+		\bibitem{felleisen06}
+		S. Tobin-Hochstadt and M. Felleisen:
+		\emph{Interlanguage Migration: From Scripts to Programs}.
+		In: Proc. of ACM Dynamic Languages Symposium. (2006)
+
+		\bibitem{findler07} P. Wadler and R.B. Findler: 
+		\emph{Well-typed programs can't be blamed}
+		In: Proc. ACM Workshop on Scheme and Functional Programming (2007)
+
+		\bibitem{js1} A. Guha, C. Saftoiu, and S. Krishnamurthi: 
+		\emph{The Essence of JavaScript}
+		In: ECOOP (2010)
+
+		\bibitem{js2} G. Richards, S. Lebresne, B. Burg and J. Vitek:
+		\emph{An Analysis of the Dynamic Behavior of JavaScript Programs}
+		In: Proc. ACM SIGPLAN Conference on Programming Language Design and Implementation (2010)
+
+		\bibitem{types1} B. Pierce:
+		\emph{Types and Programming Languages} (2002)
+
+		\bibitem{gradual1} K. Gray: 
+		\emph{Safe Cross-Language Inheritance}
+		In: ECOOP (2008)
+
+		\bibitem{gradual2} E. Meijer and P. Drayton
+		\emph{Static Typing Where Possible, Dynamic Typing When Needed: The End of the Cold War Between Programming Languages}
+		In: OOPSLA Workshop on Revival of Dynamic Languages (2004)
+
+		\bibitem{typescript} G. Bierman, M. Abadi and M. Torgersen: 
+		\emph{Understanding TypeScript}
+		In: ECOOP (2014)
+
+	\end{thebibliography}
+
+
+\end{document}

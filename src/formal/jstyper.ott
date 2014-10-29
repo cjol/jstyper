@@ -1,0 +1,36 @@
+% v0.1
+grammar
+
+id :: 'id_' ::=
+
+v :: 'v_' ::=
+  | b         ::  :: Boolean
+  | n         ::  :: Number
+  | s         ::  :: String
+  | undefined ::  :: Undefined
+  | null      ::  :: null
+
+vd :: 'vd_' ::=
+  | id        ::  :: Declaration
+  | id = e    ::  :: Definition
+  | vd1 , vd2   ::  :: Multiple
+
+m :: 'm_' ::=
+  | e         ::  :: Expression
+  | epsilon   ::  :: Skip 
+  | m1 ; m2     ::  :: Seq
+  | var vd    ::  :: VarDeclaration
+
+e :: 'e_' ::=
+  | v         ::  :: Value
+  | id        ::  :: Deref
+  | id = e    ::  :: Ref
+
+defns
+Jop :: '' ::=
+
+ defn
+ <e,s> -> <e',s'> :: ::reduce::''  by
+
+    ---------------- :: seq1
+    <v;e,s> -> <e,s>
