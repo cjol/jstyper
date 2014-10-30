@@ -60,8 +60,8 @@ function handleCompile(src, req, res) {
 	}
 }
 var exec = require('child_process').exec;
-app.get('/gitpull/', function(req, res) {
-    exec("git pull", function(error, stdout, stderr) {
+app.post('/gitpull/', function(req, res) {
+    exec("git pull && forever restartall", function(error, stdout, stderr) {
         console.log(error);
         console.log(stdout);
         console.log(stderr);
