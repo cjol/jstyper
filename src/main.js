@@ -39,13 +39,14 @@ app.set("views", __dirname + "/views");
 // set the default template engine to ejs - although I'm only using it for static html anyway
 app.engine("html", require('ejs').renderFile);
   
-// serve static files in the 'res' folder directly from the root
-app.use('/', express.static(__dirname + '/res'));
-
 // serve test files in the 'tests' folder under the /tests path
 app.use('/tests/', express.static(__dirname + '/tests'));
 
+// serve static files in the 'res' folder directly from the root
+app.use('/assets', express.static(__dirname + '/res'));
+
 app.use(bodyParser.text());
+
 
 function handleCompile(src, req, res) {
 	res.set('Content-Type', 'application/javascript');
@@ -58,6 +59,15 @@ function handleCompile(src, req, res) {
 		res.status(400).send(e.message);
 	}
 }
+var exec = require('child_process').exec;
+app.get('/gitpull/', function(req, res) {
+    exec("git pull", function(error, stdout, stderr) {
+        console.log(error);
+        console.log(stdout);
+        console.log(stderr);
+        res.send(stdout);
+    });
+});
 
 app.post('/compile/', function (req, res) {
 	if (req.body !== undefined && req.body.length > 0) {
@@ -90,4 +100,4 @@ app.get('/:test', function(req, res) {
 	res.render("compile.html", {from:src, to:result});
 });
 
-app.listen(1234);
+app.listen(3006);
