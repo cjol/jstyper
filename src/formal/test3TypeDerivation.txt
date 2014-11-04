@@ -1,0 +1,46 @@
+G |- var x, y=5; true; z=x="hello"; x=y;
+	G |- var x, y=5;
+		G |- var x
+		G |- var y=5
+			G |- var y
+			G |- y=5 : T1
+				G |- 5 : T1
+				-----------
+				G |- y : ref<T1>
+					G(y) = ref<T1>
+					--------------
+	G |- true; z=x="hello"; x=y;
+		G |- true
+			G |- true : boolean
+		G |- z=x="hello"; x=y;
+			G |- z=x="hello"
+				G |- z=x="hello" : T2
+					G |- x="hello" : T2
+						G |- "hello" : T2
+						-----------------
+						G |- x : ref<T2>
+							G(x) = ref<T2>
+							--------------
+					G |- z : ref<T2>
+						G(z) = ref<T2>
+						---------------
+			G |- x=y
+				G |- x=y : T3
+					G |- y : T3
+						G(y) = ref<T3>
+						--------------
+					G |- x : ref<T3>
+						G(x) = ref<T3>
+						--------------
+
+Constraints
+	T1 must be number
+	T2 must be string
+	G(y) must be ref<T1> = ref<number>
+	G(x) must be ref<T2> = ref<string>
+	G(x) must be ref<T2> = ref<string>
+	G(y) must be ref<T3>
+	G(x) must be ref<T3>
+
+	No solutions (can't unify T with both number and string)
+

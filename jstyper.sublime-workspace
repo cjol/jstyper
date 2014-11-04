@@ -1,0 +1,306 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+		]
+	},
+	"buffers":
+	[
+		{
+			"contents": "% v0.1\ngrammar\n\nid :: 'id_' ::=\n\nv :: 'v_' ::=                 {{ com Values }}\n  | b         ::  :: Boolean            {{ com Boolean }}\n  | n         ::  :: Number             {{ com Number }}\n  | str       ::  :: String             {{ com String }}\n  | undefined ::  :: Undefined          {{ com Undefined }}\n  | null      ::  :: null               {{ com null }}\n  | get( s , id ) :: M:: GetStore       {{ com GetStore }}\n\ns :: 's_' ::=                   {{ com Store }}\n  |  put( s , id , v ) :: M:: PutStore  {{ com PutStore }}\n\nvd :: 'vd_' ::=               {{ com VariableDeclaration }}\n  | id        ::  :: Declaration        {{ com Declaration }}\n  | id = e    ::  :: Definition         {{ com Definition }}\n  | vd , vd'  ::  :: Multiple           {{ com Multiple }}\n\ne :: 'e_' ::=                  {{ com Expression }}\n  | v         ::  :: Value              {{ com Value }}\n  | id        ::  :: Deref              {{ com Deref }}\n  | id = e    ::  :: Ref                {{ com Ref }}\n\nterminals :: 'terminals_' ::=\n  | ->        ::   :: rightarrow {{ tex \\rightarrow }}\n  | ;         ::   :: semicolon\n  | var       ::   :: var\n\nm :: 'm_' ::=                  {{ com Statement }}\n  | e         ::  :: Expression         {{ com Expression }}\n  | epsilon   ::  :: Skip               {{ com Skip }}\n  | m ; m'    ::  :: Seq                {{ com Seq }}\n  | var vd    ::  :: VarDeclaration     {{ com VarDeclaration }}\n\n\ndefns\nJop :: '' ::=\n\n defn\n < m , s > -> < m' , s' > :: ::reduce::''  by\n\n    ----------------------------                      :: seq1\n    < v ; e , s > -> < e , s >\n\n    < e1 , s > -> < e1' , s' >\n    --------------------------------------            :: seq2\n    < e1 ; e2 , s > -> < e1' ; e2 , s' >\n\n    < e , s > -> < e' , s' >\n    -----------------------------------               :: assign1\n    < id = e , s > -> < id = e' , s' >\n\n    ----------------------------------------          :: assign2\n    < id = v , s > -> < v , put(s, id, v) >\n\n    ----------------------------------                :: deref\n    < id , s > -> < get(s, id) , s >\n\n    -------------------------------------             :: var1\n    < var id = e , s > -> < id = e , s >\n\n    ------------------------------------              :: var2\n    < var id , s > -> < undefined , s >\n\n    ------------------------------------------------- :: var3\n    < var vd , vd' , s > -> < var vd ; var vd' , s >",
+			"file": "src/formal/jstyper.ott",
+			"file_size": 2398,
+			"file_write_time": 130595970483854432,
+			"settings":
+			{
+				"buffer_size": 2398,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/home/christoph/Downloads/j_and_s.ott",
+			"settings":
+			{
+				"buffer_size": 51026,
+				"line_ending": "Unix"
+			}
+		}
+	],
+	"build_system": "Packages/User/CustomOtt.sublime-build",
+	"command_palette":
+	{
+		"height": 220.0,
+		"selected_items":
+		[
+			[
+				"install",
+				"Package Control: Install Package"
+			],
+			[
+				"gutter",
+				"SublimeLinter: Choose Gutter Theme"
+			],
+			[
+				"insta",
+				"Package Control: Install Package"
+			],
+			[
+				"instal",
+				"Package Control: Install Package"
+			],
+			[
+				"package",
+				"Package Control: Install Package"
+			],
+			[
+				"remove",
+				"Package Control: Remove Package"
+			],
+			[
+				"enab",
+				"Package Control: Enable Package"
+			],
+			[
+				"packag",
+				"Package Control: Discover Packages"
+			],
+			[
+				"packa",
+				"Preferences: Browse Packages"
+			]
+		],
+		"width": 561.0
+	},
+	"console":
+	{
+		"height": 347.0,
+		"history":
+		[
+			"import urllib.request,os,hashlib; h = '7183a2d3e96f11eeadd761d777e62404' + 'e330c659d4bb41d3bdf022e94cab3cd0'; pf = 'Package Control.sublime-package'; ipp = sublime.installed_packages_path(); urllib.request.install_opener( urllib.request.build_opener( urllib.request.ProxyHandler()) ); by = urllib.request.urlopen( 'http://packagecontrol.io/' + pf.replace(' ', '%20')).read(); dh = hashlib.sha256(by).hexdigest(); print('Error validating download (got %s instead of %s), please try manual install' % (dh, h)) if dh != h else open(os.path.join( ipp, pf), 'wb' ).write(by)"
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/home/christoph/Documents/dev/jstyper",
+		"/home/christoph/Documents/dev/jstyper/src",
+		"/home/christoph/Documents/dev/jstyper/src/formal"
+	],
+	"file_history":
+	[
+		"/home/christoph/Downloads/jstyper.ott",
+		"/home/christoph/.config/sublime-text-3/Packages/User/CustomOtt.sublime-build",
+		"/media/christoph/D862E85762E83C3E/Documents and Settings/Christopher/Documents/OneNote Notebooks/Part II/Natural Language Processing.one"
+	],
+	"find":
+	{
+		"height": 55.0
+	},
+	"find_in_files":
+	{
+		"height": 0.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"\n  ",
+			"\n\ns :: 's_' ::=                   {{",
+			"{{",
+			"         {{",
+			"::",
+			"Undefined",
+			"undefined",
+			"Undefined",
+			"undefined",
+			"Undefined",
+			"undefined",
+			"var2",
+			"::",
+			"par",
+			"var",
+			"get-field",
+			"get-field\\(",
+			"get-field(",
+			"reduce"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": true,
+		"replace_history":
+		[
+			"var",
+			"par"
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 0,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "src/formal/jstyper.ott",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 2398,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								728,
+								727
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Text/Plain text.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "/home/christoph/Downloads/j_and_s.ott",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 51026,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								12805,
+								12805
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Text/Plain text.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 6404.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 55.0
+	},
+	"input":
+	{
+		"height": 0.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.exec":
+	{
+		"height": 235.0
+	},
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"project": "jstyper.sublime-project",
+	"replace":
+	{
+		"height": 106.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 150.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}

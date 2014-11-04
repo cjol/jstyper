@@ -1,36 +1,167 @@
-% v0.1
+% v0.1.2
+% Version numbering: (project_goals_met?1:0).(added syntax).(refined spec)
 grammar
+
+% syntax
 
 id :: 'id_' ::=
 
-v :: 'v_' ::=
-  | b         ::  :: Boolean
-  | n         ::  :: Number
-  | s         ::  :: String
-  | undefined ::  :: Undefined
-  | null      ::  :: null
+v :: 'v_' ::=                   {{ com Values }}
+	| b         ::  :: Boolean            {{ com Boolean }}
+	| n         ::  :: Number             {{ com Number }}
+	| str       ::  :: String             {{ com String }}
+	| undefined ::  :: Undefined          {{ com Undefined }}
+	| null      ::  :: null               {{ com null }}
+	| get( s , id ) :: M:: GetStore       {{ com GetStore }}
 
-vd :: 'vd_' ::=
-  | id        ::  :: Declaration
-  | id = e    ::  :: Definition
-  | vd1 , vd2   ::  :: Multiple
+s :: 's_' ::=                   {{ com Store }}
+	|  put( s , id , v ) :: M:: PutStore  {{ com PutStore }}
 
-m :: 'm_' ::=
-  | e         ::  :: Expression
-  | epsilon   ::  :: Skip 
-  | m1 ; m2     ::  :: Seq
-  | var vd    ::  :: VarDeclaration
+vd :: 'vd_' ::=                 {{ com VariableDeclaration }}
+	| id        ::  :: Declaration        {{ com Declaration }}
+	| id = e    ::  :: Definition         {{ com Definition }}
+	| vd , vd'  ::  :: Multiple           {{ com Multiple }}
 
-e :: 'e_' ::=
-  | v         ::  :: Value
-  | id        ::  :: Deref
-  | id = e    ::  :: Ref
+e :: 'e_' ::=                   {{ com Expression }}
+	| v         ::  :: Value              {{ com Value }}
+	| id        ::  :: Deref              {{ com Deref }}
+	| id = e    ::  :: Ref                {{ com Ref }}
+
+m :: 'm_' ::=                   {{ com Statement }}
+	| e         ::  :: Expression         {{ com Expression }}
+	| eps  ::  :: Skip {{ tex \epsilon }} {{ com Skip }}
+	| m ; m'    ::  :: Seq                {{ com Seq }}
+	| var vd    ::  :: VarDeclaration     {{ com VarDeclaration }}
+
+% Typing definitions
+% TODO: We will need to do something clever here to allow for object types
+
+Tv :: 'Tval_' ::=				{{ com Value Type }}
+	| number    ::  :: Number             {{ com Number }}
+	| boolean   ::  :: Boolean            {{ com Boolean }}
+	| string    ::  :: String             {{ com String }}
+	| undefined ::  :: undefined          {{ com undefined }}
+	| null      ::  :: null               {{ com null }}
+
+T :: 'T_' ::=                   {{ com Expression Type }}
+	| Tv 		::  :: ValueType			{{ com ValueType }}
+	| ref< Tv > ::  :: RefType				{{ com Location Type }}
+	
+
+% Things Ott wants
+
+terminals :: 'terminals_' ::=
+	| ->        ::  :: rightarrow {{ tex \rightarrow }}
+	| G         ::  :: Gamma {{ tex \Gamma }}
+	| |-        ::  :: Entails {{ tex \vdash }}
+	| ;         ::  :: semicolon
+	| var       ::  :: var
+
 
 defns
 Jop :: '' ::=
 
- defn
- <e,s> -> <e',s'> :: ::reduce::''  by
+defn
+< m , s > -> < m' , s' > :: ::reduce::''  by
 
-    ---------------- :: seq1
-    <v;e,s> -> <e,s>
+	----------------------------                      :: seq1
+	<v; e, s> -> <e, s>
+
+	<e1, s> -> <e1', s'>
+	--------------------------------------            :: seq2
+	<e1; e2, s> -> <e1'; e2, s'>
+
+	<e, s> -> <e', s'>
+	-----------------------------------               :: assign1
+	<id = e, s> -> <id = e', s'>
+
+	----------------------------------------          :: assign2
+	<id = v, s> -> <v, put(s, id, v)>
+
+	----------------------------------                :: deref
+	<id, s> -> <get(s, id), s>
+
+	-------------------------------------             :: var1
+	<var id = e, s> -> <id = e, s>
+
+	------------------------------------              :: var2
+	<var id, s> -> <undefined, s>
+
+	------------------------------------------------- :: var3
+	<var vd, vd', s> -> <var vd; var vd', s >
+
+defn
+G ( id ) = T :: M::expType2::''  by
+	
+
+defn
+G |- e : T :: ::expType::''  by
+	% Note: Only expressions have a type - the more general statements do not
+
+	% Trivial typing rules for values
+
+	---------------                                   :: v_num
+	G |- n : number
+
+	---------------                                   :: v_bool
+	G |- b : boolean
+
+	---------------                                   :: v_string
+	G |- str : string
+
+	---------------                                   :: v_undefined
+	G |- undefined : undefined
+
+	---------------                                   :: v_null
+	G |- null : null
+
+	% Mildly more interesting - assign / deref rules.
+	G(id) = ref<Tv>
+	------------------                                :: DerefType
+	G |- id : T
+
+	G(id) = ref<Tv>
+	------------------                                :: RefType
+	G |- id : ref<Tv>
+
+	% Problem of typing id: it needs to be typed as either a T or a ref<T>. In either case, what should G(id) be?
+	% My solution: id legitimately needs to be able to be typed in either case, so we need both Ref and DerefType rules. G internally just stores id as having type ref<Tv>
+
+
+	G |- e : T
+	G |- id : ref<Tv> 
+	------------------                                	:: AssignType
+	G |- id = e : T
+	% TODO: Would be interesting to allow mutable type of id
+
+
+defn 
+G |- m :: :: typable::'' by
+	% We say that a statement m is typable if all expressions contained within it are well typed by the definition above.
+
+	% NB We're going to need to do something to model scope within G
+
+	--------  	                                        :: SkipTypable
+	G |- eps 
+
+	----------- 	                                    :: DecTypable
+	G |- var id
+
+	G |- e : T
+	----------    	                                    :: ExpTypable
+	G |- e
+
+	G |- m
+	G |- m'
+	-----------  	                                    :: SeqTypable
+	G |- m ; m'
+
+	G |- var id
+	G |- id = e : T
+	---------------- 	                                :: DefTypable
+	G |- var id = e
+
+	G |- var vd
+	G |- var vd'
+	----------------- 	                                :: MultiDecTypable
+	G |- var vd, vd'
