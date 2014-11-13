@@ -8,21 +8,28 @@
 	"buffers":
 	[
 		{
-			"contents": "% v0.1\ngrammar\n\nid :: 'id_' ::=\n\nv :: 'v_' ::=                 {{ com Values }}\n  | b         ::  :: Boolean            {{ com Boolean }}\n  | n         ::  :: Number             {{ com Number }}\n  | str       ::  :: String             {{ com String }}\n  | undefined ::  :: Undefined          {{ com Undefined }}\n  | null      ::  :: null               {{ com null }}\n  | get( s , id ) :: M:: GetStore       {{ com GetStore }}\n\ns :: 's_' ::=                   {{ com Store }}\n  |  put( s , id , v ) :: M:: PutStore  {{ com PutStore }}\n\nvd :: 'vd_' ::=               {{ com VariableDeclaration }}\n  | id        ::  :: Declaration        {{ com Declaration }}\n  | id = e    ::  :: Definition         {{ com Definition }}\n  | vd , vd'  ::  :: Multiple           {{ com Multiple }}\n\ne :: 'e_' ::=                  {{ com Expression }}\n  | v         ::  :: Value              {{ com Value }}\n  | id        ::  :: Deref              {{ com Deref }}\n  | id = e    ::  :: Ref                {{ com Ref }}\n\nterminals :: 'terminals_' ::=\n  | ->        ::   :: rightarrow {{ tex \\rightarrow }}\n  | ;         ::   :: semicolon\n  | var       ::   :: var\n\nm :: 'm_' ::=                  {{ com Statement }}\n  | e         ::  :: Expression         {{ com Expression }}\n  | epsilon   ::  :: Skip               {{ com Skip }}\n  | m ; m'    ::  :: Seq                {{ com Seq }}\n  | var vd    ::  :: VarDeclaration     {{ com VarDeclaration }}\n\n\ndefns\nJop :: '' ::=\n\n defn\n < m , s > -> < m' , s' > :: ::reduce::''  by\n\n    ----------------------------                      :: seq1\n    < v ; e , s > -> < e , s >\n\n    < e1 , s > -> < e1' , s' >\n    --------------------------------------            :: seq2\n    < e1 ; e2 , s > -> < e1' ; e2 , s' >\n\n    < e , s > -> < e' , s' >\n    -----------------------------------               :: assign1\n    < id = e , s > -> < id = e' , s' >\n\n    ----------------------------------------          :: assign2\n    < id = v , s > -> < v , put(s, id, v) >\n\n    ----------------------------------                :: deref\n    < id , s > -> < get(s, id) , s >\n\n    -------------------------------------             :: var1\n    < var id = e , s > -> < id = e , s >\n\n    ------------------------------------              :: var2\n    < var id , s > -> < undefined , s >\n\n    ------------------------------------------------- :: var3\n    < var vd , vd' , s > -> < var vd ; var vd' , s >",
 			"file": "src/formal/jstyper.ott",
-			"file_size": 2398,
-			"file_write_time": 130595970483854432,
 			"settings":
 			{
-				"buffer_size": 2398,
+				"buffer_size": 5143,
 				"line_ending": "Unix"
 			}
 		},
 		{
-			"file": "/home/christoph/Downloads/j_and_s.ott",
+			"contents": "Package Control Messages\n========================\n\nSublimeLinter:\n-------------\n\n  SublimeLinter 3.4.21\n  --------------------\n  \n  The \"passive_warnings\" setting has been added. When set to true, only\n  errors will be displayed in the \"Show All Errors\" quick panel. This\n  setting, by default, is set to false.\n  \n  Thank you so much for your support!\n  \n\n  ************************\n  * Good news, everyone! *\n  ************************\n  \n  We have had great support recently and are truly \n  thankful to everyone who has wished Aparajita a \n  fond farewell. We expect he will continue to \n  contribute in the future and appreciate the \n  amazing stewardship he has shown to the project.\n  \n  Please join us in welcoming Blake (@skj3gg) as \n  the new project administrator for the SublimeLinter \n  organization. We know the project will continue \n  for a long time to come with this new change in \n  leadership. Our number one priority will always be\n  to help developers craft better code.\n  \n  As a final note, all donations will continue to go\n  to Aparajita until November 14, 2014, so please\n  consider thanking him for his services before that\n  time.\n  \n",
 			"settings":
 			{
-				"buffer_size": 51026,
+				"buffer_size": 1163,
+				"line_ending": "Unix",
+				"name": "Package Control Messages",
+				"scratch": true
+			}
+		},
+		{
+			"file": "/home/christoph/.cache/.fr-YTPEl3/Documents/1/Pages/19.fpage",
+			"settings":
+			{
+				"buffer_size": 11446,
 				"line_ending": "Unix"
 			}
 		}
@@ -30,9 +37,21 @@
 	"build_system": "Packages/User/CustomOtt.sublime-build",
 	"command_palette":
 	{
-		"height": 220.0,
+		"height": 174.0,
 		"selected_items":
 		[
+			[
+				"indent",
+				"Indentation: Convert to Tabs"
+			],
+			[
+				":w",
+				":w - Save"
+			],
+			[
+				":W",
+				":w - Save"
+			],
 			[
 				"install",
 				"Package Control: Install Package"
@@ -97,13 +116,18 @@
 	],
 	"file_history":
 	[
-		"/home/christoph/Downloads/jstyper.ott",
+		"/media/christoph/BED8F495D8F44D61/Part II/Bioinformatics.one",
+		"/home/christoph/Downloads/j_and_s.ott",
+		"/home/christoph/.config/sublime-text-3/Packages/User/Preferences.sublime-settings",
+		"/home/christoph/Documents/dev/jstyper/src/formal/jstyper.ott",
+		"/home/christoph/.config/sublime-text-3/Packages/User/Plain text.sublime-settings",
 		"/home/christoph/.config/sublime-text-3/Packages/User/CustomOtt.sublime-build",
+		"/home/christoph/Downloads/jstyper.ott",
 		"/media/christoph/D862E85762E83C3E/Documents and Settings/Christopher/Documents/OneNote Notebooks/Part II/Natural Language Processing.one"
 	],
 	"find":
 	{
-		"height": 55.0
+		"height": 36.0
 	},
 	"find_in_files":
 	{
@@ -114,9 +138,24 @@
 	},
 	"find_state":
 	{
-		"case_sensitive": false,
+		"case_sensitive": true,
 		"find_history":
 		[
+			" ,",
+			"< ",
+			"::",
+			"|",
+			"\n|",
+			"{{",
+			"{{ ",
+			" +",
+			"\\s+",
+			"{{",
+			"vdash",
+			"ref",
+			"::",
+			" {{",
+			"::",
 			"\n  ",
 			"\n\ns :: 's_' ::=                   {{",
 			"{{",
@@ -143,6 +182,10 @@
 		"regex": true,
 		"replace_history":
 		[
+			"<",
+			" ",
+			"\\s",
+			"Ref",
 			"var",
 			"par"
 		],
@@ -155,7 +198,7 @@
 	"groups":
 	[
 		{
-			"selected": 0,
+			"selected": 2,
 			"sheets":
 			[
 				{
@@ -164,22 +207,77 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 2398,
+						"buffer_size": 5143,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								728,
-								727
+								4729,
+								4729
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Text/Plain text.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 2603.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1163,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1163,
+								1163
 							]
 						],
 						"settings":
 						{
 							"syntax": "Packages/Text/Plain text.tmLanguage",
-							"tab_size": 2,
-							"translate_tabs_to_spaces": true
+							"word_wrap": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "/home/christoph/.cache/.fr-YTPEl3/Documents/1/Pages/19.fpage",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 11446,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Text/Plain text.tmLanguage",
+							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
 						"translation.y": 0.0,
@@ -187,43 +285,13 @@
 					},
 					"stack_index": 0,
 					"type": "text"
-				},
-				{
-					"buffer": 1,
-					"file": "/home/christoph/Downloads/j_and_s.ott",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 51026,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								12805,
-								12805
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/Text/Plain text.tmLanguage",
-							"tab_size": 2,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 6404.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 1,
-					"type": "text"
 				}
 			]
 		}
 	],
 	"incremental_find":
 	{
-		"height": 55.0
+		"height": 27.0
 	},
 	"input":
 	{
@@ -263,7 +331,7 @@
 	"project": "jstyper.sublime-project",
 	"replace":
 	{
-		"height": 106.0
+		"height": 68.0
 	},
 	"save_all_on_build": true,
 	"select_file":
@@ -294,7 +362,7 @@
 	"settings":
 	{
 	},
-	"show_minimap": true,
+	"show_minimap": false,
 	"show_open_files": false,
 	"show_tabs": true,
 	"side_bar_visible": true,

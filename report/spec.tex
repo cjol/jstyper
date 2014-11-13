@@ -84,7 +84,22 @@
 \newcommand{\ottT}{
 \ottrulehead{\ottnt{T}}{::=}{\ottcom{Expression Type}}\ottprodnewline
 \ottfirstprodline{|}{\ottnt{Tv}}{}{}{}{\ottcom{ValueType}}\ottprodnewline
-\ottprodline{|}{\ottsym{ref<}  \ottnt{Tv}  \ottsym{>}}{}{}{}{\ottcom{Location Type}}}
+\ottprodline{|}{ ref \langle  \ottnt{Tv}  \rangle }{}{}{}{\ottcom{Location Type}}}
+
+\newcommand{\ottX}{
+\ottrulehead{\ottnt{X}}{::=}{}\ottprodnewline
+\ottfirstprodline{|}{\ottnt{S}}{}{}{}{}}
+
+\newcommand{\ottC}{
+\ottrulehead{\ottnt{C}}{::=}{\ottcom{Constraints}}\ottprodnewline
+\ottfirstprodline{|}{\ottnt{S}}{}{}{}{}}
+
+\newcommand{\ottS}{
+\ottrulehead{\ottnt{S}}{::=}{\ottcom{Set}}\ottprodnewline
+\ottfirstprodline{|}{\varnothing}{}{}{}{\ottcom{EmptySet}}\ottprodnewline
+\ottprodline{|}{\ottsym{\{}  \ottnt{T}  \ottsym{\}}}{}{}{}{\ottcom{Singleton}}\ottprodnewline
+\ottprodline{|}{ \ottnt{X}  \cup  \ottnt{X'} }{}{}{}{\ottcom{Union}}\ottprodnewline
+\ottprodline{|}{ \ottnt{X}  \cap  \ottnt{X'} }{}{}{}{\ottcom{Intersect}}}
 
 \newcommand{\ottterminals}{
 \ottrulehead{\ottnt{terminals}}{::=}{}\ottprodnewline
@@ -92,7 +107,8 @@
 \ottprodline{|}{ \Gamma }{}{}{}{}\ottprodnewline
 \ottprodline{|}{ \vdash }{}{}{}{}\ottprodnewline
 \ottprodline{|}{\ottsym{;}}{}{}{}{}\ottprodnewline
-\ottprodline{|}{\ottkw{var}}{}{}{}{}}
+\ottprodline{|}{\ottkw{var}}{}{}{}{}\ottprodnewline
+\ottprodline{|}{ \varnothing }{}{}{}{}}
 
 \newcommand{\ottformula}{
 \ottrulehead{\ottnt{formula}}{::=}{}\ottprodnewline
@@ -102,8 +118,8 @@
 \ottrulehead{\ottnt{Jop}}{::=}{}\ottprodnewline
 \ottfirstprodline{|}{\ottsym{<}  \ottnt{m}  \ottsym{,}  \ottnt{s}  \ottsym{>}  \rightarrow  \ottsym{<}  \ottnt{m'}  \ottsym{,}  \ottnt{s'}  \ottsym{>}}{}{}{}{}\ottprodnewline
 \ottprodline{|}{\Gamma \, \ottsym{(}  \ottnt{id}  \ottsym{)}  \ottsym{=}  \ottnt{T}} {\textsf{M}}{}{}{}\ottprodnewline
-\ottprodline{|}{\Gamma \, \vdash  \ottnt{e}  \ottsym{:}  \ottnt{T}}{}{}{}{}\ottprodnewline
-\ottprodline{|}{\Gamma \, \vdash  \ottnt{m}}{}{}{}{}}
+\ottprodline{|}{ \Gamma   \vdash   \ottnt{e}  :  \ottnt{T} \hspace{5pt}| _{  \ottnt{X}  } \hspace{3pt} \ottnt{C} }{}{}{}{}\ottprodnewline
+\ottprodline{|}{ \Gamma   \vdash   \ottnt{m}  \hspace{5pt}| _{  \ottnt{X}  } \hspace{3pt} \ottnt{C} }{}{}{}{}}
 
 \newcommand{\ottjudgement}{
 \ottrulehead{\ottnt{judgement}}{::=}{}\ottprodnewline
@@ -119,6 +135,9 @@
 \ottprodline{|}{\ottnt{m}}{}{}{}{}\ottprodnewline
 \ottprodline{|}{\ottnt{Tv}}{}{}{}{}\ottprodnewline
 \ottprodline{|}{\ottnt{T}}{}{}{}{}\ottprodnewline
+\ottprodline{|}{\ottnt{X}}{}{}{}{}\ottprodnewline
+\ottprodline{|}{\ottnt{C}}{}{}{}{}\ottprodnewline
+\ottprodline{|}{\ottnt{S}}{}{}{}{}\ottprodnewline
 \ottprodline{|}{\ottnt{terminals}}{}{}{}{}}
 
 \newcommand{\ottgrammar}{\ottgrammartabular{
@@ -130,6 +149,9 @@
 \ottm\ottinterrule
 \ottTv\ottinterrule
 \ottT\ottinterrule
+\ottX\ottinterrule
+\ottC\ottinterrule
+\ottS\ottinterrule
 \ottterminals\ottinterrule
 \ottformula\ottinterrule
 \ottJop\ottinterrule
@@ -216,124 +238,127 @@
 %% defn expType
 \newcommand{\ottdrulevXXnum}[1]{\ottdrule[#1]{%
 }{
-\Gamma \, \vdash  \ottkw{n}  \ottsym{:}  \ottkw{number}}{%
+ \Gamma   \vdash   \ottkw{n}  :  \ottkw{number} \hspace{5pt}| _{  \varnothing  } \hspace{3pt} \varnothing }{%
 {\ottdrulename{v\_num}}{}%
 }}
 
 
 \newcommand{\ottdrulevXXbool}[1]{\ottdrule[#1]{%
 }{
-\Gamma \, \vdash  \ottkw{b}  \ottsym{:}  \ottkw{boolean}}{%
+ \Gamma   \vdash   \ottkw{b}  :  \ottkw{boolean} \hspace{5pt}| _{  \varnothing  } \hspace{3pt} \varnothing }{%
 {\ottdrulename{v\_bool}}{}%
 }}
 
 
 \newcommand{\ottdrulevXXstring}[1]{\ottdrule[#1]{%
 }{
-\Gamma \, \vdash  \ottkw{str}  \ottsym{:}  \ottkw{string}}{%
+ \Gamma   \vdash   \ottkw{str}  :  \ottkw{string} \hspace{5pt}| _{  \varnothing  } \hspace{3pt} \varnothing }{%
 {\ottdrulename{v\_string}}{}%
 }}
 
 
 \newcommand{\ottdrulevXXundefined}[1]{\ottdrule[#1]{%
 }{
-\Gamma \, \vdash  \ottkw{undefined}  \ottsym{:}  \ottkw{undefined}}{%
+ \Gamma   \vdash   \ottkw{undefined}  :  \ottkw{undefined} \hspace{5pt}| _{  \varnothing  } \hspace{3pt} \varnothing }{%
 {\ottdrulename{v\_undefined}}{}%
 }}
 
 
 \newcommand{\ottdrulevXXnull}[1]{\ottdrule[#1]{%
 }{
-\Gamma \, \vdash  \ottkw{null}  \ottsym{:}  \ottkw{null}}{%
+ \Gamma   \vdash   \ottkw{null}  :  \ottkw{null} \hspace{5pt}| _{  \varnothing  } \hspace{3pt} \varnothing }{%
 {\ottdrulename{v\_null}}{}%
 }}
 
 
-\newcommand{\ottdruleDerefType}[1]{\ottdrule[#1]{%
-\ottpremise{\Gamma \, \ottsym{(}  \ottnt{id}  \ottsym{)}  \ottsym{=}  \ottsym{ref<}  \ottnt{Tv}  \ottsym{>}}%
+\newcommand{\ottdruleIdType}[1]{\ottdrule[#1]{%
+\ottpremise{\Gamma \, \ottsym{(}  \ottnt{id}  \ottsym{)}  \ottsym{=}  \ottnt{T}}%
 }{
-\Gamma \, \vdash  \ottnt{id}  \ottsym{:}  \ottnt{T}}{%
-{\ottdrulename{DerefType}}{}%
-}}
-
-
-\newcommand{\ottdruleRefType}[1]{\ottdrule[#1]{%
-\ottpremise{\Gamma \, \ottsym{(}  \ottnt{id}  \ottsym{)}  \ottsym{=}  \ottsym{ref<}  \ottnt{Tv}  \ottsym{>}}%
-}{
-\Gamma \, \vdash  \ottnt{id}  \ottsym{:}  \ottsym{ref<}  \ottnt{Tv}  \ottsym{>}}{%
-{\ottdrulename{RefType}}{}%
+ \Gamma   \vdash   \ottnt{id}  :  \ottnt{T} \hspace{5pt}| _{  \ottsym{\{}  \ottnt{T}  \ottsym{\}}  } \hspace{3pt} \varnothing }{%
+{\ottdrulename{IdType}}{}%
 }}
 
 
 \newcommand{\ottdruleAssignType}[1]{\ottdrule[#1]{%
-\ottpremise{\Gamma \, \vdash  \ottnt{e}  \ottsym{:}  \ottnt{T}}%
-\ottpremise{\Gamma \, \vdash  \ottnt{id}  \ottsym{:}  \ottsym{ref<}  \ottnt{Tv}  \ottsym{>}}%
+\ottpremise{ \Gamma   \vdash   \ottnt{id}  :  \ottnt{T_{{\mathrm{1}}}} \hspace{5pt}| _{  \ottnt{X_{{\mathrm{1}}}}  } \hspace{3pt} \ottnt{C_{{\mathrm{1}}}} }%
+\ottpremise{ \Gamma   \vdash   \ottnt{e}  :  \ottnt{T_{{\mathrm{2}}}} \hspace{5pt}| _{  \ottnt{X_{{\mathrm{2}}}}  } \hspace{3pt} \ottnt{C_{{\mathrm{2}}}} }%
+\ottpremise{\texttt{\textcolor{red}{<<no parses (char 2): 	!*** X1 n X2 = X1 n X(T2) = X2 n X(T1) = \{\} >>}}}%
+\ottpremise{\texttt{\textcolor{red}{<<no parses (char 2): 	!*** X' = X1 u X2 >>}}}%
+\ottpremise{\texttt{\textcolor{red}{<<no parses (char 2): 	!*** C' = C1 u C2 u \{T1 = ref<T2>\} >>}}}%
 }{
-\Gamma \, \vdash  \ottnt{id}  \ottsym{=}  \ottnt{e}  \ottsym{:}  \ottnt{T}}{%
+ \Gamma   \vdash   \ottnt{id}  \ottsym{=}  \ottnt{e}  :  \ottnt{T_{{\mathrm{2}}}} \hspace{5pt}| _{  \ottnt{X'}  } \hspace{3pt} \ottnt{C'} }{%
 {\ottdrulename{AssignType}}{}%
 }}
 
-\newcommand{\ottdefnexpType}[1]{\begin{ottdefnblock}[#1]{$\Gamma \, \vdash  \ottnt{e}  \ottsym{:}  \ottnt{T}$}{}
+\newcommand{\ottdefnexpType}[1]{\begin{ottdefnblock}[#1]{$ \Gamma   \vdash   \ottnt{e}  :  \ottnt{T} \hspace{5pt}| _{  \ottnt{X}  } \hspace{3pt} \ottnt{C} $}{}
 \ottusedrule{\ottdrulevXXnum{}}
 \ottusedrule{\ottdrulevXXbool{}}
 \ottusedrule{\ottdrulevXXstring{}}
 \ottusedrule{\ottdrulevXXundefined{}}
 \ottusedrule{\ottdrulevXXnull{}}
-\ottusedrule{\ottdruleDerefType{}}
-\ottusedrule{\ottdruleRefType{}}
+\ottusedrule{\ottdruleIdType{}}
 \ottusedrule{\ottdruleAssignType{}}
 \end{ottdefnblock}}
 
 %% defn typable
 \newcommand{\ottdruleSkipTypable}[1]{\ottdrule[#1]{%
 }{
-\Gamma \, \vdash   \epsilon }{%
+ \Gamma   \vdash    \epsilon   \hspace{5pt}| _{  \varnothing  } \hspace{3pt} \varnothing }{%
 {\ottdrulename{SkipTypable}}{}%
 }}
 
 
 \newcommand{\ottdruleDecTypable}[1]{\ottdrule[#1]{%
 }{
-\Gamma \, \vdash  \ottkw{var} \, \ottnt{id}}{%
+ \Gamma   \vdash   \ottkw{var} \, \ottnt{id}  \hspace{5pt}| _{  \varnothing  } \hspace{3pt} \varnothing }{%
 {\ottdrulename{DecTypable}}{}%
 }}
 
 
 \newcommand{\ottdruleExpTypable}[1]{\ottdrule[#1]{%
-\ottpremise{\Gamma \, \vdash  \ottnt{e}  \ottsym{:}  \ottnt{T}}%
+\ottpremise{ \Gamma   \vdash   \ottnt{e}  :  \ottnt{T} \hspace{5pt}| _{  \ottnt{X}  } \hspace{3pt} \ottnt{C} }%
 }{
-\Gamma \, \vdash  \ottnt{e}}{%
+ \Gamma   \vdash   \ottnt{e}  \hspace{5pt}| _{  \ottnt{X}  } \hspace{3pt} \ottnt{C} }{%
 {\ottdrulename{ExpTypable}}{}%
 }}
 
 
 \newcommand{\ottdruleSeqTypable}[1]{\ottdrule[#1]{%
-\ottpremise{\Gamma \, \vdash  \ottnt{m}}%
-\ottpremise{\Gamma \, \vdash  \ottnt{m'}}%
+\ottpremise{ \Gamma   \vdash   \ottnt{m_{{\mathrm{1}}}}  \hspace{5pt}| _{  \ottnt{X_{{\mathrm{1}}}}  } \hspace{3pt} \ottnt{C_{{\mathrm{1}}}} }%
+\ottpremise{ \Gamma   \vdash   \ottnt{m_{{\mathrm{2}}}}  \hspace{5pt}| _{  \ottnt{X_{{\mathrm{2}}}}  } \hspace{3pt} \ottnt{C_{{\mathrm{2}}}} }%
+\ottpremise{\texttt{\textcolor{red}{<<no parses (char 2): 	!***X1 n X2 = \{\} >>}}}%
+\ottpremise{\texttt{\textcolor{red}{<<no parses (char 2): 	!***C' = C1 u C2 >>}}}%
+\ottpremise{\texttt{\textcolor{red}{<<no parses (char 2): 	!***X' = X1 u X2 >>}}}%
 }{
-\Gamma \, \vdash  \ottnt{m}  \ottsym{;}  \ottnt{m'}}{%
+ \Gamma   \vdash   \ottnt{m_{{\mathrm{1}}}}  \ottsym{;}  \ottnt{m_{{\mathrm{2}}}}  \hspace{5pt}| _{  \ottnt{X'}  } \hspace{3pt} \ottnt{C'} }{%
 {\ottdrulename{SeqTypable}}{}%
 }}
 
 
 \newcommand{\ottdruleDefTypable}[1]{\ottdrule[#1]{%
-\ottpremise{\Gamma \, \vdash  \ottkw{var} \, \ottnt{id}}%
-\ottpremise{\Gamma \, \vdash  \ottnt{id}  \ottsym{=}  \ottnt{e}  \ottsym{:}  \ottnt{T}}%
+\ottpremise{ \Gamma   \vdash   \ottkw{var} \, \ottnt{id}  \hspace{5pt}| _{  \ottnt{X_{{\mathrm{1}}}}  } \hspace{3pt} \ottnt{C} }%
+\ottpremise{ \Gamma   \vdash   \ottnt{id}  \ottsym{=}  \ottnt{e}  :  \ottnt{T} \hspace{5pt}| _{  \ottnt{X_{{\mathrm{2}}}}  } \hspace{3pt} \ottnt{C} }%
+\ottpremise{\texttt{\textcolor{red}{<<no parses (char 2): 	!***X1 n X2 = \{\} >>}}}%
+\ottpremise{\texttt{\textcolor{red}{<<no parses (char 2): 	!***C' = C1 u C2 >>}}}%
+\ottpremise{\texttt{\textcolor{red}{<<no parses (char 2): 	!***X' = X1 u X2 >>}}}%
 }{
-\Gamma \, \vdash  \ottkw{var} \, \ottnt{id}  \ottsym{=}  \ottnt{e}}{%
+ \Gamma   \vdash   \ottkw{var} \, \ottnt{id}  \ottsym{=}  \ottnt{e}  \hspace{5pt}| _{  \ottnt{X'}  } \hspace{3pt} \ottnt{C'} }{%
 {\ottdrulename{DefTypable}}{}%
 }}
 
 
 \newcommand{\ottdruleMultiDecTypable}[1]{\ottdrule[#1]{%
-\ottpremise{\Gamma \, \vdash  \ottkw{var} \, \ottnt{vd}}%
-\ottpremise{\Gamma \, \vdash  \ottkw{var} \, \ottnt{vd'}}%
+\ottpremise{ \Gamma   \vdash   \ottkw{var} \, \ottnt{vd}  \hspace{5pt}| _{  \ottnt{X_{{\mathrm{1}}}}  } \hspace{3pt} \ottnt{C_{{\mathrm{1}}}} }%
+\ottpremise{ \Gamma   \vdash   \ottkw{var} \, \ottnt{vd'}  \hspace{5pt}| _{  \ottnt{X_{{\mathrm{1}}}}  } \hspace{3pt} \ottnt{C_{{\mathrm{2}}}} }%
+\ottpremise{\texttt{\textcolor{red}{<<no parses (char 2): 	!***X1 n X2 = \{\} >>}}}%
+\ottpremise{\texttt{\textcolor{red}{<<no parses (char 2): 	!***C' = C1 u C2 >>}}}%
+\ottpremise{\texttt{\textcolor{red}{<<no parses (char 2): 	!***X' = X1 u X2 >>}}}%
 }{
-\Gamma \, \vdash  \ottkw{var} \, \ottnt{vd}  \ottsym{,}  \ottnt{vd'}}{%
+ \Gamma   \vdash   \ottkw{var} \, \ottnt{vd}  \ottsym{,}  \ottnt{vd'}  \hspace{5pt}| _{  \ottnt{X'}  } \hspace{3pt} \ottnt{C'} }{%
 {\ottdrulename{MultiDecTypable}}{}%
 }}
 
-\newcommand{\ottdefntypable}[1]{\begin{ottdefnblock}[#1]{$\Gamma \, \vdash  \ottnt{m}$}{}
+\newcommand{\ottdefntypable}[1]{\begin{ottdefnblock}[#1]{$ \Gamma   \vdash   \ottnt{m}  \hspace{5pt}| _{  \ottnt{X}  } \hspace{3pt} \ottnt{C} $}{}
 \ottusedrule{\ottdruleSkipTypable{}}
 \ottusedrule{\ottdruleDecTypable{}}
 \ottusedrule{\ottdruleExpTypable{}}
@@ -358,7 +383,7 @@
 \ottall
 
 \begin{verbatim}
-Definition rules:        22 good    0 bad
-Definition rule clauses: 35 good    0 bad
+Definition rules:        17 good    4 bad
+Definition rule clauses: 33 good    12 bad
 \end{verbatim}
 \end{document}

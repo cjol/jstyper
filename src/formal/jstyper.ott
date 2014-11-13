@@ -46,9 +46,25 @@ Tv :: 'Tval_' ::=				{{ com Value Type }}
 T :: 'T_' ::=                   {{ com Expression Type }}
 	| Tv 		::  :: ValueType			{{ com ValueType }}
 	| ref< Tv > ::  :: RefType				{{ com Location Type }}
+								{{ tex ref \langle [[Tv]] \rangle}}
 	
 
 % Things Ott wants
+
+X :: 'X_' ::= 
+	| S 		::  :: Set
+
+C :: 'C_' ::= {{ com Constraints}}
+	| S		::  :: Set
+
+S :: 'S_' ::= 					{{ com Set }}
+	| {}		::  :: EmptySet 			{{ com EmptySet }}
+	| { T }		::  :: Singleton			{{ com Singleton }}
+	| X u X'	::  :: Union				{{ com Union }}
+											{{ tex [[X]] \cup [[X']] }}
+	| X n X'	::  :: Intersect			{{ com Intersect }}
+											{{ tex [[X]] \cap [[X']] }}
+
 
 terminals :: 'terminals_' ::=
 	| ->        ::  :: rightarrow {{ tex \rightarrow }}
@@ -56,6 +72,7 @@ terminals :: 'terminals_' ::=
 	| |-        ::  :: Entails {{ tex \vdash }}
 	| ;         ::  :: semicolon
 	| var       ::  :: var
+	| {}		::  :: emptyset {{ tex \varnothing }}
 
 
 defns
@@ -95,73 +112,92 @@ G ( id ) = T :: M::expType2::''  by
 	
 
 defn
-G |- e : T :: ::expType::''  by
+G |- e : T | X C :: ::expType::''
+ {{ tex [[G]] [[|-]] [[e]] : [[T]]\hspace{5pt}| _{ [[X]] } \hspace{3pt}[[C]] }}
+ by
 	% Note: Only expressions have a type - the more general statements do not
 
 	% Trivial typing rules for values
 
 	---------------                                   :: v_num
-	G |- n : number
+	G |- n : number | {} {}
 
 	---------------                                   :: v_bool
-	G |- b : boolean
+	G |- b : boolean | {} {}
 
 	---------------                                   :: v_string
-	G |- str : string
+	G |- str : string | {} {}
 
 	---------------                                   :: v_undefined
-	G |- undefined : undefined
+	G |- undefined : undefined | {} {}
 
 	---------------                                   :: v_null
-	G |- null : null
-
+	G |- null : null | {} {}
+%
 	% Mildly more interesting - assign / deref rules.
-	G(id) = ref<Tv>
-	------------------                                :: DerefType
-	G |- id : T
+%	G(id) = ref<Tv>
+%	------------------                                :: DerefType
+%	G |- id : T |{} {}
+%
+%	G(id) = ref<Tv>
+%	-----------------                                 :: RefType
+%	G |- id : ref<Tv> |{} {}
 
-	G(id) = ref<Tv>
-	------------------                                :: RefType
-	G |- id : ref<Tv>
+	G(id) = T
+	----------											:: IdType
+	G |- id : T |{ T } {}
 
 	% Problem of typing id: it needs to be typed as either a T or a ref<T>. In either case, what should G(id) be?
 	% My solution: id legitimately needs to be able to be typed in either case, so we need both Ref and DerefType rules. G internally just stores id as having type ref<Tv>
 
 
-	G |- e : T
-	G |- id : ref<Tv> 
+	G |- id : T1 |X1 C1 
+	G |- e : T2 |X2 C2
+	! X1 n X2 = X1 n X(T2) = X2 n X(T1) = {}
+	! X' = X1 u X2
+	! C' = C1 u C2 u {T1 = ref<T2>}
 	------------------                                	:: AssignType
-	G |- id = e : T
-	% TODO: Would be interesting to allow mutable type of id
+	G |- id = e : T2 |X' C'
 
 
-defn 
-G |- m :: :: typable::'' by
+defn
+G |- m | X C :: :: typable::'' 
+ {{ tex [[G]] [[|-]] [[m]] \hspace{5pt}| _{ [[X]] } \hspace{3pt}[[C]] }}
+ by
 	% We say that a statement m is typable if all expressions contained within it are well typed by the definition above.
 
 	% NB We're going to need to do something to model scope within G
 
 	--------  	                                        :: SkipTypable
-	G |- eps 
+	G |- eps |{} {}
 
 	----------- 	                                    :: DecTypable
-	G |- var id
+	G |- var id |{} {}
 
-	G |- e : T
+	G |- e : T |X C
 	----------    	                                    :: ExpTypable
-	G |- e
+	G |- e |X C
 
-	G |- m
-	G |- m'
+	G |- m1 |X1 C1
+	G |- m2 |X2 C2
+	!X1 n X2 = {}
+	!C' = C1 u C2
+	!X' = X1 u X2
 	-----------  	                                    :: SeqTypable
-	G |- m ; m'
+	G |- m1 ; m2 |X' C'
 
-	G |- var id
-	G |- id = e : T
+	G |- var id | X1 C
+	G |- id = e : T |X2 C
+	!X1 n X2 = {}
+	!C' = C1 u C2
+	!X' = X1 u X2
 	---------------- 	                                :: DefTypable
-	G |- var id = e
+	G |- var id = e | X' C'
 
-	G |- var vd
-	G |- var vd'
+	G |- var vd |X1 C1
+	G |- var vd' |X1 C2
+	!X1 n X2 = {}
+	!C' = C1 u C2
+	!X' = X1 u X2
 	----------------- 	                                :: MultiDecTypable
-	G |- var vd, vd'
+	G |- var vd, vd' | X' C'
