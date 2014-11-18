@@ -53,7 +53,7 @@ function handleCompile(src, req, res) {
 	try {
 		var result = jstyper(src);
 		res.send(
-			result
+			result.src
 		);
 	} catch(e) {
 		res.status(400).send(e.message);
@@ -83,6 +83,20 @@ app.get('/compile/:test/', function (req, res) {
 	handleCompile(src, req, res);
 });
 
+app.get('/test/:test/', function (req, res) {
+	var file = "tests/" + req.params.test;
+	var src = fs.readFileSync(file, "utf8");
+	res.set('Content-Type', 'application/javascript');
+	try {
+		var result = jstyper(src);
+		res.json(
+			result
+		);
+	} catch(e) {
+		res.status(400).send(e.message);
+	}
+});
+
 
 app.get('/', function(req, res) {
 	res.render("compile.html", {from:'', to:''});
@@ -97,7 +111,7 @@ app.get('/:test', function(req, res) {
 	} catch(e) {
 		result = e.message;
 	}
-	res.render("compile.html", {from:src, to:result});
+	res.render("compile.html", {from:src, to:result.src});
 });
 
 app.listen(3006);

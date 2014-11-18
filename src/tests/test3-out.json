@@ -1,0 +1,52 @@
+{
+"src": "/* jstyper typed */\nvar x, y = 5;\ntrue;\nz = x = 'hello';\nx = y;\n/* jstyper end typed */\n\nfunction untyped() {return x + true;}\n",
+"check": [
+{
+"types": {
+"x": {
+"type": "T1"
+},
+"y": {
+"type": "T2"
+},
+"z": {
+"type": "T3"
+}
+},
+"constraints": [
+{
+"left": {
+"type": "T2"
+},
+"right": {
+"type": "number"
+}
+},
+{
+"left": {
+"type": "T1"
+},
+"right": {
+"type": "string"
+}
+},
+{
+"left": {
+"type": "T3"
+},
+"right": {
+"type": "string"
+}
+},
+{
+"left": {
+"type": "T1"
+},
+"right": {
+"type": "T2"
+}
+}
+]
+}
+]
+}

@@ -6,105 +6,105 @@ grammar
 
 id :: 'id_' ::=
 
-v :: 'v_' ::=                   {{ com Values }}
-	| b         ::  :: Boolean 				{{ com Boolean }}
-	| n         ::  :: Number 				{{ com Number }}
-	| str       ::  :: String 				{{ com String }}
-	| undefined ::  :: Undefined 			{{ com Undefined }}
-	| null      ::  :: null 				{{ com null }}
-	| get( s , id ) :: M:: GetStore 		{{ com GetStore }}
+v :: 'v_' ::=                                   {{ com Values }}
+	| b         ::  :: Boolean 									{{ com Boolean }}
+	| n         ::  :: Number 									{{ com Number }}
+	| str       ::  :: String 									{{ com String }}
+	| undefined ::  :: Undefined 								{{ com Undefined }}
+	| null      ::  :: null 									{{ com null }}
+	| get( s , id ) :: M:: GetStore 							{{ com GetStore }}
 
-s :: 's_' ::=                   {{ com Store }}
-	|  put( s , id , v ) :: M:: PutStore 	{{ com PutStore }}
+s :: 's_' ::=                                   {{ com Store }}
+	|  put( s , id , v ) :: M:: PutStore 						{{ com PutStore }}
 
-vd :: 'vd_' ::=                 {{ com VariableDeclaration }}
-	| id        ::  :: Declaration 			{{ com Declaration }}
-	| id = e    ::  :: Definition 			{{ com Definition }}
-	| vd , vd'  ::  :: Multiple 			{{ com Multiple }}
+vd :: 'vd_' ::=                                 {{ com VariableDeclaration }}
+	| id        ::  :: Declaration 								{{ com Declaration }}
+	| id = e    ::  :: Definition 								{{ com Definition }}
+	| vd , vd'  ::  :: Multiple 								{{ com Multiple }}
 
-e :: 'e_' ::=                   {{ com Expression }}
-	| v         ::  :: Value 				{{ com Value }}
-	| id        ::  :: Deref 				{{ com Deref }}
-	| id = e    ::  :: Ref 					{{ com Ref }}
+e :: 'e_' ::=                                   {{ com Expression }}
+	| v         ::  :: Value 									{{ com Value }}
+	| id        ::  :: Deref 									{{ com Deref }}
+	| id = e    ::  :: Ref 										{{ com Ref }}
 
-m :: 'm_' ::=                   {{ com Statement }}
-	| e         ::  :: Expression 			{{ com Expression }}
-	| eps  		::  :: Skip 				{{ com Skip }}
-											{{ tex \epsilon }}
-	| m ; m'    ::  :: Seq          		{{ com Seq }}
-	| var vd    ::  :: VarDeclaration 		{{ com VarDeclaration }}
+m :: 'm_' ::=                                   {{ com Statement }}
+	| e         ::  :: Expression 								{{ com Expression }}
+	| eps  		::  :: Skip 									{{ com Skip }}
+																{{ tex \epsilon }}
+	| m ; m'    ::  :: Seq          							{{ com Seq }}
+	| var vd    ::  :: VarDeclaration 							{{ com VarDeclaration }}
 
 % Typing definitions
 % TODO: We will need to do something clever here to allow for object types
 
-Tv :: 'Tval_' ::=				{{ com Value Type }}
-	| number    ::  :: Number 				{{ com Number }}
-	| boolean   ::  :: Boolean 				{{ com Boolean }}
-	| string    ::  :: String 				{{ com String }}
-	| undefined ::  :: undefined 			{{ com undefined }}
-	| null      ::  :: null 				{{ com null }}
+T :: 'Tval_' ::=				                {{ com Value Type }}
+	| number    ::  :: Number 									{{ com Number }}
+	| boolean   ::  :: Boolean 									{{ com Boolean }}
+	| string    ::  :: String 									{{ com String }}
+	| undefined ::  :: undefined 								{{ com undefined }}
+	| null      ::  :: null 									{{ com null }}
 
-T :: 'T_' ::=                   {{ com Expression Type }}
-	| Tv 		::  :: ValueType			{{ com ValueType }}
-	| ref< Tv > ::  :: RefType				{{ com Location Type }}
-								{{ tex ref \langle [[Tv]] \rangle}}
+% T :: 'T_' ::=                                   {{ com Expression Type }}
+	%| Tv 		::  :: ValueType								{{ com ValueType }}
+	%| ref< Tv > ::  :: RefType									{{ com Location Type }}
+								            					%{{ tex ref \langle [[Tv]] \rangle}}
 	
 
 % Things Ott wants
 
 G {{ tex \Gamma }} :: 'G_' ::= 					{{ com Context }}
-	| {}		::  :: EmptyContext			{{ com EmptyContext }}
-	| { G }		::  :: SingletonContext		{{ com SingletonContext }}
-	| G u G'	::  :: UnionContext			{{ com UnionContext }}
-											{{ tex [[G]] \cup [[G']] }}
-	| id : T 	::  :: ContextItem			{{ com ContextItem }}
+	| {}		::  :: EmptyContext								{{ com EmptyContext }}
+	| { G }		::  :: SingletonContext							{{ com SingletonContext }}
+	| G u G'	::  :: UnionContext								{{ com UnionContext }}
+																{{ tex [[G]] \cup [[G']] }}
+	| id : T 	::  :: ContextItem								{{ com ContextItem }}
 
-R :: 'R_' ::=					{{ com Relations }}
-	| =			::  :: Equals				{{ com Equals }}
-	| != 		::  :: NotEquals			{{ com NotEquals }}
-	| contains 	::  :: Contains				{{ com Contains }}
-											{{ tex \in }}
-	| !contains ::  :: NotContains 			{{ com NotContains }}
-											{{ tex \notin }}
+R :: 'R_' ::=					                {{ com Relations }}
+	| =			::  :: Equals									{{ com Equals }}
+	| != 		::  :: NotEquals								{{ com NotEquals }}
+	| contains 	::  :: Contains									{{ com Contains }}
+																{{ tex \in }}
+	| !contains ::  :: NotContains 								{{ com NotContains }}
+																{{ tex \notin }}
 
-Eq :: 'Eq' ::=				{{ com Equations }}
-	| Eq R Eq'  ::  :: Equality
-	| C 		::  :: ConstraintFormula
-	| G 		::  :: ContextFormula
-	| X 		::  :: VariableFormula
-	| T 		::  :: TypeFormula
-	| id 		::  :: IDFormula
-	| func  	::  :: FuncFormula
+Eq :: 'Eq' ::=					                {{ com Equations }}
+	| Eq R Eq'  ::  :: Equality	 								{{ com com Equality }}
+	| C 		::  :: ConstraintFormula						{{ com ConstraintFormula }}
+	| G 		::  :: ContextFormula							{{ com ContextFormula }}
+	| X 		::  :: VariableFormula							{{ com VariableFormula }}
+	| T 		::  :: TypeFormula								{{ com TypeFormula }}
+	| id 		::  :: IDFormula								{{ com IDFormula }}
+	| func  	::  :: FuncFormula								{{ com FuncFormula }}
 
-C :: 'C_' ::= 					{{ com Constraint }}
-	| {}		::  :: EmptyConstraint		{{ com EmptyConstraint }}
-	| C u C'	::  :: UnionConstraint		{{ com UnionConstraint }}
-											{{ tex [[C]] \cup [[C']] }}
-	| C n C'	::  :: IntersectConstraint	{{ com IntersectConstraint }}
-											{{ tex [[C]] \cap [[C']] }}
-	| { Eq }	::  :: ConstraintEquation 	{{ com ConstraintEquation }}
-	| ( C )		::  :: BracketedConstraint  {{ com BracketedConstraint }}
-											{{ tex [[C]] }}
+C :: 'C_' ::= 					                {{ com Constraint }}
+	| {}		::  :: EmptyConstraint							{{ com EmptyConstraint }}
+	| C u C'	::  :: UnionConstraint							{{ com UnionConstraint }}
+																{{ tex [[C]] \cup [[C']] }}
+	| C n C'	::  :: IntersectConstraint						{{ com IntersectConstraint }}
+																{{ tex [[C]] \cap [[C']] }}
+	| { Eq }	::  :: ConstraintEquation 						{{ com ConstraintEquation }}
+	| ( C )		::  :: BracketedConstraint  					{{ com BracketedConstraint }}
+																{{ tex [[C]] }}
 
-X :: 'X_' ::= 					{{ com Variable }}
-	| {}		::  :: EmptyVariable		{{ com EmptyVariable }}
-	| { T }		::  :: SingletonVariable	{{ com SingletonVariable }}
-	| X u X'	::  :: UnionVariable		{{ com UnionVariable }}
-											{{ tex [[X]] \cup [[X']] }}
-	| X n X'	::  :: IntersectVariable	{{ com IntersectVariable }}
-											{{ tex [[X]] \cap [[X']] }}
-	| FV( T )	::  :: FreeVars				{{ com FreeVars }}											
-func :: 'func_' ::=				{{ com Function }}
+X :: 'X_' ::= 					                {{ com Variable }}
+	| {}		::  :: EmptyVariable							{{ com EmptyVariable }}
+	| { T }		::  :: SingletonVariable						{{ com SingletonVariable }}
+	| X u X'	::  :: UnionVariable							{{ com UnionVariable }}
+																{{ tex [[X]] \cup [[X']] }}
+	| X n X'	::  :: IntersectVariable						{{ com IntersectVariable }}
+																{{ tex [[X]] \cap [[X']] }}
+	| FV( T )	::  :: FreeVars									{{ com FreeVars }}											
+
+func :: 'func_' ::=				                {{ com Function }}
 	| dom( G )	::  :: dom
-	| FV( T )	::  :: FreeVars
 
 terminals :: 'terminals_' ::=
-	| ->        ::  :: rightarrow {{ tex \rightarrow }}
-	| G         ::  :: Gamma {{ tex \Gamma }}
-	| |-        ::  :: Entails {{ tex \vdash }}
+	| ->        ::  :: rightarrow 								{{ tex \rightarrow }}
+	| G         ::  :: Gamma                					{{ tex \Gamma }}
+	| |-        ::  :: Entails              					{{ tex \vdash }}
 	| ;         ::  :: semicolon
 	| var       ::  :: var
-	| {}		::  :: emptyset {{ tex \varnothing }}
+	| {}		::  :: emptyset             					{{ tex \varnothing }}
 
 
 defns
@@ -113,34 +113,34 @@ Jop :: '' ::=
 defn
 < m , s > -> < m' , s' > :: ::reduce::''  by
 
-	----------------------------                      :: seq1
+	-------------------                        		::   seq1
 	<v; e, s> -> <e, s>
 
 	<e1, s> -> <e1', s'>
-	--------------------------------------            :: seq2
+	----------------------------              		::   seq2
 	<e1; e2, s> -> <e1'; e2, s'>
 
 	<e, s> -> <e', s'>
-	-----------------------------------               :: assign1
+	----------------------------                 		::   assign1
 	<id = e, s> -> <id = e', s'>
 
-	----------------------------------------          :: assign2
+	---------------------------------            		::   assign2
 	<id = v, s> -> <v, put(s, id, v)>
 
-	----------------------------------                :: deref
+	--------------------------                  		::   deref
 	<id, s> -> <get(s, id), s>
 
-	-------------------------------------             :: var1
+	------------------------------               		::   var1
 	<var id = e, s> -> <id = e, s>
 
-	------------------------------------              :: var2
+	-----------------------------                		::   var2
 	<var id, s> -> <undefined, s>
 
-	------------------------------------------------- :: var3
+	----------------------------------------- 			::   var3
 	<var vd, vd', s> -> <var vd; var vd', s >
 
 defn
-G ( id ) = T :: M::expType3::''  by
+g ( id ) = t :: m::expType3::''  by
 
 defn
 G ( id ) = T :: M::expType2::''  by
@@ -156,37 +156,37 @@ G |- e : T | X C , G' :: ::expType::''
 
 	% Trivial typing rules for values
 
-	---------------                                     :: v_num
+	-------------------------                           		:: v_num
 	G |- n : number |{} {}, G
 
-	---------------                                     :: v_bool
+	--------------------------                          		:: v_bool
 	G |- b : boolean |{} {}, G
 
-	---------------                                     :: v_string
+	---------------------------                         		:: v_string
 	G |- str : string |{} {}, G
 
-	---------------                                     :: v_undefined
+	------------------------------------                		:: v_undefined
 	G |- undefined : undefined |{} {}, G
 
-	---------------                                     :: v_null
+	--------------------------                          		:: v_null
 	G |- null : null |{} {}, G
 
 	G(id) = T
-	----------											:: IdType
+	---------------------		                                :: IdType
 	G |- id : T |{} {}, G
 
 	id !contains dom(G)
-	----------											:: IdTypeUndef
+	----------------------------------- 						:: IdTypeUndef
 	G |- id : T |{ T } {}, G u {id : T}
 
 
 	% Note I'm enforcing that the expression have a value type
 	% Note we might be worried here about typing things like ref<ref<T>> but that can't occur in JavaScript
-	G |- e : Tv1 |X1 C1, G1
-	G1 |- id : T2 |X2 C2, G2
-	X1 n X2 = {}
-	------------------                                	:: AssignType
-	G |- id = e : T2 |X1 u X2 (C1 u C2) u { T2 = Tv1 }, G2
+	              G |- e : T1 |X1 C1, G1               		
+	             G1 |- id : T2 |X2 C2, G2               		
+	                   X1 n X2 = {}                     		
+	------------------------------------------------------	 	:: AssignType
+	G |- id = e : T2 |X1 u X2 (C1 u C2) u { T2 = T1 }, G2
 
 defn
 G |- m | X C , G' :: :: typable::'' 
@@ -196,31 +196,31 @@ G |- m | X C , G' :: :: typable::''
 
 	% NB We're going to need to do something to model scope within G
 
-	--------  	                                        :: SkipTypable
+	------------------                                 		:: SkipTypable
 	G |- eps |{} {}, G
 
-	----------- 	                                    :: DecTypable
+	---------------------------------                		:: DecTypable
 	G |- var id |{T} {}, G u {id : T}
 
 	G |- e : T |X C, G'
-	----------    	                                    :: ExpTypable
+	-------------------                                		:: ExpTypable
 	G |- e |X C, G'
 
 	G |- m1 |X1 C1, G1
 	G1 |- m2 |X2 C2, G2
 	X1 n X2 = {}
-	-----------  	                                    :: SeqTypable
+	---------------------------------                		:: SeqTypable
 	G |- m1 ; m2 |X1 u X2 C1 u C2, G2
 
 	G |- var id | X1 C, G1
 	G1 |- id = e : T |X2 C, G2
 	X1 n X2 = {}
-	---------------- 	                                :: DefTypable
+	---------------------------------                		:: DefTypable
 	G |- m1 ; m2 |X1 u X2 C1 u C2, G2
 
 
 	G |- var vd |X1 C1, G1
 	G1 |- var vd' |X1 C2, G2
 	X1 n X2 = {}
-	----------------- 	                                :: MultiDecTypable
+	---------------------------------------            		:: MultiDecTypable
 	G |- var vd , vd' |X1 u X2 C1 u C2, G2

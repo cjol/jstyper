@@ -13,9 +13,10 @@ var Enum = {
 		null: "null"
 	}
 };
-var nextType = 1;
 
+var nextType = 1;
 module.exports = function(src) {
+	nextType = 1;
 	// pre-process source 
 	// read all jstyper annotations
 	var jstyperComments = /(?:\/\*\s*jstyper\s+((?:[^*]|[\r\n]|(?:\*+(?:[^*\/]|[\r\n])))*)\*+\/)|(?:\/\/\s*jstyper\s+(.*))/g;
@@ -70,6 +71,7 @@ module.exports = function(src) {
 	// because typed and untyped chunks are contiguous, we now have chunks to be typed at odd indices
 	// console.log(srcChunks);
 	var outSrc = "";
+	var checkRes = [];
 	for (i=0; i<srcChunks.length; i++) {
 		if (i%2 === 0) {
 			// output as-is
@@ -85,8 +87,14 @@ module.exports = function(src) {
 				e.message = "Parse Error: " + e.message;
 				throw e;
 			}
+			
+			var c = typecheck(ast);
+			checkRes.push({
+				types: c.gamma,
+				constraints: c.C
+			});
 
-			typecheck(ast);
+			//TODO: This is too early to return! Need to rethink chunking
 
 			// type check
 			// var walker = new UglifyJS.TreeWalker(function(node, descend) {
@@ -123,7 +131,10 @@ module.exports = function(src) {
 	// 	}
 	// }
 	// console.log(croppedSrc);
-	return outSrc;
+	return {
+		src: outSrc,
+		check: checkRes
+	};
 };
 
 function makeJudgement(type, gamma, defVars, constraints) {
@@ -137,8 +148,8 @@ function makeJudgement(type, gamma, defVars, constraints) {
 function makeConstraint(T1, T2) {
 	// TODO: I am implicitly assuming all constraints will be equality. Is this the case?
 	return {
-		T1: T1,
-		T2: T2
+		left: T1,
+		right: T2
 	};
 }
 function makeRef(T) {
@@ -149,8 +160,7 @@ function makeRef(T) {
 }
 function makeType(T) {
 	return {
-		type: T,
-		refers: "null"
+		type: T
 	};
 }
 
@@ -246,7 +256,8 @@ function typecheck(ast) {
 			// TODO: assert that X1 and X2 have empty intersection
 			// TODO: extend the above assertion to include free variables in T1 and T2?
 			var X = j1.X.concat(j2.X);
-			var C = j1.C.concat(j2.C.concat([ makeConstraint(j1.T, makeRef(j2.T)) ]));
+			var C = j1.C.concat(j2.C.concat([ makeConstraint(j1.T, j2.T) ]));
+			// var C = j1.C.concat(j2.C.concat([ makeConstraint(j1.T, makeRef(j2.T)) ]));
 			// TODO: currently T2 will be typed as ref<Tx> if node.right has type Identifier. We need to change this so that it is directly typed as T
 			// TODO: assert that we can't get ref<ref<T>>
 			return makeJudgement(j2.T, gamma, X, C);
@@ -303,9 +314,10 @@ function typecheck(ast) {
 	// actually do the type checking, now we have defined all checkers
 	// root node is a Program node
 	var j = checkProgram({}, ast);
-	console.log("Gamma: ");console.log(JSON.stringify(j.gamma));
-	console.log("X: ");console.log(JSON.stringify(j.X));
-	console.log("C: ");console.log(JSON.stringify(j.C));
+	console.log("Gamma: ");console.log(JSON.stringify(j.gamma, null, 4));
+	console.log("X: ");console.log(JSON.stringify(j.X, null, 4));
+	console.log("C: ");console.log(JSON.stringify(j.C, null, 4));
+	return {X:j.X,C:j.C,gamma:j.gamma};
 }
 
 // Use Acorn + Escodegen
@@ -329,17 +341,3 @@ function get_ast(src) {
 function get_src(ast) {
 	return (escodegen.generate(ast, {comment: true}));
 }
-// Use UglifyJS2
-// function get_ast(src) {
-// 	var ast = UglifyJS.parse(src);
-// 	ast.figure_out_scope();
-// 	return ast;
-// }
-
-// function get_src(ast) {
-// 	var stream = UglifyJS.OutputStream({
-// 		beautify: true
-// 	});
-// 	var src = ast.print(stream);
-// 	return stream.toString();
-// }
