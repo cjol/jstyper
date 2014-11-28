@@ -89,12 +89,86 @@ module.exports = function(src) {
 			}
 			
 			var c = typecheck(ast);
+
+			var substitutions = solveConstraints(c.C);
+			// apply the substOitution to the type environment
+			for (var j in c.gamma) {
+				// NB first sub should be applied first
+				for (var k in substitutions) {
+					if (c.gamma[j].type.type === substitutions[k].from.type) {
+						c.gamma[j].type = substitutions[k].to;
+					}
+				}
+			}
+
+			//TODO: Maybe need to rethink chunking?
 			checkRes.push({
-				types: c.gamma,
-				constraints: c.C
+				types: c.gamma
 			});
 
-			//TODO: This is too early to return! Need to rethink chunking
+			// Gamma needs to be functionally defined environment (not gonna muck things around if we change another one),
+			// with some sort of scope. Probably looking after itself, rather than having to choose which scope we want to use.
+
+			ast.body.push(
+				{
+		            "type": "IfStatement",
+		            "test": {
+		                "type": "BinaryExpression",
+		                "operator": "!==",
+		                "left": {
+		                    "type": "UnaryExpression",
+		                    "operator": "typeof",
+		                    "argument": {
+		                        "type": "Identifier",
+		                        "name": "y"
+		                    },
+		                    "prefix": true
+		                },
+		                "right": {
+		                    "type": "Literal",
+		                    "value": "string",
+		                    "raw": "\"string\""
+		                }
+		            },
+		            "consequent": {
+		                "type": "BlockStatement",
+		                "body": [
+		                    {
+		                        "type": "ThrowStatement",
+		                        "argument": {
+		                            "type": "NewExpression",
+		                            "callee": {
+		                                "type": "Identifier",
+		                                "name": "Error"
+		                            },
+		                            "arguments": [
+		                                {
+		                                    "type": "Literal",
+		                                    "value": "y should be string",
+		                                    "raw": "\"y should be string\""
+		                                }
+		                            ]
+		                        }
+		                    }
+		                ]
+		            },
+		            "alternate": null
+		        }
+			}
+			);
+			var typeComment = " ";
+			var sep = "";
+			for (var j in c.gamma) {
+				typeComment += sep + c.gamma[j].name + " (" + c.gamma[j].program_point + "): " + c.gamma[j].type.type;
+				sep = ", ";
+			}
+			ast.body[0].leadingComments =  [
+				{
+					"type": "Line",
+					"value": typeComment
+				}
+			];
+			console.log(ast);
 
 			// type check
 			// var walker = new UglifyJS.TreeWalker(function(node, descend) {
@@ -137,6 +211,45 @@ module.exports = function(src) {
 	};
 };
 
+function makeSubstitution(from, to) {
+	return {
+		from: from,
+		to: to
+	};
+}
+function solveConstraints(constraints) {
+	// Hindley-Milner straight from Pierce p. 327
+	if (constraints.length < 1)
+		return [];
+	var L = constraints[0].left;
+	var R = constraints[0].right;
+	var C = constraints.slice(1);
+	if (L.type === R.type) 
+		return solveConstraints(C);
+	// TODO: add a case for function types, and ensure to add occurs check below
+	var sub;
+
+	if ( !L.isConcrete ) {
+		sub = makeSubstitution(L, R);
+	} else if ( !R.isConcrete ) {
+		sub = makeSubstitution(R, L);
+	} else {
+		throw new Error(" Failed Unification: " + L.type + " != " + R.type);
+	}
+	
+	// apply this substitution to the remaining constraints
+	for (var i = 0; i < C.length; i++) {
+		if (C[i].left.type === sub.from.type)
+			C[i].left = sub.to;
+		if (C[i].right.type === sub.from.type)
+			C[i].right = sub.to;
+	}
+
+	// it's quite important that substitutions are applied in the right order
+	// here first item should be applied first
+	return [sub].concat(solveConstraints(C));
+	
+}
 function makeJudgement(type, gamma, defVars, constraints) {
 	return {
 		T:type,
@@ -158,22 +271,23 @@ function makeRef(T) {
 		refers: T
 	};
 }
-function makeType(T) {
+function makeType(T, conc) {
 	return {
-		type: T
+		type: T,
+		isConcrete: (conc === true)
+	};
+}
+function makeTypeEnvEntry(name, program_point, type) {
+	return {
+		name: name,
+		program_point: program_point,
+		type: type
 	};
 }
 
 function typecheck(ast) {
 	function checkProgram(gamma, node) {
 		// program node body is a list of statements
-		/*
-		 * TODO: gamma resolution:
-		 * To check, we are given a gamma (G1). 
-		 The first subcheck takes this G1, and returns a new gamma G2. 
-		 This G2 is handed to the next subcheck, and so on. Eventually return the final return value.
-		 I am pretty sure, to reflect this, the type system will have to add an additinoal judgement
-		 */
 		var X=[], C=[];
 		for (var i in node.body) {
 			var judgements = checkStatement(gamma, node.body[i]);
@@ -203,20 +317,20 @@ function typecheck(ast) {
 
 
 	function checkVariableDeclarator(gamma, node) {
+		var X = [], C = [];
+		// need to select a new type (we are redefining the type from here on)
+		var T = makeType("T" + (nextType++));
 		if (node.init) {
 			// TODO: the type system defines this in terms of separate var + assignment, which doesn't mirror the AST format.
 			// I'm getting roung this by constructing an artificial assignment node. Problem?
-			return checkAssignmentExpression(gamma, {
-				right: node.init,
-				left: node.id,
-				operator: "="
-			});
-		}
+			var j1 = checkExpression(gamma, node.init);
 
-		// need to select a new type (we are redefining the type from here on)
-		var T = makeType("T" + (nextType++));
-		gamma[node.id.name] = T;
-		return makeJudgement(null, gamma, [T], []);
+			X = j1.X.concat([T]);
+			C = j1.C.concat([ makeConstraint(j1.T, T) ]);
+		} 
+		gamma.push(makeTypeEnvEntry(node.id.name, node.start, T));
+		return makeJudgement(null, gamma, X, C);
+
 	}
 
 	function checkVariableDeclaration(gamma, node) {
@@ -233,7 +347,7 @@ function typecheck(ast) {
 	}
 
 	/***********************************************************************************
-	 * below we are not only checking typability, but also creating type constraints
+	 * below we are not only checking typability, but also creating type judgements
 	 ***********************************************************************************/
 
 	function checkExpression(gamma, node) {
@@ -248,36 +362,38 @@ function typecheck(ast) {
 				throw new Error("Unhandled Expression type " + node.type);
 		}
 	}
+
 	function checkAssignmentExpression(gamma, node) {
 		//node.operator .left .right
 		if ("=" === node.operator) {
 			var j2 = checkExpression(gamma, node.right);
-			var j1 = checkExpression(gamma, node.left);
-			// TODO: assert that X1 and X2 have empty intersection
-			// TODO: extend the above assertion to include free variables in T1 and T2?
+			var j1 = checkIdentifier(gamma, node.left);
+
 			var X = j1.X.concat(j2.X);
 			var C = j1.C.concat(j2.C.concat([ makeConstraint(j1.T, j2.T) ]));
 			// var C = j1.C.concat(j2.C.concat([ makeConstraint(j1.T, makeRef(j2.T)) ]));
-			// TODO: currently T2 will be typed as ref<Tx> if node.right has type Identifier. We need to change this so that it is directly typed as T
-			// TODO: assert that we can't get ref<ref<T>>
 			return makeJudgement(j2.T, gamma, X, C);
 		} else {
 			throw new Error("Unhandled assignment operator " + node.operator);
 		}
 	}
 	function checkIdentifier(gamma, node) {
-		console.log("identifier " + node.name);
 		var T, X = [], C = [];
 
-		// TODO: this feels like a simplistic use of gamma (scope?)
-		if (typeof gamma[node.name] !== "undefined") {
-			// identifier has already got a type
-			T = gamma[node.name];
-		} else {
+		var foundDef = false;
+		// search backwards through gamma to find the most recent defn
+		for (var i = gamma.length - 1; i >= 0; i--) {
+			if (gamma[i].name === node.name) {
+				T = gamma[i].type;
+				foundDef = true;
+				break;
+			}
+		}
+		if (!foundDef) {
 			// need to select a new type
 			T = makeType("T" + (nextType++));
 			X.push(T);
-			gamma[node.name] = T;
+			gamma.push(makeTypeEnvEntry(node.name, node.start, T));
 		}
 
 		return makeJudgement(T, gamma, X, C);
@@ -286,37 +402,29 @@ function typecheck(ast) {
 		var type;
 		switch (typeof(node.value)) {
 			case "number":
-				console.log("number: " + node.value);
 				type = Enum.Type.number;
 				break;
 			case "boolean":
-				console.log("boolean: " + node.value);
 				type = Enum.Type.boolean;
 				break;
 			case "string":
-				console.log("string: " + node.value);
 				type = Enum.Type.string;
 				break;
 			case "undefined":
-				console.log("undefined");
 				type = Enum.Type.undefined;
 				break;
 			case "null":
-				console.log("null");
 				type = Enum.Type.null;
 				break;
 			default:
 				throw new Error("Unhandled literal type " + typeof(node.value) + " (value = " + node.value + ")");
 		}
-		return makeJudgement(makeType(type), gamma, [], []);
+		return makeJudgement(makeType(type, true), gamma, [], []);
 	}
 
 	// actually do the type checking, now we have defined all checkers
 	// root node is a Program node
-	var j = checkProgram({}, ast);
-	console.log("Gamma: ");console.log(JSON.stringify(j.gamma, null, 4));
-	console.log("X: ");console.log(JSON.stringify(j.X, null, 4));
-	console.log("C: ");console.log(JSON.stringify(j.C, null, 4));
+	var j = checkProgram([], ast);
 	return {X:j.X,C:j.C,gamma:j.gamma};
 }
 
