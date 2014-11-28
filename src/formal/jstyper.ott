@@ -111,7 +111,9 @@ defns
 Jop :: '' ::=
 
 defn
-< m , s > -> < m' , s' > :: ::reduce::''  by
+< m , s > -> < m' , s' > :: ::reduce::''  
+{{ tex \langle [[m]], [[s]] \rangle [[->]] \langle [[m']], [[s']] \rangle }}
+by
 
 	-------------------                        		::   seq1
 	<v; e, s> -> <e, s>
@@ -216,7 +218,7 @@ G |- m | X C , G' :: :: typable::''
 	G1 |- id = e : T |X2 C, G2
 	X1 n X2 = {}
 	---------------------------------                		:: DefTypable
-	G |- m1 ; m2 |X1 u X2 C1 u C2, G2
+	G |- var id = e |X1 u X2 C1 u C2, G2
 
 
 	G |- var vd |X1 C1, G1
