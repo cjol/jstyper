@@ -1,7 +1,11 @@
-var y = "hey";
-/* jstyper start */
-var x = y;
-z = y;
-
+var str = "hey";
+// jstyper start import str
 var x = true;
-/* jstyper end */
+var y = x;
+y = str;
+// str = "hello";
+// jstyper end
+true;
+// jstyper start
+var y = 42;
+// jstyper end

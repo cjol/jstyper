@@ -4,6 +4,38 @@
 		"selected_items":
 		[
 			[
+				"annota",
+				"annotationsJudgement"
+			],
+			[
+				"jud",
+				"judgement"
+			],
+			[
+				"ini",
+				"initialJudgement"
+			],
+			[
+				"lea",
+				"leadingComments"
+			],
+			[
+				"for",
+				"for	for (…) {…}"
+			],
+			[
+				"makeT",
+				"makeTypeEnvEntry"
+			],
+			[
+				"program",
+				"program_point"
+			],
+			[
+				"sub",
+				"substitutions"
+			],
+			[
 				"X",
 				"X"
 			],
@@ -31,15 +63,24 @@
 			"file": "src/formal/jstyper.ott",
 			"settings":
 			{
-				"buffer_size": 7292,
+				"buffer_size": 8258,
 				"line_ending": "Unix"
 			}
 		},
 		{
-			"file": "/home/christoph/Downloads/j_and_s (1).ott",
+			"file": "/home/christoph/Documents/InfoTheory I.txt",
 			"settings":
 			{
-				"buffer_size": 51026,
+				"buffer_size": 5021,
+				"line_ending": "Unix",
+				"name": "InfoTheory Examples Class 1 prep"
+			}
+		},
+		{
+			"file": "src/tests/test5.js",
+			"settings":
+			{
+				"buffer_size": 86,
 				"line_ending": "Unix"
 			}
 		},
@@ -47,20 +88,39 @@
 			"file": "src/jstyper.js",
 			"settings":
 			{
-				"buffer_size": 10061,
+				"buffer_size": 17256,
 				"line_ending": "Unix"
 			}
 		},
 		{
-			"file": "src/node_modules/acorn/util/walk.js",
+			"file": "src/tests/test4.js",
 			"settings":
 			{
-				"buffer_size": 12423,
+				"buffer_size": 67,
 				"line_ending": "Unix"
 			}
 		},
 		{
+			"file": "src/main.js",
+			"settings":
+			{
+				"buffer_size": 3047,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "src/tests/test3-out.json",
+			"settings":
+			{
+				"buffer_size": 506,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"contents": "{\n	\"type\": \"Program\",\n	\"start\": 1,\n	\"end\": 36,\n	\"range\": [\n		1,\n		36\n	],\n	\"body\": [\n		{\n			\"type\": \"VariableDeclaration\",\n			\"start\": 1,\n			\"end\": 12,\n			\"range\": [\n				1,\n				12\n			],\n			\"declarations\": [\n				{\n					\"type\": \"VariableDeclarator\",\n					\"start\": 5,\n					\"end\": 6,\n					\"range\": [\n						5,\n						6\n					],\n					\"id\": {\n						\"type\": \"Identifier\",\n						\"start\": 5,\n						\"end\": 6,\n						\"range\": [\n							5,\n							6\n						],\n						\"name\": \"x\"\n					},\n					\"init\": null\n				},\n				{\n					\"type\": \"VariableDeclarator\",\n					\"start\": 8,\n					\"end\": 11,\n					\"range\": [\n						8,\n						11\n					],\n					\"id\": {\n						\"type\": \"Identifier\",\n						\"start\": 8,\n						\"end\": 9,\n						\"range\": [\n							8,\n							9\n						],\n						\"name\": \"y\"\n					},\n					\"init\": {\n						\"type\": \"Literal\",\n						\"start\": 10,\n						\"end\": 11,\n						\"range\": [\n							10,\n							11\n						],\n						\"value\": 5,\n						\"raw\": \"5\"\n					}\n				}\n			],\n			\"kind\": \"var\"\n		},\n		{\n			\"type\": \"ExpressionStatement\",\n			\"start\": 13,\n			\"end\": 18,\n			\"range\": [\n				13,\n				18\n			],\n			\"expression\": {\n				\"type\": \"Literal\",\n				\"start\": 13,\n				\"end\": 17,\n				\"range\": [\n					13,\n					17\n				],\n				\"value\": true,\n				\"raw\": \"true\"\n			}\n		},\n		{\n			\"type\": \"ExpressionStatement\",\n			\"start\": 19,\n			\"end\": 31,\n			\"range\": [\n				19,\n				31\n			],\n			\"expression\": {\n				\"type\": \"AssignmentExpression\",\n				\"start\": 19,\n				\"end\": 30,\n				\"range\": [\n					19,\n					30\n				],\n				\"operator\": \"=\",\n				\"left\": {\n					\"type\": \"Identifier\",\n					\"start\": 19,\n					\"end\": 20,\n					\"range\": [\n						19,\n						20\n					],\n					\"name\": \"z\"\n				},\n				\"right\": {\n					\"type\": \"AssignmentExpression\",\n					\"start\": 21,\n					\"end\": 30,\n					\"range\": [\n						21,\n						30\n					],\n					\"operator\": \"=\",\n					\"left\": {\n						\"type\": \"Identifier\",\n						\"start\": 21,\n						\"end\": 22,\n						\"range\": [\n							21,\n							22\n						],\n						\"name\": \"x\"\n					},\n					\"right\": {\n						\"type\": \"Literal\",\n						\"start\": 23,\n						\"end\": 30,\n						\"range\": [\n							23,\n							30\n						],\n						\"value\": \"hello\",\n						\"raw\": \"\\\"hello\\\"\"\n					}\n				}\n			}\n		},\n		{\n			\"type\": \"ExpressionStatement\",\n			\"start\": 32,\n			\"end\": 36,\n			\"range\": [\n				32,\n				36\n			],\n			\"expression\": {\n				\"type\": \"AssignmentExpression\",\n				\"start\": 32,\n				\"end\": 35,\n				\"range\": [\n					32,\n					35\n				],\n				\"operator\": \"=\",\n				\"left\": {\n					\"type\": \"Identifier\",\n					\"start\": 32,\n					\"end\": 33,\n					\"range\": [\n						32,\n						33\n					],\n					\"name\": \"x\"\n				},\n				\"right\": {\n					\"type\": \"Identifier\",\n					\"start\": 34,\n					\"end\": 35,\n					\"range\": [\n						34,\n						35\n					],\n					\"name\": \"y\"\n				}\n			}\n		}\n	]\n}\n",
 			"file": "src/temp.txt",
+			"file_size": -1,
+			"file_write_time": -1,
 			"settings":
 			{
 				"buffer_size": 2654,
@@ -75,20 +135,116 @@
 		"selected_items":
 		[
 			[
-				":w",
-				":w - Save"
+				"enab",
+				"Package Control: Enable Package"
 			],
 			[
-				"instal",
-				"Package Control: Install Package"
+				"clear",
+				"SublimeLinter: Clear Caches"
+			],
+			[
+				"dis",
+				"Package Control: Disable Package"
 			],
 			[
 				"remove",
 				"Package Control: Remove Package"
 			],
 			[
+				"subli",
+				"SublimeLinter: Clear Caches"
+			],
+			[
 				"disab",
 				"Package Control: Disable Package"
+			],
+			[
+				"instal",
+				"Package Control: Install Package"
+			],
+			[
+				"remoe",
+				"Package Control: Remove Package"
+			],
+			[
+				"dia",
+				"Package Control: Disable Package"
+			],
+			[
+				"vin",
+				"Vintageous: Toggle Vim Ctrl Keys"
+			],
+			[
+				"ena",
+				"Package Control: Enable Package"
+			],
+			[
+				"disa",
+				"Package Control: Disable Package"
+			],
+			[
+				"insta",
+				"Package Control: Install Package"
+			],
+			[
+				"canc",
+				"Build: Cancel"
+			],
+			[
+				"can",
+				"Build: Cancel"
+			],
+			[
+				"cancl",
+				"Build: Cancel"
+			],
+			[
+				":w",
+				":w - Save"
+			],
+			[
+				"live",
+				"AlignTab: Live Preview Mode"
+			],
+			[
+				"lign",
+				"AlignTab: Live Preview Mode"
+			],
+			[
+				"liv",
+				"AlignTab: Live Preview Mode"
+			],
+			[
+				"align",
+				"AlignTab"
+			],
+			[
+				"enable",
+				"Package Control: Enable Package"
+			],
+			[
+				"ali",
+				"AlignTab"
+			],
+			[
+				"livr",
+				"AlignTab: Live Preview Mode"
+			],
+			[
+				"alig",
+				"AlignTab"
+			],
+			[
+				"al",
+				"AlignTab: Live Preview Mode"
+			],
+			[
+				"install",
+				"Package Control: Install Package"
+			],
+			[
+				"json",
+				"Set Syntax: JSON"
 			],
 			[
 				"inst",
@@ -107,10 +263,6 @@
 				"Set Syntax: JavaScript"
 			],
 			[
-				"json",
-				"Set Syntax: JSON"
-			],
-			[
 				"indent",
 				"Indentation: Convert to Tabs"
 			],
@@ -119,24 +271,12 @@
 				":w - Save"
 			],
 			[
-				"install",
-				"Package Control: Install Package"
-			],
-			[
 				"gutter",
 				"SublimeLinter: Choose Gutter Theme"
 			],
 			[
-				"insta",
-				"Package Control: Install Package"
-			],
-			[
 				"package",
 				"Package Control: Install Package"
-			],
-			[
-				"enab",
-				"Package Control: Enable Package"
 			],
 			[
 				"packag",
@@ -147,7 +287,7 @@
 				"Preferences: Browse Packages"
 			]
 		],
-		"width": 561.0
+		"width": 435.0
 	},
 	"console":
 	{
@@ -169,14 +309,25 @@
 	"expanded_folders":
 	[
 		"/home/christoph/Documents/dev/jstyper",
+		"/home/christoph/Documents/dev/jstyper/report",
+		"/home/christoph/Documents/dev/jstyper/report/Proposal",
 		"/home/christoph/Documents/dev/jstyper/src",
 		"/home/christoph/Documents/dev/jstyper/src/formal",
-		"/home/christoph/Documents/dev/jstyper/src/node_modules",
-		"/home/christoph/Documents/dev/jstyper/src/node_modules/acorn",
-		"/home/christoph/Documents/dev/jstyper/src/node_modules/acorn/util"
+		"/home/christoph/Documents/dev/jstyper/src/tests"
 	],
 	"file_history":
 	[
+		"/home/christoph/Documents/dev/jstyper/src/jstyper.js",
+		"/home/christoph/Documents/dev/jstyper/src/node_modules/uglify-js2/node_modules/optimist/index.js",
+		"/home/christoph/Documents/dev/jstyper/src/node_modules/uglify-js2/test/compress/drop-unused.js",
+		"/home/christoph/Documents/dev/jstyper/src/node_modules/.bin/uglifyjs2",
+		"/home/christoph/.config/sublime-text-3/Packages/Shell Turtlestein/Shell Turtlestein.sublime-settings",
+		"/home/christoph/Documents/dev/jstyper/src/tests/test4.js",
+		"/home/christoph/Documents/dev/jstyper/src/tests/test2.js",
+		"/home/christoph/Downloads/tues.txt",
+		"/home/christoph/Downloads/tueweds.txt",
+		"/home/christoph/Documents/dev/jstyper/src/tests/test3.js",
+		"/home/christoph/Downloads/j_and_s (1).ott",
 		"/home/christoph/Documents/dev/jstyper/src/te",
 		"/home/christoph/.cache/.fr-YTPEl3/Documents/1/Pages/19.fpage",
 		"/media/christoph/BED8F495D8F44D61/Part II/Bioinformatics.one",
@@ -204,6 +355,56 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"judgements",
+			"typecheck",
+			"get_ast",
+			"\n				",
+			"search",
+			"checkProgram",
+			"body",
+			"makeJudgement",
+			"judgement",
+			"newGamma",
+			"initialJudgement",
+			"typedWorld",
+			"initTypeJudgement",
+			"node.leadingComments",
+			"checkProgram",
+			"makeConstraint",
+			"o",
+			"makeConstraint",
+			"C",
+			"typecheck",
+			"solveConstraints",
+			"constraint",
+			"console.log",
+			"checkExpression",
+			"typecheck",
+			"console",
+			"vd",
+			"makeType",
+			"y",
+			"makeType",
+			"isConcrete",
+			"Enum",
+			"type",
+			"Type",
+			"makeType",
+			"get_src",
+			"typecheck",
+			"jstyper",
+			" +",
+			"\\s\\s",
+			"{{",
+			"	::",
+			"{{",
+			" \n",
+			"{{",
+			"   {{",
+			"     ::",
+			"	:: ",
+			"::",
+			"makeRef",
 			"Gamma",
 			" (G(\\d|')*$)",
 			"ref",
@@ -274,6 +475,8 @@
 		"regex": true,
 		"replace_history":
 		[
+			" ",
+			"\\s",
 			", \\1",
 			"makeJudgement",
 			"\\t",
@@ -296,7 +499,7 @@
 	"groups":
 	[
 		{
-			"selected": 0,
+			"selected": 3,
 			"sheets":
 			[
 				{
@@ -305,15 +508,15 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 7292,
+						"buffer_size": 8258,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								6304,
-								6304
+								1448,
+								1448
 							]
 						],
 						"settings":
@@ -322,108 +525,19 @@
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 3306.0,
+						"translation.y": 304.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 0,
+					"stack_index": 4,
 					"type": "text"
 				},
 				{
 					"buffer": 1,
-					"file": "/home/christoph/Downloads/j_and_s (1).ott",
+					"file": "/home/christoph/Documents/InfoTheory I.txt",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 51026,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								12825,
-								12825
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/Text/Plain text.tmLanguage",
-							"tab_size": 2,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 5796.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 2,
-					"type": "text"
-				},
-				{
-					"buffer": 2,
-					"file": "src/jstyper.js",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 10061,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								4521,
-								4521
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 534.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 1,
-					"type": "text"
-				},
-				{
-					"buffer": 3,
-					"file": "src/node_modules/acorn/util/walk.js",
-					"semi_transient": true,
-					"settings":
-					{
-						"buffer_size": 12423,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								5712,
-								5712
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
-							"tab_size": 2,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 2821.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 3,
-					"type": "text"
-				},
-				{
-					"buffer": 4,
-					"file": "src/temp.txt",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 2654,
+						"buffer_size": 5021,
 						"regions":
 						{
 						},
@@ -436,15 +550,186 @@
 						],
 						"settings":
 						{
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
-							"tab_size": 2,
+							"auto_name": "InfoTheory Examples Class 1 prep",
+							"syntax": "Packages/Text/Plain text.tmLanguage",
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 4,
+					"stack_index": 3,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "src/tests/test5.js",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 86,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								86,
+								86
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "src/jstyper.js",
+					"semi_transient": true,
+					"settings":
+					{
+						"buffer_size": 17256,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								433,
+								433
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "src/tests/test4.js",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 67,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								48,
+								48
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 5,
+					"type": "text"
+				},
+				{
+					"buffer": 5,
+					"file": "src/main.js",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 3047,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2602,
+								2602
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 1271.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 6,
+					"type": "text"
+				},
+				{
+					"buffer": 6,
+					"file": "src/tests/test3-out.json",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 506,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								322,
+								322
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JSON.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 42.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 7,
+					"type": "text"
+				},
+				{
+					"buffer": 7,
+					"file": "src/temp.txt",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 2654,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2055,
+								2055
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 1749.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
 					"type": "text"
 				}
 			]
@@ -456,7 +741,7 @@
 	},
 	"input":
 	{
-		"height": 0.0
+		"height": 36.0
 	},
 	"layout":
 	{
@@ -522,12 +807,18 @@
 	"selected_group": 0,
 	"settings":
 	{
+		"_vintageous_last_buffer_search": "checkIdentifier",
+		"_vintageous_reset_during_init": true,
+		"vintage":
+		{
+			"_cmdline_cd": "/home/christoph/Documents/dev/jstyper/src"
+		}
 	},
 	"show_minimap": false,
 	"show_open_files": false,
 	"show_tabs": true,
 	"side_bar_visible": true,
-	"side_bar_width": 184.0,
+	"side_bar_width": 168.0,
 	"status_bar_visible": true,
 	"template_settings":
 	{
