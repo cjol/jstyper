@@ -10,7 +10,8 @@ var Enum = {
 		boolean: "boolean",
 		string: "string",
 		undefined: "undefined",
-		null: "null"
+		null: "null",
+		dynamic: "dynamic"
 	}
 };
 
@@ -151,7 +152,17 @@ function typecheck(ast) {
 
 	function initTypeJudgement(directive, judgement, startNode) {
 		chunkStartNode = startNode;
-		return makeJudgement(null, [], [], []);
+		directive = directive.substr("start ".length);
+		var gamma = [];
+		if (directive.search("import ") === 0) {
+			directive = directive.substr("import ".length);
+			var imported = directive.split(/,\s*/);
+			for (var i in imported) {
+				var entry = makeTypeEnvEntry(imported[i], startNode.loc.start, makeType(Enum.Type.dynamic, true));
+				gamma.push(entry);
+			}
+		}
+		return makeJudgement(null, gamma, [], []);
 	}
 
 	function endJudgement(judgement, endNode, trailing) {
