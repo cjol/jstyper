@@ -38,11 +38,7 @@ module.exports = function(src) {
 		for (var j in c[i].gamma) {
 			// NB first sub should be applied first
 			for (var k in substitutions) {
-				if (c[i].gamma[j].type.type === substitutions[k].from.type) {
-					c[i].gamma[j].type.type = substitutions[k].to.type;
-					c[i].gamma[j].type.isConcrete = substitutions[k].to.isConcrete;
-					c[i].gamma[j].type.isDynamic = substitutions[k].to.isDynamic;
-				}
+				c[i].gamma[j].applySubstitution(substitutions[k]);
 			}
 		}
 		// Prepare a helpful message for each typed chunk
@@ -74,36 +70,24 @@ module.exports = function(src) {
 		}
 
 		// Insert type checks if the types are concrete
-		for (j in c[i].assertions) {
-			// only insert type checks for non-dynamic assertions
-			if (!c[i].assertions[j].type.isDynamic) {
-				var node = createTypeAssertion(c[i].assertions[j].variable, c[i].assertions[j].type.type);
-				insertBefore(node, c[i].assertions[j].beforeNode);
-			}
-		}
+		// for (j in c[i].assertions) {
+		// 	// only insert type checks for non-dynamic assertions
+		// 	if (!c[i].assertions[j].type.isDynamic) {
+		// 		var node = createTypeAssertion(c[i].assertions[j].variable, c[i].assertions[j].type.type);
+		// 		// insertBefore(node, c[i].assertions[j].beforeNode);
+		// 	}
+		// }
 
 	}
 	var checkRes = c;
 
 	return {
 		src: get_src(ast),
-		// check: checkRes
+		check: checkRes
 	};
 	// return src;
 };
 
-function insertBefore(newNode, treeNode) {
-	switch (treeNode.parent.type) {
-		case "Program":
-			var i = treeNode.parent.body.indexOf(treeNode);
-			newNode.leadingComments = treeNode.parent.body[i].leadingComments;
-			treeNode.parent.body[i].leadingComments = [];
-			treeNode.parent.body.splice(i, 0, newNode);
-		break;
-		default:
-			throw new Error("Unhandled parent node type in node insertion");
-	}
-}
 function createTypeAssertion(variable, type) {
 	return {
 		"type": "IfStatement",
@@ -159,34 +143,17 @@ function solveConstraints(constraints) {
 
 	if (!L.isConcrete) {
 		sub = new Classes.Substitution(L, R);
-		// if left is dynamic, ensure result is tagged dynamic
-		if (L.isDynamic) {
-			sub.to.isDynamic = true;
-		}
 	} else if (!R.isConcrete) {
 		sub = new Classes.Substitution(R, L);
 
 	} // so both are different concrete types
-	else if (L.isDynamic) {
-		// if the write type is dynamic, we allow
-		return solveConstraints(C);
-	} else {
-		// if either type is not dynamic, and they're different types, we have an error
+	else {
 		throw new Error(" Failed Unification: " + L.type + " != " + R.type + " at line " + constraints[0].description.start.line + ", character " + constraints[0].description.start.column);
 	}
 
 	// apply this substitution to the remaining constraints
 	for (var i = 0; i < C.length; i++) {
-		if (C[i].left.type === sub.from.type) {
-			C[i].left.type = sub.to.type;
-			C[i].left.isConcrete = sub.to.isConcrete;
-			C[i].left.isDynamic = sub.to.isDynamic;
-		}
-		if (C[i].right.type === sub.from.type) {
-			C[i].right.type = sub.to.type;
-			C[i].right.isConcrete = sub.to.isConcrete;
-			C[i].right.isDynamic = sub.to.isDynamic;
-		}
+		sub.apply(C[i]);
 	}
 
 	// it's quite important that substitutions are applied in the right order
@@ -291,13 +258,13 @@ function typecheck(ast) {
 	}
 
 	function checkProgram(node) {
-		node.parent = null;
+		// node.parent = null;
 		// program node body is a list of statements
 		var judgement = null;
 		judgement = annotationsJudgement(node, judgement);
 
 		for (var i in node.body) {
-			node.body[i].parent = node;
+			// node.body[i].parent = node;
 			if (judgement === null) {
 				// if the next statement takes us into the typed world, we should stay there for the statement after that
 				judgement = checkStatement(null, node.body[i]);
@@ -324,7 +291,7 @@ function typecheck(ast) {
 			case "ExpressionStatement":
 				// we only check for annotations when we are splitting the node in further calls (e.g. here we are looking at node.expression)
 				judgement = annotationsJudgement(node, judgement);
-				node.expression.parent = node;
+				// node.expression.parent = node;
 				return checkExpression(judgement, node.expression);
 			case "VariableDeclaration":
 				// TODO: Check if this is the best way of handling this: VariableDeclaration <: Declaration <: Statement
@@ -349,7 +316,7 @@ function typecheck(ast) {
 		// need to select a new type (we are redefining the type from here on)
 		var T = new Classes.Type("T" + (nextType++));
 		if (node.init) {
-			node.init.parent = node;
+			// node.init.parent = node;
 			if (judgement === null) {
 				return checkExpression(null, node.init);
 			}
@@ -378,7 +345,7 @@ function typecheck(ast) {
 		var X = [],
 			C = [];
 		for (var i in node.declarations) {
-			node.declarations[i].parent = node;
+			// node.declarations[i].parent = node;
 			var j1 = checkVariableDeclarator(judgement, node.declarations[i]);
 			// TODO: assert X1 n X2 is empty
 			if (judgement !== null) {
@@ -470,8 +437,8 @@ function typecheck(ast) {
 
 		switch (node.operator) {
 			case ("="):
-				node.right.parent = node;
-				node.left.parent = node;
+				// node.right.parent = node;
+				// node.left.parent = node;
 				var j2 = checkExpression(judgement, node.right);
 				var j1 = checkIdentifier(judgement, node.left);
 

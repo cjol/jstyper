@@ -10,8 +10,11 @@ var Substitution = function(from, to) {
 	this.to = {
 		type       : to.type,
 		isConcrete : to.isConcrete,
-		isDynamic  : to.isDynamic
 	};
+};
+// shotcut method
+Substitution.prototype.apply = function(element) {
+	element.applySubstitution(this);
 };
 
 var Judgement = function(type, gamma, defVars, constraints, assertions) {
@@ -27,6 +30,10 @@ var Constraint = function (type1, type2) {
 	this.right       = type2;
 	this.description = type1.type + " must be " + type2.type;
 };
+Constraint.prototype.applySubstitution = function(sub) {
+	this.left.applySubstitution(sub);
+	this.right.applySubstitution(sub);
+};
 
 var Type = function(type, options) {
 	options          = options || {};
@@ -34,12 +41,22 @@ var Type = function(type, options) {
 	this.type        = type;
 	this.isConcrete  = (options.concrete === true);
 };
+Type.prototype.applySubstitution = function(sub) {
+	if (sub.from.type === this.type) {
+		this.type = sub.to.type;
+		this.isConcrete = sub.to.isConcrete;
+	}
+};
 
 var TypeEnvEntry = function(varName, program_point, type) {
 	this.name          = varName;
 	this.program_point = program_point;
 	this.type          = type;
 };
+TypeEnvEntry.prototype.applySubstitution = function(sub) {
+	this.type.applySubstitution(sub);
+};
+
 
 module.exports = {
 	Substitution : Substitution,
