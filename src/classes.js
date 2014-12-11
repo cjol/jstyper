@@ -1,7 +1,7 @@
 /*jshint unused:true, bitwise:true, eqeqeq:true, undef:true, latedef:true, eqnull:true */
 /* global module */
 
-var Substitution = function(from, to) {
+function Substitution(from, to) {
 	this.from = {
 		type       : from.type,
 		isConcrete : from.isConcrete,
@@ -11,36 +11,68 @@ var Substitution = function(from, to) {
 		type       : to.type,
 		isConcrete : to.isConcrete,
 	};
-};
-// shotcut method
+}
+// shortcut method
 Substitution.prototype.apply = function(element) {
 	element.applySubstitution(this);
 };
 
-var Judgement = function(type, gamma, defVars, constraints, assertions) {
-	this.T           = type;
-	this.gamma       = gamma;
-	this.X           = defVars;
-	this.C           = constraints;
-	this.assertions  = assertions || [];
+
+
+
+// TODO: Do we actually need a TypeEnv class rather than a plain array?
+// Currently the only benefit is a few shortcut methods
+function TypeEnv() {
+}
+TypeEnv.prototype = new Array();
+TypeEnv.prototype.get = function(varName) {
+	// TODO: does this model scope suitably?
+	// search backwards through entries to find the most recent defn
+	for (var i = this.length - 1; i >= 0; i--) {
+		if (this[i].name === varName) {
+			return this[i].type;
+		}
+	}
+	return null;
+};
+TypeEnv.prototype.applySubstitution = function(sub) {
+	for (var i = 0; i<this.length; i++) {
+		this[i].applySubstitution(sub);
+	}
 };
 
-var Constraint = function (type1, type2) {
+
+
+function Judgement(type, gamma, defVars, constraints, assertions) {
+	this.T           = type;
+	this.gamma       = gamma;
+	this.X           = defVars || [];
+	this.C           = constraints || [];
+	this.assertions  = assertions || [];
+}
+
+
+
+
+function Constraint(type1, type2) {
 	this.left        = type1;
 	this.right       = type2;
 	this.description = type1.type + " must be " + type2.type;
-};
+}
 Constraint.prototype.applySubstitution = function(sub) {
 	this.left.applySubstitution(sub);
 	this.right.applySubstitution(sub);
 };
 
-var Type = function(type, options) {
+
+
+
+function Type(type, options) {
 	options          = options || {};
 
 	this.type        = type;
 	this.isConcrete  = (options.concrete === true);
-};
+}
 Type.prototype.applySubstitution = function(sub) {
 	if (sub.from.type === this.type) {
 		this.type = sub.to.type;
@@ -48,14 +80,19 @@ Type.prototype.applySubstitution = function(sub) {
 	}
 };
 
-var TypeEnvEntry = function(varName, program_point, type) {
+
+
+
+function TypeEnvEntry(varName, program_point, type) {
 	this.name          = varName;
 	this.program_point = program_point;
 	this.type          = type;
-};
+}
 TypeEnvEntry.prototype.applySubstitution = function(sub) {
 	this.type.applySubstitution(sub);
 };
+
+
 
 
 module.exports = {
@@ -63,5 +100,6 @@ module.exports = {
 	Judgement    : Judgement,
 	Constraint   : Constraint,
 	Type         : Type,
-	TypeEnvEntry : TypeEnvEntry
+	TypeEnv      : TypeEnv,
+	TypeEnvEntry : TypeEnvEntry,
 };

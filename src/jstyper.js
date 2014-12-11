@@ -31,20 +31,21 @@ module.exports = function(src) {
 		throw e;
 	}
 
+	// generate a judgement for (each annotated section of) the entire tree
 	var c = typecheck(ast);
+
+	// 
 	for (var i in c) {
 		var substitutions = solveConstraints(c[i].C);
 		// apply the substitution to the type environment
-		for (var j in c[i].gamma) {
 			// NB first sub should be applied first
-			for (var k in substitutions) {
-				c[i].gamma[j].applySubstitution(substitutions[k]);
-			}
+		for (var k in substitutions) {
+			c[i].gamma.applySubstitution(substitutions[k]);
 		}
 		// Prepare a helpful message for each typed chunk
 		var typeComment = " jstyper types: ";
 		var sep = "";
-		for (j in c[i].gamma) {
+		for (var j = 0; j<c[i].gamma.length; j++) {
 			typeComment += sep + c[i].gamma[j].name + " (" + c[i].gamma[j].program_point.line + "): " + c[i].gamma[j].type.type + (c[i].gamma[j].type.isDynamic?"?":"");
 			sep = ", ";
 		}
@@ -148,7 +149,7 @@ function solveConstraints(constraints) {
 
 	} // so both are different concrete types
 	else {
-		throw new Error(" Failed Unification: " + L.type + " != " + R.type + " at line " + constraints[0].description.start.line + ", character " + constraints[0].description.start.column);
+		throw new Error(" Failed Unification: " + L.type + " != " + R.type); 
 	}
 
 	// apply this substitution to the remaining constraints
@@ -162,17 +163,6 @@ function solveConstraints(constraints) {
 
 }
 
-function getTypeEnvEntry(varName, gamma) {
-	// TODO: does this model scope suitably?
-	// search backwards through gamma to find the most recent defn
-	for (var i = gamma.length - 1; i >= 0; i--) {
-		if (gamma[i].name === varName) {
-			return gamma[i].type;
-		}
-	}
-	return null;
-}
-
 function typecheck(ast) {
 	var currentChunk = 0;
 	var chunkJudgements = [];
@@ -182,7 +172,7 @@ function typecheck(ast) {
 	function initTypeJudgement(directive, judgement, startNode) {
 		chunkStartNode = startNode;
 		directive = directive.substr("start ".length);
-		var gamma = [];
+		var gamma = new Classes.TypeEnv();
 		var loc = {
 			line: startNode.loc.start.line - 1,
 			column: 0
@@ -235,7 +225,6 @@ function typecheck(ast) {
 					if (directive.search("start") === 0) {
 						if (inTypedWorld)
 							throw new Error("Unexpected jstyper start directive");
-						console.log("Entering typed world " + currentChunk);
 						// if we have just started a new typed area, we want an appropriately new judgement
 						inTypedWorld = true;
 						judgement = initTypeJudgement(directive, judgement, node);
@@ -243,7 +232,6 @@ function typecheck(ast) {
 					} else if (directive.search("end") === 0) {
 						if (!inTypedWorld)
 							throw new Error("Unexpected jstyper end directive");
-						console.log("Leaving typed world " + currentChunk);
 						inTypedWorld = false;
 						endJudgement(judgement, node, trailing);
 						judgement = null;
@@ -389,7 +377,7 @@ function typecheck(ast) {
 			C = [],
 			gamma = judgement.gamma;
 
-		T = getTypeEnvEntry(node.name, gamma);
+		T = gamma.get(node.name);
 
 		if (T === null) {
 			// need to select a new type
