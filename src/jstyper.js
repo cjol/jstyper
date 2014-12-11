@@ -141,10 +141,10 @@ module.exports = function(src) {
 		var typeComment = " jstyper types: ";
 		var sep = "";
 		for (var j = 0; j < chunks[i].gamma.length; j++) {
-			var location = (chunks[i].gamma[j].program_point === null)?"imported":
+			var location = (chunks[i].gamma[j].node === null)?"imported":
 				"l%s c%s".format(
-					chunks[i].gamma[j].program_point.loc.start.line,
-					chunks[i].gamma[j].program_point.loc.start.column);
+					chunks[i].gamma[j].node.loc.start.line,
+					chunks[i].gamma[j].node.loc.start.column);
 
 			typeComment += sep;
 			typeComment += "%s (%s): %s".format(
