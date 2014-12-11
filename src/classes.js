@@ -36,15 +36,15 @@ var Type = function(type, options) {
 };
 
 var TypeEnvEntry = function(varName, program_point, type) {
-	this.name = varName;
+	this.name          = varName;
 	this.program_point = program_point;
-	this.type = type;
+	this.type          = type;
 };
 
 module.exports = {
-	Substitution: Substitution,
-	Judgement: Judgement,
-	Constraint: Constraint,
-	Type: Type,
-	TypeEnvEntry: TypeEnvEntry
+	Substitution : Substitution,
+	Judgement    : Judgement,
+	Constraint   : Constraint,
+	Type         : Type,
+	TypeEnvEntry : TypeEnvEntry
 };

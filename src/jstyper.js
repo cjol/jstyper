@@ -1,7 +1,13 @@
 /*jshint unused:true, bitwise:true, eqeqeq:true, undef:true, latedef:true, eqnull:true */
 /* global require, module, console */
+
+// for constructing and deconstructing the AST respectively
 var acorn = require("acorn");
 var escodegen = require("escodegen");
+
+// for our jstyper objects
+var Classes = require("./classes.js");
+
 var Enum = {
 	Type: {
 		number: "number",
@@ -80,26 +86,12 @@ module.exports = function(src) {
 	var checkRes = c;
 
 	return {
-		src: get_src(ast)//,
+		src: get_src(ast),
 		// check: checkRes
 	};
 	// return src;
 };
 
-function makeSubstitution(from, to) {
-	return {
-		from: {
-			type:from.type,
-			isConcrete: from.isConcrete,
-			isDynamic: from.isDynamic
-		},
-		to: {
-			type:to.type,
-			isConcrete: to.isConcrete,
-			isDynamic: to.isDynamic
-		},
-	};
-}
 function insertBefore(newNode, treeNode) {
 	switch (treeNode.parent.type) {
 		case "Program":
@@ -166,13 +158,13 @@ function solveConstraints(constraints) {
 	var sub;
 
 	if (!L.isConcrete) {
-		sub = makeSubstitution(L, R);
+		sub = new Classes.Substitution(L, R);
 		// if left is dynamic, ensure result is tagged dynamic
 		if (L.isDynamic) {
 			sub.to.isDynamic = true;
 		}
 	} else if (!R.isConcrete) {
-		sub = makeSubstitution(R, L);
+		sub = new Classes.Substitution(R, L);
 
 	} // so both are different concrete types
 	else if (L.isDynamic) {
@@ -201,43 +193,6 @@ function solveConstraints(constraints) {
 	// here first item should be applied first
 	return [sub].concat(solveConstraints(C));
 
-}
-
-function makeJudgement(type, gamma, defVars, constraints, assertions) {
-	return {
-		T: type,
-		gamma: gamma,
-		X: defVars,
-		C: constraints,
-		assertions: assertions || []
-	};
-}
-
-function makeConstraint(T1, T2, desc) {
-	// Note V1 and V2 may well be undefined. They're only defined if it's an identifier being constrained	
-	// TODO: I am implicitly assuming all constraints will be equality. Is this the case?
-	return {
-		left: T1,
-		right: T2,
-		description: desc ? desc : T1.type + " must be " + T2.type
-	};
-}
-
-function makeType(T, opt) {
-	opt = opt || {};
-	return {
-		type: T,
-		isConcrete: (opt.concrete === true),
-		isDynamic: (opt.dynamic === true)
-	};
-}
-
-function makeTypeEnvEntry(name, program_point, type) {
-	return {
-		name: name,
-		program_point: program_point,
-		type: type
-	};
 }
 
 function getTypeEnvEntry(varName, gamma) {
@@ -275,10 +230,10 @@ function typecheck(ast) {
 				var name = imported[i].trim();
 				if (name.length === 0)
 					continue;
-				var T = makeType("T" + (nextType++), {
+				var T = new Classes.Type("T" + (nextType++), {
 					dynamic: true
 				});
-				var entry = makeTypeEnvEntry(name, loc, T);
+				var entry = new Classes.TypeEnvEntry(name, loc, T);
 				gamma.push(entry);
 
 				assertions.push({
@@ -288,7 +243,7 @@ function typecheck(ast) {
 				});
 			}
 		}
-		return makeJudgement(null, gamma, [], [], assertions);
+		return new Classes.Judgement(null, gamma, [], [], assertions);
 	}
 
 	function endJudgement(judgement, endNode, trailing) {
@@ -383,7 +338,7 @@ function typecheck(ast) {
 	function checkEmptyStatement(judgement, node) {
 		judgement = annotationsJudgement(node, judgement);
 		if (judgement !== null)
-			return makeJudgement(null, judgement.gamma, [], [], judgement.assertions);
+			return new Classes.Judgement(null, judgement.gamma, [], [], judgement.assertions);
 	}
 
 	function checkVariableDeclarator(judgement, node) {
@@ -392,7 +347,7 @@ function typecheck(ast) {
 		var X = [],
 			C = [];
 		// need to select a new type (we are redefining the type from here on)
-		var T = makeType("T" + (nextType++));
+		var T = new Classes.Type("T" + (nextType++));
 		if (node.init) {
 			node.init.parent = node;
 			if (judgement === null) {
@@ -404,7 +359,7 @@ function typecheck(ast) {
 			var j1 = checkExpression(judgement, node.init);
 			if (j1 !== null) {
 				X = j1.X.concat([T]);
-				C = j1.C.concat([makeConstraint(T, j1.T, "Type of '" + node.id.name +
+				C = j1.C.concat([new Classes.Constraint(T, j1.T, "Type of '" + node.id.name +
 					"' at line " + node.id.loc.start.line + ", col " +
 					node.id.loc.start.column + " must be " + T.type, node.id.name)]);
 			}
@@ -413,8 +368,8 @@ function typecheck(ast) {
 		if (judgement === null)
 			return null;
 
-		judgement.gamma.push(makeTypeEnvEntry(node.id.name, node.loc.start, T));
-		return makeJudgement(null, judgement.gamma, X, C, judgement.assertions);
+		judgement.gamma.push(new Classes.TypeEnvEntry(node.id.name, node.loc.start, T));
+		return new Classes.Judgement(null, judgement.gamma, X, C, judgement.assertions);
 	}
 
 	function checkVariableDeclaration(judgement, node) {
@@ -433,7 +388,7 @@ function typecheck(ast) {
 			}
 		}
 		if (judgement != null) {
-			return makeJudgement(null, judgement.gamma, X, C, judgement.assertions);
+			return new Classes.Judgement(null, judgement.gamma, X, C, judgement.assertions);
 		} else {
 			// if we're not in the typed world, the constraints generated here are irrelevant
 			return null;
@@ -471,12 +426,12 @@ function typecheck(ast) {
 
 		if (T === null) {
 			// need to select a new type
-			T = makeType("T" + (nextType++));
+			T = new Classes.Type("T" + (nextType++));
 			X.push(T);
-			gamma.push(makeTypeEnvEntry(node.name, node.loc.start, T));
+			gamma.push(new Classes.TypeEnvEntry(node.name, node.loc.start, T));
 		}
 
-		return makeJudgement(T, gamma, X, C, judgement.assertions);
+		return new Classes.Judgement(T, gamma, X, C, judgement.assertions);
 	}
 
 	function checkLiteral(judgement, node) {
@@ -505,7 +460,7 @@ function typecheck(ast) {
 				throw new Error("Unhandled literal type " + typeof(node.value) + " (value = " + node.value + ")");
 		}
 
-		return makeJudgement(makeType(type, {
+		return new Classes.Judgement(new Classes.Type(type, {
 			concrete: true
 		}), judgement.gamma, [], [], judgement.assertions);
 	}
@@ -523,8 +478,8 @@ function typecheck(ast) {
 				if (judgement !== null && j1 !== null && j2 !== null) {
 					var X = j1.X.concat(j2.X);
 					// TODO maybe: Should I record the name of the left identifier here?
-					var C = j1.C.concat(j2.C.concat([makeConstraint(j1.T, j2.T, node.loc)]));
-					return makeJudgement(j2.T, judgement.gamma, X, C, judgement.assertions);
+					var C = j1.C.concat(j2.C.concat([new Classes.Constraint(j1.T, j2.T, node.loc)]));
+					return new Classes.Judgement(j2.T, judgement.gamma, X, C, judgement.assertions);
 				}
 				return null;
 			default:

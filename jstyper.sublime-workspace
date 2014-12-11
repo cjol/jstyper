@@ -4,6 +4,34 @@
 		"selected_items":
 		[
 			[
+				"insert",
+				"insertBefore"
+			],
+			[
+				"asser",
+				"createTypeAssertion"
+			],
+			[
+				"traili",
+				"trailingComments"
+			],
+			[
+				"com",
+				"commentsToDelete"
+			],
+			[
+				"chu",
+				"chunkStartNode"
+			],
+			[
+				"cu",
+				"currentChunk"
+			],
+			[
+				"chunk",
+				"chunkJudgements"
+			],
+			[
 				"annota",
 				"annotationsJudgement"
 			],
@@ -68,19 +96,18 @@
 			}
 		},
 		{
-			"file": "/home/christoph/Documents/InfoTheory I.txt",
-			"settings":
-			{
-				"buffer_size": 5021,
-				"line_ending": "Unix",
-				"name": "InfoTheory Examples Class 1 prep"
-			}
-		},
-		{
 			"file": "src/tests/test5.js",
 			"settings":
 			{
-				"buffer_size": 86,
+				"buffer_size": 144,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "src/tests/test6.js",
+			"settings":
+			{
+				"buffer_size": 76,
 				"line_ending": "Unix"
 			}
 		},
@@ -88,7 +115,7 @@
 			"file": "src/jstyper.js",
 			"settings":
 			{
-				"buffer_size": 17256,
+				"buffer_size": 15892,
 				"line_ending": "Unix"
 			}
 		},
@@ -105,14 +132,6 @@
 			"settings":
 			{
 				"buffer_size": 3047,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "src/tests/test3-out.json",
-			"settings":
-			{
-				"buffer_size": 506,
 				"line_ending": "Unix"
 			}
 		},
@@ -134,6 +153,42 @@
 		"height": 374.0,
 		"selected_items":
 		[
+			[
+				"tab",
+				"Indentation: Convert to Tabs"
+			],
+			[
+				"bea",
+				"Javascript Beautify"
+			],
+			[
+				":w",
+				":w - Save"
+			],
+			[
+				"align",
+				"AlignTab: Table Mode"
+			],
+			[
+				"ta",
+				"Indentation: Convert to Tabs"
+			],
+			[
+				"js",
+				"Javascript Beautify"
+			],
+			[
+				"todo",
+				"TodoReview: Project Files"
+			],
+			[
+				"instal",
+				"Package Control: Install Package"
+			],
+			[
+				"error",
+				"SublimeLinter: Previous Error"
+			],
 			[
 				"enab",
 				"Package Control: Enable Package"
@@ -157,10 +212,6 @@
 			[
 				"disab",
 				"Package Control: Disable Package"
-			],
-			[
-				"instal",
-				"Package Control: Install Package"
 			],
 			[
 				"remoe",
@@ -199,10 +250,6 @@
 				"Build: Cancel"
 			],
 			[
-				":w",
-				":w - Save"
-			],
-			[
 				"live",
 				"AlignTab: Live Preview Mode"
 			],
@@ -213,10 +260,6 @@
 			[
 				"liv",
 				"AlignTab: Live Preview Mode"
-			],
-			[
-				"align",
-				"AlignTab"
 			],
 			[
 				"enable",
@@ -317,6 +360,15 @@
 	],
 	"file_history":
 	[
+		"/home/christoph/.config/sublime-text-3/Packages/Javascript Beautify/JavascriptBeautify.sublime-settings",
+		"/home/christoph/.config/sublime-text-3/Packages/User/JavascriptBeautify.sublime-settings",
+		"/home/christoph/Documents/FBMessageBackup - copy/litty_0.csv",
+		"/home/christoph/Documents/FBMessageBackup - copy/litty_1.csv",
+		"/home/christoph/Documents/FBMessageBackup - copy/litty_2.csv",
+		"/home/christoph/Documents/FBMessageBackup - copy/litty_3.csv",
+		"/home/christoph/Documents/InfoTheory II.txt",
+		"/home/christoph/Documents/dev/jstyper/src/tests/test3-out.json",
+		"/home/christoph/Documents/InfoTheory I.txt",
 		"/home/christoph/Documents/dev/jstyper/src/jstyper.js",
 		"/home/christoph/Documents/dev/jstyper/src/node_modules/uglify-js2/node_modules/optimist/index.js",
 		"/home/christoph/Documents/dev/jstyper/src/node_modules/uglify-js2/test/compress/drop-unused.js",
@@ -345,9 +397,10 @@
 	},
 	"find_in_files":
 	{
-		"height": 0.0,
+		"height": 100.0,
 		"where_history":
 		[
+			"/home/christoph/Documents/FBMessageBackup - copy"
 		]
 	},
 	"find_state":
@@ -355,6 +408,68 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"makeSubstitution",
+			"insertBefore",
+			"	newNode.leadingComments = treeNode.parent.body[i].leadingComments;\n		",
+			"initTypeJudgement",
+			"after",
+			"isConcrete",
+			"checks",
+			"check",
+			"getTypeEnvEntry",
+			"gamma",
+			"enviro",
+			"environ",
+			"lookup",
+			"makeJudgement",
+			"makeTypeEnvEntry",
+			"makeType",
+			"dynamic",
+			"solveC",
+			"checkAssignmentExpression",
+			"checkIdentifier",
+			"assign",
+			"makeType",
+			"checkAssignmentExpression",
+			"makeType",
+			"makeTypeEnvEntry",
+			"too",
+			"makeConstraint",
+			"checkIdentifier",
+			"checkExpression",
+			"makeConstraint",
+			"solveConstraints",
+			"makeConstraint",
+			"program_point",
+			"ram_point, type) {\n	return {\n		name: name,\n		program_point: ",
+			"program_point",
+			"makeTypeEnvEntry",
+			"program_point",
+			"makeTypeEnvEntry",
+			"program_point",
+			"1641243041",
+			"eddy",
+			"gamma",
+			"emptystatement",
+			"sep",
+			"annotationsJudgement",
+			"description",
+			"console",
+			"c",
+			"gamma",
+			"declaration",
+			"annotationsJudgement",
+			"entering",
+			"consol",
+			"checkStatement",
+			"checkVariableDeclaration",
+			"checkVariableDeclarator",
+			"push",
+			"token",
+			"push",
+			"typecheck",
+			"checkProgram",
+			"typecheck",
 			"judgements",
 			"typecheck",
 			"get_ast",
@@ -420,54 +535,7 @@
 			"acornwalker",
 			"accornwalker",
 			"scopeVisitor",
-			"walk",
-			"\\n",
-			"\\t",
-			"escodegen",
-			"\\}\\n\\{",
-			"}\n{",
-			"5",
-			"z",
-			"y",
-			"C",
-			"X",
-			"Context",
-			"assign",
-			"FV",
-			" ,",
-			"< ",
-			"::",
-			"|",
-			"\n|",
-			"{{",
-			"{{ ",
-			" +",
-			"\\s+",
-			"{{",
-			"vdash",
-			"ref",
-			"::",
-			" {{",
-			"::",
-			"\n  ",
-			"\n\ns :: 's_' ::=                   {{",
-			"{{",
-			"         {{",
-			"::",
-			"Undefined",
-			"undefined",
-			"Undefined",
-			"undefined",
-			"Undefined",
-			"undefined",
-			"var2",
-			"::",
-			"par",
-			"var",
-			"get-field",
-			"get-field\\(",
-			"get-field(",
-			"reduce"
+			"walk"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -475,6 +543,7 @@
 		"regex": true,
 		"replace_history":
 		[
+			"Litty Carter",
 			" ",
 			"\\s",
 			", \\1",
@@ -525,57 +594,27 @@
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 304.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 4,
+					"stack_index": 1,
 					"type": "text"
 				},
 				{
 					"buffer": 1,
-					"file": "/home/christoph/Documents/InfoTheory I.txt",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 5021,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								0,
-								0
-							]
-						],
-						"settings":
-						{
-							"auto_name": "InfoTheory Examples Class 1 prep",
-							"syntax": "Packages/Text/Plain text.tmLanguage",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 3,
-					"type": "text"
-				},
-				{
-					"buffer": 2,
 					"file": "src/tests/test5.js",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 86,
+						"buffer_size": 144,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								86,
-								86
+								78,
+								78
 							]
 						],
 						"settings":
@@ -586,24 +625,53 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 1,
+					"stack_index": 2,
 					"type": "text"
 				},
 				{
-					"buffer": 3,
-					"file": "src/jstyper.js",
-					"semi_transient": true,
+					"buffer": 2,
+					"file": "src/tests/test6.js",
+					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 17256,
+						"buffer_size": 76,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								433,
-								433
+								11,
+								11
+							]
+						],
+						"settings":
+						{
+							"auto_name": "",
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 3,
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "src/jstyper.js",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 15892,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2475,
+								2475
 							]
 						],
 						"settings":
@@ -612,7 +680,7 @@
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 656.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 0,
@@ -631,8 +699,8 @@
 						"selection":
 						[
 							[
-								48,
-								48
+								19,
+								19
 							]
 						],
 						"settings":
@@ -643,7 +711,7 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 5,
+					"stack_index": 4,
 					"type": "text"
 				},
 				{
@@ -659,8 +727,8 @@
 						"selection":
 						[
 							[
-								2602,
-								2602
+								2113,
+								2113
 							]
 						],
 						"settings":
@@ -668,42 +736,14 @@
 							"syntax": "Packages/JavaScript/JavaScript.tmLanguage"
 						},
 						"translation.x": 0.0,
-						"translation.y": 1271.0,
+						"translation.y": 1100.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 6,
+					"stack_index": 5,
 					"type": "text"
 				},
 				{
 					"buffer": 6,
-					"file": "src/tests/test3-out.json",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 506,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								322,
-								322
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/JavaScript/JSON.tmLanguage"
-						},
-						"translation.x": 0.0,
-						"translation.y": 42.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 7,
-					"type": "text"
-				},
-				{
-					"buffer": 7,
 					"file": "src/temp.txt",
 					"semi_transient": false,
 					"settings":
@@ -729,7 +769,7 @@
 						"translation.y": 1749.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 2,
+					"stack_index": 6,
 					"type": "text"
 				}
 			]
