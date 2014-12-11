@@ -23,6 +23,7 @@ Substitution.prototype.apply = function(element) {
 // TODO: Do we actually need a TypeEnv class rather than a plain array?
 // Currently the only benefit is a few shortcut methods
 function TypeEnv() {
+	this.nextType = 1;
 }
 TypeEnv.prototype = new Array();
 TypeEnv.prototype.get = function(varName) {
@@ -35,6 +36,9 @@ TypeEnv.prototype.get = function(varName) {
 	}
 	return null;
 };
+TypeEnv.prototype.getFreshType = function() {
+	return new Type("T" + (this.nextType++));
+};
 TypeEnv.prototype.applySubstitution = function(sub) {
 	for (var i = 0; i<this.length; i++) {
 		this[i].applySubstitution(sub);
@@ -43,14 +47,38 @@ TypeEnv.prototype.applySubstitution = function(sub) {
 
 
 
-function Judgement(type, gamma, defVars, constraints, assertions) {
+function Judgement(type, gamma, defVars, constraints) {
 	this.T           = type;
 	this.gamma       = gamma;
 	this.X           = defVars || [];
 	this.C           = constraints || [];
-	this.assertions  = assertions || [];
+	this.nodes       = [];
 }
+Judgement.InitFromDirective = function(directive) {
+	var gamma = new TypeEnv();
 
+	directive = directive.trim();
+	var importKeyword = "import ";
+	if (directive.search(importKeyword) === 0) {
+		directive = directive.substr(importKeyword.length);
+
+		var imported = directive.split(/,\s*/);
+
+		for (var i = 0; i<imported.length; i++) {
+			var name = imported[i].trim();
+			if (name.length === 0)
+				continue;
+
+			// select a fresh type for this imported variable
+			var T = gamma.getFreshType();
+
+			// TODO: replace "null" with an actual program point
+			gamma.push( new TypeEnvEntry(name, null, T) );
+		}
+	}
+
+	return new Judgement(null, gamma, [], []);
+};
 
 
 
@@ -85,6 +113,7 @@ Type.prototype.applySubstitution = function(sub) {
 
 function TypeEnvEntry(varName, program_point, type) {
 	this.name          = varName;
+	// TODO: what is a program point?
 	this.program_point = program_point;
 	this.type          = type;
 }
@@ -94,6 +123,10 @@ TypeEnvEntry.prototype.applySubstitution = function(sub) {
 
 
 
+function TypeError() {
+
+}
+TypeError.prototype = new Error();
 
 module.exports = {
 	Substitution : Substitution,

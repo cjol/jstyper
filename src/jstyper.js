@@ -38,37 +38,33 @@ module.exports = function(src) {
 	for (var i in c) {
 		var substitutions = solveConstraints(c[i].C);
 		// apply the substitution to the type environment
-			// NB first sub should be applied first
+		// NB first sub should be applied first
 		for (var k in substitutions) {
 			c[i].gamma.applySubstitution(substitutions[k]);
 		}
 		// Prepare a helpful message for each typed chunk
 		var typeComment = " jstyper types: ";
 		var sep = "";
-		for (var j = 0; j<c[i].gamma.length; j++) {
-			typeComment += sep + c[i].gamma[j].name + " (" + c[i].gamma[j].program_point.line + "): " + c[i].gamma[j].type.type + (c[i].gamma[j].type.isDynamic?"?":"");
+		for (var j = 0; j < c[i].gamma.length; j++) {
+			typeComment += sep + c[i].gamma[j].name + " (" + c[i].gamma[j].program_point + "): " + c[i].gamma[j].type.type;
 			sep = ", ";
 		}
 
-		c[i].startNode.leadingComments.push({
+		if (typeof c[i].nodes[0].leadingComments === "undefined") 
+			c[i].nodes[0].leadingComments = [];
+
+		c[i].nodes[0].leadingComments.push({
 			"type": "Line",
 			"value": typeComment
 		});
+		
+		if (c[i].nodes[c[i].nodes.length - 1].trailingComments === undefined)
+			c[i].nodes[c[i].nodes.length - 1].trailingComments = [];
 
-		if (c[i].endNode) {
-			if (c[i].fromTrailing) {
-				// TODO: workaround to try to get the final comment on a newline
-				c[i].endNode.trailingComments.push({
-					"type": "Line",
-					"value": " end jstyper typed region "
-				});
-			} else {
-				c[i].endNode.leadingComments.push({
-					"type": "Line",
-					"value": " end jstyper typed region "
-				});
-			}
-		}
+		c[i].nodes[c[i].nodes.length - 1].trailingComments.push({
+			"type": "Line",
+			"value": " end jstyper typed region "
+		});
 
 		// Insert type checks if the types are concrete
 		// for (j in c[i].assertions) {
@@ -134,142 +130,111 @@ function solveConstraints(constraints) {
 	// originally from Pierce p. 327
 	if (constraints.length < 1)
 		return [];
-	var L = constraints[0].left;
-	var R = constraints[0].right;
-	var C = constraints.slice(1);
-	if (L.type === R.type)
-		return solveConstraints(C);
+	var left = constraints[0].left;
+	var right = constraints[0].right;
+	var remainder = constraints.slice(1);
+
+	// types are equal => constraint satisfied
+	if (left.type === right.type)
+		return solveConstraints(remainder);
 
 	var sub;
 
-	if (!L.isConcrete) {
-		sub = new Classes.Substitution(L, R);
-	} else if (!R.isConcrete) {
-		sub = new Classes.Substitution(R, L);
+	// if one type is not concrete, it can be substituted by the other
+	if (!left.isConcrete) {
+		sub = new Classes.Substitution(left, right);
+	} else if (!right.isConcrete) {
+		sub = new Classes.Substitution(right, left);
 
-	} // so both are different concrete types
+	} // both are different concrete types
 	else {
-		throw new Error(" Failed Unification: " + L.type + " != " + R.type); 
+		throw new Error(" Failed Unification: " + left.type + " != " + right.type);
 	}
 
-	// apply this substitution to the remaining constraints
-	for (var i = 0; i < C.length; i++) {
-		sub.apply(C[i]);
+	// apply the substitution to the remaining constraints
+	for (var i = 0; i < remainder.length; i++) {
+		sub.apply(remainder[i]);
 	}
 
 	// it's quite important that substitutions are applied in the right order
 	// here first item should be applied first
-	return [sub].concat(solveConstraints(C));
-
+	return [sub].concat(solveConstraints(remainder));
 }
 
 function typecheck(ast) {
-	var currentChunk = 0;
-	var chunkJudgements = [];
-	var chunkStartNode = null;
-	var inTypedWorld = false;
+	function getAnnotations(comments) {
+		var annotations = [];
+		
+		if (typeof comments === "undefined")
+			return annotations;
 
-	function initTypeJudgement(directive, judgement, startNode) {
-		chunkStartNode = startNode;
-		directive = directive.substr("start ".length);
-		var gamma = new Classes.TypeEnv();
-		var loc = {
-			line: startNode.loc.start.line - 1,
-			column: 0
-		};
-		var assertions = [];
-		if (directive.search("import ") === 0) {
-			directive = directive.substr("import ".length);
-
-			var imported = directive.split(/,\s*/);
-
-			for (var i in imported) {
-				var name = imported[i].trim();
-				if (name.length === 0)
-					continue;
-				var T = new Classes.Type("T" + (nextType++), {
-					dynamic: true
-				});
-				var entry = new Classes.TypeEnvEntry(name, loc, T);
-				gamma.push(entry);
-
-				assertions.push({
-					variable: imported[i],
-					type: T,
-					beforeNode: startNode
-				});
-			}
-		}
-		return new Classes.Judgement(null, gamma, [], [], assertions);
-	}
-
-	function endJudgement(judgement, endNode, trailing) {
-		// if we have left a newly typed area, save the previous judgement and move on to the next chunk
-		chunkJudgements[currentChunk] = judgement;
-		chunkJudgements[currentChunk].startNode = chunkStartNode;
-		chunkJudgements[currentChunk].endNode = endNode;
-		chunkJudgements[currentChunk].fromTrailing = trailing;
-		currentChunk += 1;
-	}
-
-	function annotationsJudgement(node, judgement, trailing) {
-		var preComments = node.leadingComments;
-		if (trailing) {
-			preComments = node.trailingComments;
-		}
 		var keyword = " jstyper ";
-		if (preComments) {
-			for (var j = preComments.length - 1; j >= 0; j--) {
-				if (preComments[j].value.search(keyword) === 0) {
-					var directive = preComments[j].value.substr(keyword.length);
-					if (directive.search("start") === 0) {
-						if (inTypedWorld)
-							throw new Error("Unexpected jstyper start directive");
-						// if we have just started a new typed area, we want an appropriately new judgement
-						inTypedWorld = true;
-						judgement = initTypeJudgement(directive, judgement, node);
-						preComments.splice(j, 1);
-					} else if (directive.search("end") === 0) {
-						if (!inTypedWorld)
-							throw new Error("Unexpected jstyper end directive");
-						inTypedWorld = false;
-						endJudgement(judgement, node, trailing);
-						judgement = null;
-						preComments.splice(j, 1);
-					} else {
-						console.log(directive);
-					}
-				}
+		for (var i = 0; i < comments.length; i++) {
+			if (comments[i].value.search(keyword) === 0) {
+				var directive = comments[i].value.substr(keyword.length);
+				annotations.push(directive);
+
+				// remove the annotation from the AST
+				comments.splice(i, 1);
 			}
 		}
-		return judgement;
+		return annotations;
 	}
 
 	function checkProgram(node) {
-		// node.parent = null;
-		// program node body is a list of statements
-		var judgement = null;
-		judgement = annotationsJudgement(node, judgement);
 
-		for (var i in node.body) {
-			// node.body[i].parent = node;
-			if (judgement === null) {
-				// if the next statement takes us into the typed world, we should stay there for the statement after that
-				judgement = checkStatement(null, node.body[i]);
-			} else {
-				var j = checkStatement(judgement, node.body[i]);
+		// we will only store judgements for the typed sections of program
+		var judgements = [];
 
-				if (j !== null) {
-					judgement.gamma = j.gamma;
-					judgement.X = judgement.X.concat(j.X);
-					judgement.C = judgement.C.concat(j.C);
+		// I only consider this level when looking for annotations (is this limiting?)
+		var directives = getAnnotations(node.leadingComments);
+		var currentlyTyping = false;
+
+		for (var i = 0; i < node.body.length; i++) {
+			// get any new directives for this statement
+			directives = directives.concat(getAnnotations(node.body[i].leadingComments));
+
+			for (var j = 0; j < directives.length; j++) {
+				if (directives[j].search("start") === 0) {
+
+					if (currentlyTyping)
+						throw new Error("Unexpected start directive (already in typed world at program statement " + i + ")");
+					currentlyTyping = true;
+					var directive = directives[j].substr("start".length);
+					// initialise a new judgement with imported variables
+					judgements.push(Classes.Judgement.InitFromDirective(directive));
+
+				} else if (directives[j].search("end") === 0) {
+
+					if (!currentlyTyping)
+						throw new Error("Unexpected end directive (not in typed world at program statement " + i + ")");
+					currentlyTyping = false;
+
+
 				} else {
-					// if the prev statement is null, we're not in the typed world (so don't try to type the next statement)
-					judgement = null;
+					throw new Error("Unexpected directive " + directives[j]);
 				}
 			}
+
+			if (!currentlyTyping) {
+				// TODO: check subexpressions for annotations
+
+			} else {
+				var judgement = judgements[judgements.length - 1];
+				judgement.nodes.push(node.body[i]);
+
+				// carry the new judgement into the next statement
+				var newJudgement = checkStatement(judgement, node.body[i]);
+				judgement.gamma = newJudgement.gamma;
+				judgement.X = judgement.X.concat(newJudgement.X);
+				judgement.C = judgement.C.concat(newJudgement.C);
+			}
+
+			// reset directives for the next statement
+			directives = getAnnotations(node.body[i].trailingComments);
 		}
-		return judgement;
+
+		return judgements;
 	}
 
 	function checkStatement(judgement, node) {
@@ -277,9 +242,6 @@ function typecheck(ast) {
 			case "EmptyStatement":
 				return checkEmptyStatement(judgement, node);
 			case "ExpressionStatement":
-				// we only check for annotations when we are splitting the node in further calls (e.g. here we are looking at node.expression)
-				judgement = annotationsJudgement(node, judgement);
-				// node.expression.parent = node;
 				return checkExpression(judgement, node.expression);
 			case "VariableDeclaration":
 				// TODO: Check if this is the best way of handling this: VariableDeclaration <: Declaration <: Statement
@@ -291,63 +253,51 @@ function typecheck(ast) {
 	}
 
 	function checkEmptyStatement(judgement, node) {
-		judgement = annotationsJudgement(node, judgement);
-		if (judgement !== null)
-			return new Classes.Judgement(null, judgement.gamma, [], [], judgement.assertions);
+		var j = new Classes.Judgement(null, judgement.gamma, [], []);
+		j.nodes.push(node);
+		return j;
 	}
 
 	function checkVariableDeclarator(judgement, node) {
-		judgement = annotationsJudgement(node, judgement);
-
 		var X = [],
 			C = [];
 		// need to select a new type (we are redefining the type from here on)
-		var T = new Classes.Type("T" + (nextType++));
-		if (node.init) {
-			// node.init.parent = node;
-			if (judgement === null) {
-				return checkExpression(null, node.init);
-			}
+		var T = judgement.gamma.getFreshType();
 
+		if (node.init) {
 			// TODO: the type system defines this in terms of separate var + assignment, which doesn't mirror the AST format.
 			// I'm getting round this by constructing an artificial assignment node. Problem?
 			var j1 = checkExpression(judgement, node.init);
 			if (j1 !== null) {
 				X = j1.X.concat([T]);
-				C = j1.C.concat([new Classes.Constraint(T, j1.T, "Type of '" + node.id.name +
-					"' at line " + node.id.loc.start.line + ", col " +
-					node.id.loc.start.column + " must be " + T.type, node.id.name)]);
+				C = j1.C.concat([new Classes.Constraint(T, j1.T)]);
 			}
 		}
 
-		if (judgement === null)
-			return null;
-
-		judgement.gamma.push(new Classes.TypeEnvEntry(node.id.name, node.loc.start, T));
-		return new Classes.Judgement(null, judgement.gamma, X, C, judgement.assertions);
+		judgement.gamma.push(new Classes.TypeEnvEntry(node.id.name, node.id, T));
+		var j = new Classes.Judgement(null, judgement.gamma, X, C);
+		j.nodes.push(node);
+		return j;
 	}
 
 	function checkVariableDeclaration(judgement, node) {
-		judgement = annotationsJudgement(node, judgement);
-		// VariableDeclaration declarations is a list of variabledeclarators
+
+		// VariableDeclaration.declarations is a list of VariableDeclarators
 		var X = [],
 			C = [];
 		for (var i in node.declarations) {
-			// node.declarations[i].parent = node;
 			var j1 = checkVariableDeclarator(judgement, node.declarations[i]);
+
+			// Pass on judgement to subsequent declarators
 			// TODO: assert X1 n X2 is empty
-			if (judgement !== null) {
-				X = X.concat(j1.X);
-				C = C.concat(j1.C);
-				judgement.gamma = j1.gamma;
-			}
+			X = X.concat(j1.X);
+			C = C.concat(j1.C);
+			judgement.gamma = j1.gamma;
 		}
-		if (judgement != null) {
-			return new Classes.Judgement(null, judgement.gamma, X, C, judgement.assertions);
-		} else {
-			// if we're not in the typed world, the constraints generated here are irrelevant
-			return null;
-		}
+
+		var j = new Classes.Judgement(null, judgement.gamma, X, C);
+		j.nodes.push(node);
+		return j;
 	}
 
 	/***********************************************************************************
@@ -363,16 +313,11 @@ function typecheck(ast) {
 			case ("Literal"):
 				return checkLiteral(judgement, node);
 			default:
-				if (judgement != null)
-					throw new Error("Unhandled Expression type " + node.type);
+				throw new Error("Unhandled Expression type " + node.type);
 		}
 	}
 
 	function checkIdentifier(judgement, node) {
-		judgement = annotationsJudgement(node, judgement);
-		if (judgement === null)
-			return null;
-
 		var T, X = [],
 			C = [],
 			gamma = judgement.gamma;
@@ -381,19 +326,35 @@ function typecheck(ast) {
 
 		if (T === null) {
 			// need to select a new type
-			T = new Classes.Type("T" + (nextType++));
+			T = gamma.getFreshType();
 			X.push(T);
 			gamma.push(new Classes.TypeEnvEntry(node.name, node.loc.start, T));
 		}
 
-		return new Classes.Judgement(T, gamma, X, C, judgement.assertions);
+		var j = new Classes.Judgement(T, gamma, X, C);
+		j.nodes.push(node);
+		return j;
 	}
 
-	function checkLiteral(judgement, node) {
-		judgement = annotationsJudgement(node, judgement);
-		if (judgement === null)
-			return null;
+	function checkAssignmentExpression(judgement, node) {
+		switch (node.operator) {
+			case ("="):
+				// node.right.parent = node;
+				// node.left.parent = node;
+				var j2 = checkExpression(judgement, node.right);
+				var j1 = checkIdentifier(judgement, node.left);
+				var X = j1.X.concat(j2.X);
+				var C = j1.C.concat(j2.C.concat([new Classes.Constraint(j1.T, j2.T)]));
+				var j = new Classes.Judgement(j2.T, judgement.gamma, X, C);
+				j.nodes.push(node);
+				return j;
+			default:
+				throw new Error("Unhandled assignment operator " + node.operator);
+		}
+	}
 
+
+	function checkLiteral(judgement, node) {
 		var type;
 		switch (typeof(node.value)) {
 			case "number":
@@ -415,41 +376,18 @@ function typecheck(ast) {
 				throw new Error("Unhandled literal type " + typeof(node.value) + " (value = " + node.value + ")");
 		}
 
-		return new Classes.Judgement(new Classes.Type(type, {
+		var T = new Classes.Type(type, {
 			concrete: true
-		}), judgement.gamma, [], [], judgement.assertions);
-	}
-
-	function checkAssignmentExpression(judgement, node) {
-		judgement = annotationsJudgement(node, judgement);
-
-		switch (node.operator) {
-			case ("="):
-				// node.right.parent = node;
-				// node.left.parent = node;
-				var j2 = checkExpression(judgement, node.right);
-				var j1 = checkIdentifier(judgement, node.left);
-
-				if (judgement !== null && j1 !== null && j2 !== null) {
-					var X = j1.X.concat(j2.X);
-					// TODO maybe: Should I record the name of the left identifier here?
-					var C = j1.C.concat(j2.C.concat([new Classes.Constraint(j1.T, j2.T, node.loc)]));
-					return new Classes.Judgement(j2.T, judgement.gamma, X, C, judgement.assertions);
-				}
-				return null;
-			default:
-				if (judgement !== null)
-					throw new Error("Unhandled assignment operator " + node.operator);
-				return null;
-		}
+		});
+		var j = new Classes.Judgement(T, judgement.gamma, [], []);
+		j.nodes.push(node);
+		return j;
 	}
 
 	// actually do the type checking, now we have defined all checkers
 	// root node is a Program node
-	var judgement = checkProgram(ast);
-	// implicitly add jstyper end at this point (because if it appears at the end of the program, it won't be a leadingComment)
-	annotationsJudgement(ast.body[ast.body.length - 1], judgement, true);
-	return chunkJudgements;
+	return checkProgram(ast);
+	// return chunkJudgements;
 }
 
 // Use Acorn + Escodegen
@@ -475,6 +413,6 @@ function get_ast(src) {
 function get_src(ast) {
 	return escodegen.generate(ast, {
 		comment: true
-	
+
 	});
 }
