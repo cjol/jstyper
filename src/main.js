@@ -1,117 +1,105 @@
-var fs = require("fs");
-var http = require("http");
+/*jshint unused:true, bitwise:true, eqeqeq:true, undef:true, latedef:true, eqnull:true */
+/* global require, console, __dirname */
+
+// for the web server
 var express = require("express");
 var app = express();
-var stringify = require("json-stringify-safe");
 var bodyParser = require('body-parser');
+var portNumber = 3006;
+
+// for reading tests
+var fs = require("fs");
+
+// for type-checking and compilation
 var jstyper = require("./jstyper");
-// set the default directory for templated pages
-app.set("views", __dirname + "/views");
-
-// reassign every object property directly so that JSON.stringify shows them
-function reassign(obj) {
-	// annotate the object with the class name for printing
-	// if (obj !== null) {
-		// obj.__typeof = obj.constructor.name;
-	// }
-	function copy(item, key) {
-		// recurse if necessary
-        if (typeof item[key] === "object")
-        	item[key] = reassign(item[key]);
-         else 
-         	item[key] = item[key];
-	}
-
-    var result = Object.create(obj);
-	// I want "TYPE" to appear first for clarity
-	if (typeof result.TYPE !== "undefined")
-		copy(result, "TYPE");
-    for(var key in result) {
-    	if (key != "TYPE")
-    		copy(result, key);	
-    }
-    return result;
-}
 
 // set the default directory for templated pages
 app.set("views", __dirname + "/views");
 
 // set the default template engine to ejs - although I'm only using it for static html anyway
 app.engine("html", require('ejs').renderFile);
-  
+
 // serve test files in the 'tests' folder under the /tests path
 app.use('/tests/', express.static(__dirname + '/tests'));
 
-// serve static files in the 'res' folder directly from the root
+// serve static files in the 'res' folder under the /assets path
 app.use('/assets', express.static(__dirname + '/res'));
 
+// make every request use bodyParser middleware
 app.use(bodyParser.text());
 
-
+// central point for all pages requiring compilation
 function handleCompile(src, req, res) {
-	res.set('Content-Type', 'application/javascript');
-	try {
-		var result = jstyper(src);
-		res.send(
-			result.src
-		);
-	} catch(e) {
-		res.status(400).send(e.message);
-	}
+    res.set('Content-Type', 'application/javascript');
+    try {
+        var result = jstyper(src);
+        res.send(
+            result.src
+        );
+    } catch (e) {
+        res.status(400).send(e.message);
+    }
 }
-var exec = require('child_process').exec;
-app.post('/gitpull/', function(req, res) {
-    exec("git pull && forever restartall", function(error, stdout, stderr) {
-        console.log(error);
-        console.log(stdout);
-        console.log(stderr);
-        res.send(stdout);
+
+// /compile/ will compile arbitrary javascript passed as request body
+app.post('/compile/', function(req, res) {
+    if (req.body !== undefined && req.body.length > 0) {
+        handleCompile(req.body, req, res);
+    } else {
+        res.status(400).send("Request body missing");
+    }
+});
+
+// /compile/test1.js will return the compilation  result for test 1 (no req body needed)
+app.get('/compile/:test/', function(req, res) {
+    var file = "tests/" + req.params.test;
+    var src = fs.readFileSync(file, "utf8");
+    handleCompile(src, req, res);
+});
+
+// /debug/test2.js will return a json object containing debug results from compiling test 2 
+app.get('/debug/:test/', function(req, res) {
+    var file = "tests/" + req.params.test;
+    var src = fs.readFileSync(file, "utf8");
+    res.set('Content-Type', 'application/javascript');
+    try {
+        var result = jstyper(src);
+        res.json(
+            result
+        );
+    } catch (e) {
+        res.status(400).send(e.message);
+    }
+});
+
+// the root page serves a blank editor which will make ajax requests to /compile
+app.get('/', function(req, res) {
+
+	// render the view with no initial data
+    res.render("compile.html", {
+        from: '',
+        to: ''
     });
 });
 
-app.post('/compile/', function (req, res) {
-	if (req.body !== undefined && req.body.length > 0) {
-		handleCompile(req.body, req, res);
-	} else {
-		res.status(400).send("Request body missing");
-	}
-});
-
-app.get('/compile/:test/', function (req, res) {
-	var file = "tests/" + req.params.test;
-	var src = fs.readFileSync(file, "utf8");
-	handleCompile(src, req, res);
-});
-
-app.get('/test/:test/', function (req, res) {
-	var file = "tests/" + req.params.test;
-	var src = fs.readFileSync(file, "utf8");
-	res.set('Content-Type', 'application/javascript');
-	try {
-		var result = jstyper(src);
-		res.json(
-			result
-		);
-	} catch(e) {
-		res.status(400).send(e.message);
-	}
-});
-
-
-app.get('/', function(req, res) {
-	res.render("compile.html", {from:'', to:''});
-});
-
+// requesting a test directly preloads the editor with the test and its result
 app.get('/:test', function(req, res) {
-	var file = "tests/" + req.params.test;
-	var src = fs.readFileSync(file, "utf8");
-	var result;
-	try {
-		result = jstyper(src);
-	} catch(e) {
-		result = e.message;
-	}
-	res.render("compile.html", {from:src, to:result.src});
+	
+	// obtain test data
+    var file = "tests/" + req.params.test;
+    var src = fs.readFileSync(file, "utf8");
+    var result;
+    try {
+        result = jstyper(src);
+    } catch (e) {
+        result = e.message;
+    }
+
+    // render the view
+    res.render("compile.html", {
+        from: src,
+        to: result.src
+    });
 });
 
-app.listen(3006);
+app.listen(portNumber);

@@ -1,0 +1,13 @@
+A full implementation might want to wrap up typed world so that content literally can't be touched
+
+Remember to assiciate type variables with all expressions, not just variables
+
+inferring ts where dynamic exists but never generates any constraints
+prove safety for this
+then prove that any runtime error must have been caused by a mimic or guard
+
+Maybe don't waste too much time cleaning up
+
+Over the break: weekly stat reports (Tuesday), but can have conversations whenever necessary. 28th - 31st may be fairly disconnected so maybe no skype then!
+Send code tomorrow!
+
