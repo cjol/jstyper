@@ -4,7 +4,7 @@
   "description": "Gradual Typing for JavaScript",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"We haven't got any tests yet...\" && exit 0"
   },
   "author": "Christopher Little",
   "license": "BSD-2-Clause",
