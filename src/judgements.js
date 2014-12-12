@@ -1,6 +1,10 @@
 /*jshint unused:true, bitwise:true, eqeqeq:true, undef:true, latedef:true, eqnull:true */
 /* global module, require */
 
+/* This module generates judgements according to the logic set out in the
+	formal specification. Ideally it should be as close to the induction
+	rules as possible */
+
 var Classes = require("./classes.js");
 
 /***********************************************************************************
@@ -84,12 +88,12 @@ function checkIdentifier(judgement, node) {
 function checkAssignmentExpression(judgement, node) {
 	switch (node.operator) {
 		case ("="):
-			// node.right.parent = node;
-			// node.left.parent = node;
+			node.left.statementNum = node.statementNum;
+			node.right.statementNum = node.statementNum;
 			var j2 = checkExpression(judgement, node.right);
 			var j1 = checkIdentifier(judgement, node.left);
 			var X = j1.X.concat(j2.X);
-			var C = j1.C.concat(j2.C.concat([new Classes.Constraint(j1.T, j2.T)]));
+			var C = j1.C.concat(j2.C.concat([new Classes.Constraint(j1.T, node.left, j2.T, node.right, node.statementNum)]));
 			var j = new Classes.Judgement(j2.T, judgement.gamma, X, C);
 			j.nodes.push(node);
 			return j;
@@ -132,10 +136,11 @@ function checkVariableDeclarator(judgement, node) {
 	if (node.init) {
 		// TODO: the type system defines this in terms of separate var + assignment, which doesn't mirror the AST format.
 		// I'm getting round this by constructing an artificial assignment node. Problem?
+		node.init.statementNum = node.statementNum;
 		var j1 = checkExpression(judgement, node.init);
 		if (j1 !== null) {
 			X = j1.X.concat([T]);
-			C = j1.C.concat([new Classes.Constraint(T, j1.T)]);
+			C = j1.C.concat([new Classes.Constraint(T, node.id, j1.T, node.init, node.statementNum)]);
 		}
 	}
 
@@ -150,7 +155,9 @@ function checkVariableDeclaration(judgement, node) {
 	// VariableDeclaration.declarations is a list of VariableDeclarators
 	var X = [],
 		C = [];
-	for (var i in node.declarations) {
+	for (var i=0; i<node.declarations.length; i++) {
+
+		node.declarations[i].statementNum = node.statementNum;
 		var j1 = checkVariableDeclarator(judgement, node.declarations[i]);
 
 		// Pass on judgement to subsequent declarators
@@ -170,6 +177,7 @@ function checkStatement(judgement, node) {
 		case "EmptyStatement":
 			return checkEmptyStatement(judgement, node);
 		case "ExpressionStatement":
+			node.expression.statementNum = node.statementNum;
 			return checkExpression(judgement, node.expression);
 		case "VariableDeclaration":
 			// TODO: Check if this is the best way of handling this: VariableDeclaration <: Declaration <: Statement
@@ -193,6 +201,7 @@ function checkProgram(node) {
 		// get any new directives for this statement
 		directives = directives.concat(getAnnotations(node.body[i].leadingComments));
 
+		// determine if we should be type-checking the next chunk or not
 		for (var j = 0; j < directives.length; j++) {
 			if (directives[j].search("start") === 0) {
 
@@ -215,12 +224,16 @@ function checkProgram(node) {
 			}
 		}
 
+
 		if (!currentlyTyping) {
 			// TODO: check subexpressions for annotations
 
 		} else {
 			var judgement = judgements[judgements.length - 1];
 			judgement.nodes.push(node.body[i]);
+
+			// TODO: This is broken, see jstyper.js line 50
+			node.body[i].statementNum = i;
 
 			// carry the new judgement into the next statement
 			var newJudgement = checkStatement(judgement, node.body[i]);
