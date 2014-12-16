@@ -48,6 +48,7 @@
 \ottprodline{|}{\ottkw{str}}{}{}{}{\ottcom{String}}\ottprodnewline
 \ottprodline{|}{\ottkw{undefined}}{}{}{}{\ottcom{Undefined}}\ottprodnewline
 \ottprodline{|}{\ottkw{null}}{}{}{}{\ottcom{null}}\ottprodnewline
+\ottprodline{|}{ \epsilon }{}{}{}{\ottcom{EmptyStatement}}\ottprodnewline
 \ottprodline{|}{\ottsym{get(}  \ottnt{s}  \ottsym{,}  \ottnt{id}  \ottsym{)}} {\textsf{M}}{}{}{\ottcom{GetStore}}}
 
 \newcommand{\otts}{
@@ -69,7 +70,6 @@
 \newcommand{\ottm}{
 \ottrulehead{\ottnt{m}}{::=}{\ottcom{Statement}}\ottprodnewline
 \ottfirstprodline{|}{\ottnt{e}}{}{}{}{\ottcom{Expression}}\ottprodnewline
-\ottprodline{|}{ \epsilon }{}{}{}{\ottcom{Skip}}\ottprodnewline
 \ottprodline{|}{\ottnt{m}  \ottsym{;}  \ottnt{m'}}{}{}{}{\ottcom{Seq}}\ottprodnewline
 \ottprodline{|}{\ottkw{var} \, \ottnt{vd}}{}{}{}{\ottcom{VarDeclaration}}}
 
@@ -140,10 +140,9 @@
 
 \newcommand{\ottJop}{
 \ottrulehead{\ottnt{Jop}}{::=}{}\ottprodnewline
-\ottfirstprodline{|}{ \langle  \ottnt{m} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{m'} ,  \ottnt{s'}  \rangle }{}{}{}{}\ottprodnewline
-\ottprodline{|}{\ottkw{g} \, \ottsym{(}  \ottnt{id}  \ottsym{)}  \ottsym{=} \, \ottkw{t}}{}{}{}{}\ottprodnewline
-\ottprodline{|}{\Gamma  \ottsym{(}  \ottnt{id}  \ottsym{)}  \ottsym{=}  \ottnt{T}} {\textsf{M}}{}{}{}\ottprodnewline
+\ottfirstprodline{|}{\Gamma  \ottsym{(}  \ottnt{id}  \ottsym{)}  \ottsym{=}  \ottnt{T}} {\textsf{M}}{}{}{}\ottprodnewline
 \ottprodline{|}{\ottnt{Eq}} {\textsf{M}}{}{}{}\ottprodnewline
+\ottprodline{|}{ \langle  \ottnt{m} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{m'} ,  \ottnt{s'}  \rangle }{}{}{}{}\ottprodnewline
 \ottprodline{|}{ \Gamma   \vdash   \ottnt{e}  :  \ottnt{T} \hspace{5pt}| _{  \ottnt{X}  } \hspace{3pt} \ottnt{C} ,  \Gamma' }{}{}{}{}\ottprodnewline
 \ottprodline{|}{ \Gamma   \vdash   \ottnt{m}  \hspace{5pt}| _{  \ottnt{X}  } \hspace{3pt} \ottnt{C} ,  \Gamma' }{}{}{}{}}
 
@@ -191,6 +190,16 @@
 
 % defnss
 % defns Jop
+%% defn expType2
+
+\newcommand{\ottdefnexpTypeTwo}[1]{\begin{ottdefnblock}[#1]{$\Gamma  \ottsym{(}  \ottnt{id}  \ottsym{)}  \ottsym{=}  \ottnt{T}$}{}
+\end{ottdefnblock}}
+
+%% defn ConstraintEq
+
+\newcommand{\ottdefnConstraintEq}[1]{\begin{ottdefnblock}[#1]{$\ottnt{Eq}$}{}
+\end{ottdefnblock}}
+
 %% defn reduce
 \newcommand{\ottdruleseqOne}[1]{\ottdrule[#1]{%
 }{
@@ -231,22 +240,30 @@
 
 \newcommand{\ottdrulevarOne}[1]{\ottdrule[#1]{%
 }{
- \langle  \ottkw{var} \, \ottnt{id}  \ottsym{=}  \ottnt{e} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{id}  \ottsym{=}  \ottnt{e} ,  \ottnt{s}  \rangle }{%
+ \langle  \ottkw{var} \, \ottnt{id} ,  \ottnt{s}  \rangle  \rightarrow  \langle   \epsilon  ,  \ottnt{s}  \rangle }{%
 {\ottdrulename{var1}}{}%
 }}
 
 
 \newcommand{\ottdrulevarTwo}[1]{\ottdrule[#1]{%
+\ottpremise{ \langle  \ottnt{e} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{e'} ,  \ottnt{s'}  \rangle }%
 }{
- \langle  \ottkw{var} \, \ottnt{id} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottkw{undefined} ,  \ottnt{s}  \rangle }{%
+ \langle  \ottkw{var} \, \ottnt{id}  \ottsym{=}  \ottnt{e} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottkw{var} \, \ottnt{id}  \ottsym{=}  \ottnt{e'} ,  \ottnt{s}  \rangle }{%
 {\ottdrulename{var2}}{}%
 }}
 
 
 \newcommand{\ottdrulevarThree}[1]{\ottdrule[#1]{%
 }{
- \langle  \ottkw{var} \, \ottnt{vd}  \ottsym{,}  \ottnt{vd'} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottkw{var} \, \ottnt{vd}  \ottsym{;}  \ottkw{var} \, \ottnt{vd'} ,  \ottnt{s}  \rangle }{%
+ \langle  \ottkw{var} \, \ottnt{id}  \ottsym{=}  \ottnt{v} ,  \ottnt{s}  \rangle  \rightarrow  \langle   \epsilon  ,  \ottnt{s}  \rangle }{%
 {\ottdrulename{var3}}{}%
+}}
+
+
+\newcommand{\ottdrulevarFour}[1]{\ottdrule[#1]{%
+}{
+ \langle  \ottkw{var} \, \ottnt{vd}  \ottsym{,}  \ottnt{vd'} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottkw{var} \, \ottnt{vd}  \ottsym{;}  \ottkw{var} \, \ottnt{vd'} ,  \ottnt{s}  \rangle }{%
+{\ottdrulename{var4}}{}%
 }}
 
 \newcommand{\ottdefnreduce}[1]{\begin{ottdefnblock}[#1]{$ \langle  \ottnt{m} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{m'} ,  \ottnt{s'}  \rangle $}{}
@@ -258,21 +275,7 @@
 \ottusedrule{\ottdrulevarOne{}}
 \ottusedrule{\ottdrulevarTwo{}}
 \ottusedrule{\ottdrulevarThree{}}
-\end{ottdefnblock}}
-
-%% defn expType3
-
-\newcommand{\ottdefnexpTypeThree}[1]{\begin{ottdefnblock}[#1]{$\ottkw{g} \, \ottsym{(}  \ottnt{id}  \ottsym{)}  \ottsym{=} \, \ottkw{t}$}{}
-\end{ottdefnblock}}
-
-%% defn expType2
-
-\newcommand{\ottdefnexpTypeTwo}[1]{\begin{ottdefnblock}[#1]{$\Gamma  \ottsym{(}  \ottnt{id}  \ottsym{)}  \ottsym{=}  \ottnt{T}$}{}
-\end{ottdefnblock}}
-
-%% defn ConstraintEq
-
-\newcommand{\ottdefnConstraintEq}[1]{\begin{ottdefnblock}[#1]{$\ottnt{Eq}$}{}
+\ottusedrule{\ottdrulevarFour{}}
 \end{ottdefnblock}}
 
 %% defn expType
@@ -311,6 +314,13 @@
 }}
 
 
+\newcommand{\ottdruleSkipTypable}[1]{\ottdrule[#1]{%
+}{
+ \Gamma   \vdash    \epsilon   :  \ottkw{undefined} \hspace{5pt}| _{  \varnothing  } \hspace{3pt} \varnothing ,  \Gamma }{%
+{\ottdrulename{SkipTypable}}{}%
+}}
+
+
 \newcommand{\ottdruleIdType}[1]{\ottdrule[#1]{%
 \ottpremise{\Gamma  \ottsym{(}  \ottnt{id}  \ottsym{)}  \ottsym{=}  \ottnt{T}}%
 }{
@@ -342,19 +352,13 @@
 \ottusedrule{\ottdrulevXXstring{}}
 \ottusedrule{\ottdrulevXXundefined{}}
 \ottusedrule{\ottdrulevXXnull{}}
+\ottusedrule{\ottdruleSkipTypable{}}
 \ottusedrule{\ottdruleIdType{}}
 \ottusedrule{\ottdruleIdTypeUndef{}}
 \ottusedrule{\ottdruleAssignType{}}
 \end{ottdefnblock}}
 
 %% defn typable
-\newcommand{\ottdruleSkipTypable}[1]{\ottdrule[#1]{%
-}{
- \Gamma   \vdash    \epsilon   \hspace{5pt}| _{  \varnothing  } \hspace{3pt} \varnothing ,  \Gamma }{%
-{\ottdrulename{SkipTypable}}{}%
-}}
-
-
 \newcommand{\ottdruleDecTypable}[1]{\ottdrule[#1]{%
 }{
  \Gamma   \vdash   \ottkw{var} \, \ottnt{id}  \hspace{5pt}| _{  \ottsym{\{}  \ottnt{T}  \ottsym{\}}  } \hspace{3pt} \varnothing ,   \Gamma  \cup  \ottsym{\{}  \ottnt{id}  \ottsym{:}  \ottnt{T}  \ottsym{\}}  }{%
@@ -400,7 +404,6 @@
 }}
 
 \newcommand{\ottdefntypable}[1]{\begin{ottdefnblock}[#1]{$ \Gamma   \vdash   \ottnt{m}  \hspace{5pt}| _{  \ottnt{X}  } \hspace{3pt} \ottnt{C} ,  \Gamma' $}{}
-\ottusedrule{\ottdruleSkipTypable{}}
 \ottusedrule{\ottdruleDecTypable{}}
 \ottusedrule{\ottdruleExpTypable{}}
 \ottusedrule{\ottdruleSeqTypable{}}
@@ -410,7 +413,7 @@
 
 
 \newcommand{\ottdefnsJop}{
-\ottdefnreduce{}\ottdefnexpTypeThree{}\ottdefnexpTypeTwo{}\ottdefnConstraintEq{}\ottdefnexpType{}\ottdefntypable{}}
+\ottdefnexpTypeTwo{}\ottdefnConstraintEq{}\ottdefnreduce{}\ottdefnexpType{}\ottdefntypable{}}
 
 \newcommand{\ottdefnss}{
 \ottdefnsJop
@@ -424,7 +427,7 @@
 \ottall
 
 \begin{verbatim}
-Definition rules:        22 good    0 bad
-Definition rule clauses: 39 good    0 bad
+Definition rules:        23 good    0 bad
+Definition rule clauses: 41 good    0 bad
 \end{verbatim}
 \end{document}

@@ -12,6 +12,8 @@ v :: 'v_' ::=                                   {{ com Values }}
 	| str       ::  :: String 									{{ com String }}
 	| undefined ::  :: Undefined 								{{ com Undefined }}
 	| null      ::  :: null 									{{ com null }}
+	| eps  		::  :: EmptyStatement							{{ com EmptyStatement }}
+																{{ tex \epsilon }}
 	| get( s , id ) :: M:: GetStore 							{{ com GetStore }}
 
 s :: 's_' ::=                                   {{ com Store }}
@@ -29,8 +31,6 @@ e :: 'e_' ::=                                   {{ com Expression }}
 
 m :: 'm_' ::=                                   {{ com Statement }}
 	| e         ::  :: Expression 								{{ com Expression }}
-	| eps  		::  :: Skip 									{{ com Skip }}
-																{{ tex \epsilon }}
 	| m ; m'    ::  :: Seq          							{{ com Seq }}
 	| var vd    ::  :: VarDeclaration 							{{ com VarDeclaration }}
 
@@ -111,6 +111,12 @@ defns
 Jop :: '' ::=
 
 defn
+G ( id ) = T :: M::expType2::''  by
+	
+defn 
+Eq 	:: M::ConstraintEq::'' by
+
+defn
 < m , s > -> < m' , s' > :: ::reduce::''  
 {{ tex \langle [[m]], [[s]] \rangle [[->]] \langle [[m']], [[s']] \rangle }}
 by
@@ -132,23 +138,18 @@ by
 	--------------------------                  		        ::   deref
 	<id, s> -> <get(s, id), s>
 
-	------------------------------               		        ::   var1
-	<var id = e, s> -> <id = e, s>
+	-----------------------------                		        ::   var1
+	<var id, s> -> <eps, s>
 
-	-----------------------------                		        ::   var2
-	<var id, s> -> <undefined, s>
+	<e, s> -> <e', s'>
+	-----------------------------------               		    ::   var2
+	<var id = e, s> -> <var id = e', s>
 
-	----------------------------------------- 			        ::   var3
+	-------------------------------               		        ::   var3
+	<var id = v, s> -> <eps, s>
+
+	----------------------------------------- 			        ::   var4
 	<var vd, vd', s> -> <var vd; var vd', s >
-
-defn
-g ( id ) = t :: m::expType3::''  by
-
-defn
-G ( id ) = T :: M::expType2::''  by
-	
-defn 
-Eq 	:: M::ConstraintEq::'' by
 
 defn
 G |- e : T | X C , G' :: ::expType::''
@@ -173,6 +174,9 @@ G |- e : T | X C , G' :: ::expType::''
 	--------------------------                          		:: v_null
 	G |- null : null |{} {}, G
 
+	------------------------------                     		    :: SkipTypable
+	G |- eps : undefined |{} {}, G
+	
 	G(id) = T
 	---------------------		                                :: IdType
 	G |- id : T |{} {}, G
@@ -197,9 +201,6 @@ G |- m | X C , G' :: :: typable::''
 	% We say that a statement m is typable if all expressions contained within it are well typed by the definition above.
 
 	% NB We're going to need to do something to model scope within G
-
-	------------------                                 		    :: SkipTypable
-	G |- eps |{} {}, G
 
 	---------------------------------                		    :: DecTypable
 	G |- var id |{T} {}, G u {id : T}
