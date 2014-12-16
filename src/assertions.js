@@ -1,10 +1,45 @@
-/*jshint unused:true, bitwise:true, eqeqeq:true, undef:true, latedef:true, eqnull:true */
-/* global module */
-
 /* This module generates AST nodes representing run-time checks for 
 	a given expression node, and a given target type */
 
-function getIdentifier(expression, type) {
+var UglifyJS = require("uglify-js2");
+
+// TODO: Assign parents to everything in here
+UglifyJS.AST_SymbolRef.prototype.getTypeCheck = function(type) {
+	// TODO: Could probably generate nothing...
+	if (!type.isConcrete) return;
+	return new UglifyJS.AST_If({
+		condition: new UglifyJS.AST_Binary({
+			left: new UglifyJS.AST_UnaryPrefix({
+				operator: 'typeof',
+				expression: new UglifyJS.AST_SymbolRef({
+					name: this.name
+				})
+			}),
+			operator: '!==',
+			right: new UglifyJS.AST_String({
+				value: type.type
+			})
+		}),
+		body: new UglifyJS.AST_BlockStatement({
+			body: [
+				new UglifyJS.AST_Throw({
+					value: new UglifyJS.AST_New({
+						expression: new UglifyJS.AST_SymbolRef({
+							name: 'Error'
+						}),
+						args: [
+							new UglifyJS.AST_String({
+								value: this.name + ' should have type ' + type.type
+							})
+						]
+					})
+				})
+			]
+		})
+	});
+};
+
+function assertIdentifier(expression, type) {
 	if (!type.isConcrete) return [];
 	return [{
 		"type": "IfStatement",
@@ -46,22 +81,11 @@ function getIdentifier(expression, type) {
 	}];
 }
 
-function getAssignment(expression, type) {
+UglifyJS.AST_Assign.prototype.getTypeCheck = function(type) {
 	// to ascertain the value of an assignment, just check the RHS type
-	return getExpression(expression.right, type);
-}
+	return this.right.getTypeCheck(type);	
+};
 
-function getExpression(expression, type) {
-	switch (expression.type) {
-		case ("AssignmentExpression"):
-			return getAssignment(expression, type);
-		case ("Identifier"):
-			return getIdentifier(expression, type);
-		default:
-			throw new Error("Unhandled Expression type " + expression.type);
-	}
-}
-
-module.exports = {
-	getExpression: getExpression
+UglifyJS.AST_Node.prototype.getTypeCheck = function() {
+	throw new Error("Unhandled Expression type ");
 };

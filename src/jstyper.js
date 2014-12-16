@@ -12,8 +12,9 @@ var UglifyJS = require("uglify-js2");
 
 // for our jstyper objects
 var Classes = require("./classes.js");
-var Judgements = require("./judgements.js");
-var TypeAssertions = require("./assertions.js");
+require("./judgements.js");
+require("./assertions.js");
+require("./insertBefore.js");
 
 String.prototype.format = function() {
 	var newStr = this,
@@ -28,7 +29,7 @@ function solveConstraints(constraints) {
 	
 	// base case
 	if (constraints.length < 1)
-		return {subs: [], assertions: []};
+		return [];
 
 	var left = constraints[0].left;
 	var right = constraints[0].right;
@@ -44,24 +45,14 @@ function solveConstraints(constraints) {
 	// if the left (write) type is dynamic, we always allow
 	if (left.isDynamic)
 		return solveConstraints(remainder);
+
 	// if the right (read) type is dynamic, we allow but must typecheck
 	if (right.isDynamic) {
-		// TODO: this only works if the left is concrete 
-		var solution = solveConstraints(remainder);
-		// TODO: referring to a statement number within the body seems hacky
-		/* 
-			worse, this won't work for a program like the following
-			// jstyper start import z
-			var x = 5;
-			// typecheck z as a number will be inserted here
-			var y = z = true, x = z;
-			// jstyper end
-		*/
-		solution.assertions.push({
-			location: constraints[0].statementNum,
-			assertion: TypeAssertions.getExpression(constraints[0].rightNode, left)
-		});
-		return solution;
+		// TODO: this only works if the left type is concrete 
+		var typeCheck = constraints[0].rightNode.getTypeCheck(left);
+		if (typeCheck)
+			constraints[0].rightNode.parent().insertBefore(typeCheck, constraints[0].rightNode);
+		return solveConstraints(remainder);
 	}
 
 
@@ -81,12 +72,9 @@ function solveConstraints(constraints) {
 		sub.apply(remainder[i]);
 	}
 
-	// solve the remainder, then join with the previous result
-	var solution = solveConstraints(remainder);
 	// it's quite important that substitutions are applied in the right order
 	// here first item should be applied first
-	solution.subs = [sub].concat(solution.subs);
-	return solution;
+	return [sub].concat(solveConstraints(remainder));
 }
 
 module.exports = function(src) {
@@ -107,9 +95,7 @@ module.exports = function(src) {
 	for (var i = 0; i< chunks.length; i++) {
 
 		// solve the generated constraints, or throw an error if this isn't possible
-		var solution = solveConstraints(chunks[i].C);
-		var substitutions = solution.subs;
-		var assertions = solution.assertions;
+		var substitutions = solveConstraints(chunks[i].C);
 
 		// apply the solution substitutions to the type environment
 		for (var j=0; j<substitutions.length; j++) {
@@ -120,10 +106,11 @@ module.exports = function(src) {
 		var typeComment = " jstyper types: ";
 		var sep = "";
 		for (var k = 0; k < chunks[i].gamma.length; k++) {
-			var location = (chunks[i].gamma[k].node === null)?"imported":
+			var location = (chunks[i].gamma[k].node)?
 				"l%s c%s".format(
 					chunks[i].gamma[k].node.start.line,
-					chunks[i].gamma[k].node.start.col);
+					chunks[i].gamma[k].node.start.col)
+				:"imported";
 
 			typeComment += sep;
 			typeComment += "%s (%s): %s".format(
@@ -133,7 +120,7 @@ module.exports = function(src) {
 			sep = "; ";
 		}
 
-		// // prepend the types in a comment at the start of the chunk
+		// prepend the types in a comment at the start of the chunk
 		chunks[i].nodes[0].start.comments_before.push(
 			new UglifyJS.AST_Token({
 				type: 'comment1',
