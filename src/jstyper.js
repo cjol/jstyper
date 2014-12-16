@@ -6,8 +6,9 @@
 
 
 // for constructing and deconstructing the AST respectively
-var acorn = require("acorn");
-var escodegen = require("escodegen");
+// var acorn = require("acorn");
+// var escodegen = require("escodegen");
+var UglifyJS = require("uglify-js2");
 
 // for our jstyper objects
 var Classes = require("./classes.js");
@@ -88,38 +89,19 @@ function solveConstraints(constraints) {
 	return solution;
 }
 
-function get_ast(src) {
-	var comments = [],
-		tokens = [];
-
-	var ast = acorn.parse(src, {
-		// collect ranges for each node
-		ranges: true,
-		// collect comments in Esprima's format
-		onComment: comments,
-		// collect token ranges
-		onToken: tokens,
-		locations: true
-	});
-
-	// attach comments using collected information
-	escodegen.attachComments(ast, comments, tokens);
-	return ast;
-}
-
 module.exports = function(src) {
 
 	// obtain AST
 	var ast;
 	try {
-		ast = get_ast(src);
+		ast = UglifyJS.parse(src);
 	} catch (e) {
 		e.message = "Parse Error: " + e.message;
 		throw e;
 	}
 
 	// generate a judgement for (each annotated section of) the entire tree
-	var chunks = Judgements.checkProgram(ast);
+	var chunks = ast.check();
 
 	// check the judgement is valid and do gradual typing for each chunk
 	for (var i = 0; i< chunks.length; i++) {
@@ -140,8 +122,8 @@ module.exports = function(src) {
 		for (var k = 0; k < chunks[i].gamma.length; k++) {
 			var location = (chunks[i].gamma[k].node === null)?"imported":
 				"l%s c%s".format(
-					chunks[i].gamma[k].node.loc.start.line,
-					chunks[i].gamma[k].node.loc.start.column);
+					chunks[i].gamma[k].node.start.line,
+					chunks[i].gamma[k].node.start.col);
 
 			typeComment += sep;
 			typeComment += "%s (%s): %s".format(
@@ -151,44 +133,41 @@ module.exports = function(src) {
 			sep = "; ";
 		}
 
-		// prepend the types in a comment at the start of the chunk
-		if (typeof chunks[i].nodes[0].leadingComments === "undefined")
-			chunks[i].nodes[0].leadingComments = [];
-		chunks[i].nodes[0].leadingComments.push({
-			"type": "Line",
-			"value": typeComment
-		});
+		// // prepend the types in a comment at the start of the chunk
+		chunks[i].nodes[0].start.comments_before.push(
+			new UglifyJS.AST_Token({
+				type: 'comment1',
+				value: typeComment
+			})
+		);
 
-		// append a notice indicating the end of the typed section
-		if (chunks[i].nodes[chunks[i].nodes.length - 1].trailingComments === undefined)
-			chunks[i].nodes[chunks[i].nodes.length - 1].trailingComments = [];
-		chunks[i].nodes[chunks[i].nodes.length - 1].trailingComments.push({
-			"type": "Line",
-			"value": " end jstyper typed region "
-		});
+		// TODO: append a notice indicating the end of the typed section (not easy without a trailing comments property!)
+		
 
-
-		// finally insert checks before the necessary statements
-		// loop backwards to avoid invalidating location numbers
-		// TODO: if you haven't got the memo yet, this is broken: see line 50
-		for (var l = ast.body.length - 1; l>=0; l--) {
-			for (var m = 0; m<assertions.length; m++) {
-				if (assertions[m].location === l) {
-					// I'm using function.apply to avoid unpacking assertions
-					var args = [l, 0].concat(assertions[m].assertion);
-					ast.body.splice.apply(ast.body, args);
-				}
-			}
-		}
+		// // finally insert checks before the necessary statements
+		// // loop backwards to avoid invalidating location numbers
+		// // TODO: if you haven't got the memo yet, this is broken: see line 50
+		// for (var l = ast.body.length - 1; l>=0; l--) {
+		// 	for (var m = 0; m<assertions.length; m++) {
+		// 		if (assertions[m].location === l) {
+		// 			// I'm using function.apply to avoid unpacking assertions
+		// 			var args = [l, 0].concat(assertions[m].assertion);
+		// 			ast.body.splice.apply(ast.body, args);
+		// 		}
+		// 	}
+		// }
 	}
 
 	var checkRes = chunks;
-	var outSrc = escodegen.generate(ast, {
-		comment: true
+	var stream = UglifyJS.OutputStream({
+		beautify: true,
+		comments: true,
+		width: 60
 	});
+	ast.print(stream);
 
 	return {
-		src: outSrc,
+		src: stream.toString(),
 		check: checkRes
 	};
 };

@@ -6,6 +6,11 @@
 	rules as possible */
 
 var Classes = require("./classes.js");
+var UglifyJS = require("uglify-js2");
+
+UglifyJS.AST_Node.prototype.check = function() {
+	throw new Error("Unhandled node type " + this.constructor);
+};
 
 /***********************************************************************************
  * helper function - could be refactored somewhere else if there were any more
@@ -34,131 +39,98 @@ function getAnnotations(comments) {
 /***********************************************************************************
  * Checking typability, and also creating type judgements
  ***********************************************************************************/
-
-function checkLiteral(judgement, node) {
-	var type;
-	// TODO: is this a useful switch? Probably not, just assign...
-	switch (typeof(node.value)) {
-		case "number":
-			type = "number";
-			break;
-		case "boolean":
-			type = "boolean";
-			break;
-		case "string":
-			type = "string";
-			break;
-		case "undefined":
-			type = "undefined";
-			break;
-		case "null":
-			type = "null";
-			break;
-		default:
-			throw new Error("Unhandled literal type " + typeof(node.value) + " (value = " + node.value + ")");
-	}
-
-	var T = new Classes.Type(type, {
+UglifyJS.AST_Constant.prototype.check = function(judgement) {
+	if (this.constType === undefined) throw new Error("Unhandled constant type " + this);
+	var T = new Classes.Type(this.constType, {
 		concrete: true
 	});
 	var j = new Classes.Judgement(T, judgement.gamma, [], []);
-	j.nodes.push(node);
+	j.nodes.push(this);
 	return j;
-}
+};
 
-function checkIdentifier(judgement, node) {
+UglifyJS.AST_String.prototype.constType = "string";
+UglifyJS.AST_Number.prototype.constType = "number";
+UglifyJS.AST_Boolean.prototype.constType = "boolean";
+UglifyJS.AST_Undefined.prototype.constType = "undefined";
+UglifyJS.AST_Null.prototype.constType = "null";
+
+UglifyJS.AST_SymbolRef.prototype.check = function(judgement) {
 	var T, X = [],
 		C = [],
 		gamma = judgement.gamma;
 
-	T = gamma.get(node.name);
+	T = gamma.get(this.name);
 
 	if (T === null) {
 		// need to select a new type
 		T = gamma.getFreshType();
 		X.push(T);
-		gamma.push(new Classes.TypeEnvEntry(node.name, node, T));
+		gamma.push(new Classes.TypeEnvEntry(this.name, this, T));
 	}
 
 	var j = new Classes.Judgement(T, gamma, X, C);
-	j.nodes.push(node);
+	j.nodes.push(this);
 	return j;
-}
-
-function checkAssignmentExpression(judgement, node) {
-	switch (node.operator) {
+};
+UglifyJS.AST_Assign.prototype.check = function(judgement) {
+	switch(this.operator) {
 		case ("="):
-			node.left.statementNum = node.statementNum;
-			node.right.statementNum = node.statementNum;
-			var j2 = checkExpression(judgement, node.right);
-			var j1 = checkIdentifier(judgement, node.left);
+			var j2 = this.right.check(judgement);
+			var j1 = this.left.check(judgement);
 			var X = j1.X.concat(j2.X);
-			var C = j1.C.concat(j2.C.concat([new Classes.Constraint(j1.T, node.left, j2.T, node.right, node.statementNum)]));
+			var C = j1.C.concat(j2.C.concat([new Classes.Constraint(j1.T, this.left, j2.T, this.right)]));
 			var j = new Classes.Judgement(j2.T, judgement.gamma, X, C);
-			j.nodes.push(node);
+			j.nodes.push(this);
 			return j;
 		default:
-			throw new Error("Unhandled assignment operator " + node.operator);
+			throw new Error("Unhandled assignment operator " + this.operator);
 	}
-}
-
-function checkExpression(judgement, node) {
-	switch (node.type) {
-		case ("AssignmentExpression"):
-			return checkAssignmentExpression(judgement, node);
-		case ("Identifier"):
-			return checkIdentifier(judgement, node);
-		case ("Literal"):
-			return checkLiteral(judgement, node);
-		default:
-			throw new Error("Unhandled Expression type " + node.type);
-	}
-}
-
+};
 
 /***********************************************************************************
  * Creating typability judgements 
  ***********************************************************************************/
 
+UglifyJS.AST_SimpleStatement.prototype.check = function(judgement) {
+	return this.body.check(judgement);
+};
 
-function checkEmptyStatement(judgement, node) {
+UglifyJS.AST_EmptyStatement.prototype.check = function(judgement) {
 	var j = new Classes.Judgement(null, judgement.gamma, [], []);
-	j.nodes.push(node);
+	j.nodes.push(this);
 	return j;
-}
+};
 
-function checkVariableDeclarator(judgement, node) {
+UglifyJS.AST_VarDef.prototype.check = function(judgement) {
 	var X = [],
 		C = [];
 	// need to select a new type (we are redefining the type from here on)
 	var T = judgement.gamma.getFreshType();
 
-	if (node.init) {
+	if (this.value) {
 		// TODO: the type system defines this in terms of separate var + assignment, which doesn't mirror the AST format.
-		// I'm getting round this by constructing an artificial assignment node. Problem?
-		node.init.statementNum = node.statementNum;
-		var j1 = checkExpression(judgement, node.init);
+		var j1 = this.value.check(judgement);
 		if (j1 !== null) {
 			X = j1.X.concat([T]);
-			C = j1.C.concat([new Classes.Constraint(T, node.id, j1.T, node.init, node.statementNum)]);
+			C = j1.C.concat([new Classes.Constraint(T, this.name, j1.T, this.init)]);
 		}
 	}
 
-	judgement.gamma.push(new Classes.TypeEnvEntry(node.id.name, node.id, T));
+	judgement.gamma.push(new Classes.TypeEnvEntry(this.name.name, this.name, T));
 	var j = new Classes.Judgement(null, judgement.gamma, X, C);
-	j.nodes.push(node);
+	j.nodes.push(this);
 	return j;
-}
+};
 
-function checkVariableDeclaration(judgement, node) {
+UglifyJS.AST_Var.prototype.check = function(judgement) {
 
 	// VariableDeclaration.declarations is a list of VariableDeclarators
 	var X = [],
 		C = [];
-	for (var i=0; i<node.declarations.length; i++) {
+	for (var i=0; i<this.definitions.length; i++) {
 
-		node.declarations[i].statementNum = node.statementNum;
-		var j1 = checkVariableDeclarator(judgement, node.declarations[i]);
+		var j1 = this.definitions[i].check(judgement);
 
 		// Pass on judgement to subsequent declarators
 		// TODO: assert X1 n X2 is empty
@@ -168,38 +140,22 @@ function checkVariableDeclaration(judgement, node) {
 	}
 
 	var j = new Classes.Judgement(null, judgement.gamma, X, C);
-	j.nodes.push(node);
+	j.nodes.push(this);
 	return j;
-}
+};
 
-function checkStatement(judgement, node) {
-	switch (node.type) {
-		case "EmptyStatement":
-			return checkEmptyStatement(judgement, node);
-		case "ExpressionStatement":
-			node.expression.statementNum = node.statementNum;
-			return checkExpression(judgement, node.expression);
-		case "VariableDeclaration":
-			// TODO: Check if this is the best way of handling this: VariableDeclaration <: Declaration <: Statement
-			return checkVariableDeclaration(judgement, node);
-		default:
-			if (judgement != null)
-				throw new Error("Unhandled statement type " + node.type);
-	}
-}
-
-function checkProgram(node) {
+UglifyJS.AST_Toplevel.prototype.check = function() {
 
 	// we will only store judgements for the typed sections of program
 	var judgements = [];
 
 	// I only consider this level when looking for annotations (is this limiting?)
-	var directives = getAnnotations(node.leadingComments);
+	var directives;
 	var currentlyTyping = false;
 
-	for (var i = 0; i < node.body.length; i++) {
+	for (var i = 0; i < this.body.length; i++) {
 		// get any new directives for this statement
-		directives = directives.concat(getAnnotations(node.body[i].leadingComments));
+		directives = getAnnotations(this.body[i].start.comments_before);
 
 		// determine if we should be type-checking the next chunk or not
 		for (var j = 0; j < directives.length; j++) {
@@ -210,7 +166,7 @@ function checkProgram(node) {
 				currentlyTyping = true;
 				var directive = directives[j].substr("start".length);
 				// initialise a new judgement with imported variables
-				judgements.push(Classes.Judgement.InitFromDirective(directive));
+				judgements.push(Classes.Judgement.InitFromDirective(directive, this.body[i]));
 
 			} else if (directives[j].search("end") === 0) {
 
@@ -230,34 +186,15 @@ function checkProgram(node) {
 
 		} else {
 			var judgement = judgements[judgements.length - 1];
-			judgement.nodes.push(node.body[i]);
-
-			// TODO: This is broken, see jstyper.js line 50
-			node.body[i].statementNum = i;
+			judgement.nodes.push(this.body[i]);
 
 			// carry the new judgement into the next statement
-			var newJudgement = checkStatement(judgement, node.body[i]);
+			var newJudgement = this.body[i].check(judgement);
 			judgement.gamma = newJudgement.gamma;
 			judgement.X = judgement.X.concat(newJudgement.X);
 			judgement.C = judgement.C.concat(newJudgement.C);
 		}
-
-		// reset directives for the next statement
-		directives = getAnnotations(node.body[i].trailingComments);
 	}
 
 	return judgements;
-}
-
-module.exports = {
-	checkProgram: checkProgram,
-	checkEmptyStatement: checkEmptyStatement,
-	checkStatement: checkStatement,
-	checkVariableDeclarator: checkVariableDeclarator,
-	checkVariableDeclaration: checkVariableDeclaration,
-	
-	checkExpression: checkExpression,
-	checkIdentifier: checkIdentifier,
-	checkAssignmentExpression: checkAssignmentExpression,
-	checkLiteral: checkLiteral,
 };
