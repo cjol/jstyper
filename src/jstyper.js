@@ -29,7 +29,7 @@ function solveConstraints(constraints) {
 	
 	// base case
 	if (constraints.length < 1)
-		return [];
+		return {substitutions:[], checks:[]};
 
 	var left = constraints[0].left;
 	var right = constraints[0].right;
@@ -48,11 +48,9 @@ function solveConstraints(constraints) {
 
 	// if the right (read) type is dynamic, we allow but must typecheck
 	if (right.isDynamic) {
-		// TODO: this only works if the left type is concrete 
-		var typeCheck = constraints[0].rightNode.getTypeCheck(left);
-		if (typeCheck)
-			constraints[0].rightNode.parent().insertBefore(typeCheck, constraints[0].rightNode);
-		return solveConstraints(remainder);
+		var solution1 = solveConstraints(remainder);
+		solution1.checks.push({node:constraints[0].rightNode, type:left});
+		return solution1;
 	}
 
 
@@ -74,7 +72,9 @@ function solveConstraints(constraints) {
 
 	// it's quite important that substitutions are applied in the right order
 	// here first item should be applied first
-	return [sub].concat(solveConstraints(remainder));
+	var solution = solveConstraints(remainder);
+	solution.substitutions = [sub].concat(solution.substitutions);
+	return solution;
 }
 
 module.exports = function(src) {
@@ -95,28 +95,46 @@ module.exports = function(src) {
 	for (var i = 0; i< chunks.length; i++) {
 
 		// solve the generated constraints, or throw an error if this isn't possible
-		var substitutions = solveConstraints(chunks[i].C);
+		var solution = solveConstraints(chunks[i].C);
 
 		// apply the solution substitutions to the type environment
-		for (var j=0; j<substitutions.length; j++) {
-			chunks[i].gamma.applySubstitution(substitutions[j]);
+		for (var j=0; j<solution.substitutions.length; j++) {
+			chunks[i].gamma.applySubstitution(solution.substitutions[j]);
+			for (var k = 0; k<solution.checks.length; k++) {
+				solution.checks[k].type.applySubstitution(solution.substitutions[j]);
+			}
 		}
 
+		for (var l = 0; l<solution.checks.length; l++) {
+			// insert the checks as appropriate
+			// unfortunately we're replacing nodes as we go, so we'll need to substitute nodes as we go along
+			var typeCheck = solution.checks[l].node.getTypeCheck( solution.checks[l].type );
+			if (typeCheck) {
+				var subs = solution.checks[l].node.parent().insertBefore(typeCheck, solution.checks[l].node);
+				for (var m = 0; m<subs.length; m++) {
+					for (var n=l; n<solution.checks.length; n++) {
+						if (solution.checks[n].node === subs[m].from) {
+							solution.checks[n].node = subs[m].to;
+						}
+					}
+				}
+			}
+		}
 		// Prepare a helpful message for each typed chunk
 		var typeComment = " jstyper types: ";
 		var sep = "";
-		for (var k = 0; k < chunks[i].gamma.length; k++) {
-			var location = (chunks[i].gamma[k].node)?
+		for (var o = 0; o < chunks[i].gamma.length; o++) {
+			var location = (chunks[i].gamma[o].node)?
 				"l%s c%s".format(
-					chunks[i].gamma[k].node.start.line,
-					chunks[i].gamma[k].node.start.col)
+					chunks[i].gamma[o].node.start.line,
+					chunks[i].gamma[o].node.start.col)
 				:"imported";
 
 			typeComment += sep;
 			typeComment += "%s (%s): %s".format(
-				chunks[i].gamma[k].name,
+				chunks[i].gamma[o].name,
 				location,
-				chunks[i].gamma[k].type.type);
+				chunks[i].gamma[o].type.type);
 			sep = "; ";
 		}
 

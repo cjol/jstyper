@@ -26,6 +26,10 @@
 
 var UglifyJS = require("uglify-js2");
 
+function parent(par) {
+	return function() { return par; };
+}
+
 UglifyJS.AST_Node.prototype.insertBefore = function() {
 	throw new Error("insertBefore not implemented yet...");			
 };
@@ -40,10 +44,11 @@ UglifyJS.AST_Assign.prototype.insertBefore = function(newNode, target, del) {
 	if (target === this.left) {
 		// wrap the value with an IIFE which runs the new node before returning the expression value
 		this.right = getIIFE(newNode, this.left);
-		this.right.parent = this.left.parent;
+		this.right.parent = parent(this);
+		return [];
 	} else if (target === this.right) {
 		// RHS is executed first, so can safely execute before the whole assignment
-		this.parent().insertBefore(newNode, this);
+		return this.parent().insertBefore(newNode, this);
 	} else {
 		throw new Error("target is not a subnode");
 	}
@@ -51,7 +56,7 @@ UglifyJS.AST_Assign.prototype.insertBefore = function(newNode, target, del) {
 
 UglifyJS.AST_SimpleStatement.prototype.insertBefore = function(newNode, target, del) {
 	if (target === this.body) {
-		this.parent().insertBefore(newNode, this, del);
+		return this.parent().insertBefore(newNode, this, del);
 	} else {
 		throw new Error("target is not a subnode");
 	}
@@ -65,9 +70,10 @@ UglifyJS.AST_VarDef.prototype.insertBefore = function(newNode, target, del) {
 	if (target === this.name) {
 		// wrap the value with an IIFE which check's the identifier's type before returning
 		this.value = getIIFE(newNode, this.value);
-		this.value.parent = this.name.parent;
+		this.value.parent = parent(this); 
+		return [];
 	} else if (target === this.value) {
-		this.parent().insertBefore(newNode, this);
+		return this.parent().insertBefore(newNode, this);
 	} else {
 		throw new Error("target is not a subnode");
 	}
@@ -80,29 +86,54 @@ UglifyJS.AST_Var.prototype.insertBefore = function(newStatement, target, del) {
 	var pos = this.definitions.indexOf(target);
 	if (pos < 0) throw new Error("target is not a subnode");
 	
+	var preVarDefs = this.definitions.slice(0, pos);
 	var preVar = new UglifyJS.AST_Var({
-		definitions: this.definitions.slice(0, pos)
+		definitions: preVarDefs
 	});
-
-	if (del) pos += 1; // skip the VarDef we want to delete
-	
+	var deleted = [];
+	if (del) {
+		deleted.push({
+			from:this.definitions[pos],
+			to: newStatement
+		});
+		pos += 1; // skip the VarDef we want to delete
+	}
+	var postVarDefs = this.definitions.slice(pos);
 	var postVar = new UglifyJS.AST_Var({
-		definitions: this.definitions.slice(pos)
+		definitions: postVarDefs
 	});
 
-	newStatement.parent = target.parent;
-	preVar.parent = target.parent;
-	postVar.parent = target.parent;
+	// reallocate parents
+	preVar.parent = parent(this);
+	postVar.parent = parent(this);
+	for (var i =0; i<preVarDefs.length; i++) {
+		preVarDefs[i].parent = parent(preVar);
+	}
+	for (var j =0; j<postVarDefs.length; j++) {
+		postVarDefs[j].parent = parent(postVar);
+	}
 	
-	this.parent().insertBefore(preVar, this);
-	this.parent().insertBefore(newStatement, this);
-	this.parent().insertBefore(postVar, this, true);
+	if (preVar.definitions.length > 0)
+		deleted = deleted.concat(this.parent().insertBefore(preVar, this));
+
+	deleted = deleted.concat(this.parent().insertBefore(newStatement, this));
+
+	if (postVar.definitions.length > 0)
+		deleted = deleted.concat(this.parent().insertBefore(postVar, this, true));
+
+	return deleted;
 };
 
 UglifyJS.AST_Toplevel.prototype.insertBefore = function(newStatement, target, del) {
 	var pos = this.body.indexOf(target);
 	if (pos < 0) throw new Error("target is not a subnode");
-	this.body.splice(pos, del?1:0, newStatement);
+	var deleted = this.body.splice(pos, del?1:0, newStatement);
+	newStatement.parent = parent(this);
+	if (del) {
+		return [{from: deleted[0], to: newStatement}];
+	} else {
+		return [];
+	}
 };
 
 

@@ -1,4 +1,7 @@
+var z;
 // jstyper start import z
 var x = true;
-var y = z = 5, x=z;
+var y = z = 'hello', p = x = z;
+p = 6;
 // jstyper end
+
