@@ -44,6 +44,23 @@ UglifyJS.AST_Assign.prototype.getTypeChecks = function(type) {
 	return this.right.getTypeChecks(type);	
 };
 
+// Might want to split this into pre/postfix?
+UglifyJS.AST_Unary.prototype.getTypeChecks = function(type) {
+	switch (this.operator) {
+		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Expressions_and_Operators
+		// arithmetic (should be number)
+		case ("++"):
+		case ("--"):
+		case ("-"):
+		// boolean operators (should be boolean)
+		case ("!"):
+			// only one expression to type check
+			return this.expression.getTypeChecks(type);
+		default:
+			throw new Error("Not yet implemented!");
+	}
+};
+
 UglifyJS.AST_Binary.prototype.getTypeChecks = function(type) {
 	switch (this.operator) {
 		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Expressions_and_Operators

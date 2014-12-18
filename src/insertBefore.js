@@ -22,6 +22,13 @@
 		will also be deleted from the parent. For example, in the situation above,
 		we would need to delete the original node 'v' from the body and replace it
 		by the two separate halves.
+
+	Note, I'm suddenly not sure if this is required, or if it would be easier
+	just to wrap everything in an IIFE without worrying about what kind of
+	node it is. In some cases it wouldn't be as tidy, but I'm not sure safety
+	is affected either way. Pro of IIFE-everywhere is less compiler logic. Pro
+	of smart insertion is that the compiled JS is potentially faster.
+
 */
 
 var UglifyJS = require("uglify-js2");
@@ -37,6 +44,24 @@ UglifyJS.AST_Node.prototype.insertBefore = function() {
 UglifyJS.AST_Constant.prototype.insertBefore = noSubchildren;
 
 UglifyJS.AST_SymbolRef.prototype.insertBefore = noSubchildren;
+
+// Might want to split this into pre/postfix?
+UglifyJS.AST_Unary.prototype.insertBefore = function(newNode, target, del) {
+	if (del) throw new Error("Can't delete subnode here");
+	switch (this.operator) {
+		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Expressions_and_Operators
+		// arithmetic (should be number)
+		case ("++"):
+		case ("--"):
+		case ("-"):
+		// boolean operators (should be boolean)
+		case ("!"):
+			// the single expression will be next to evaluate so just insert before this statement
+			return this.parent().insertBefore(newNode, this);
+		default:
+			throw new Error("Unhandled unary operator!");
+	}
+};
 
 UglifyJS.AST_Binary.prototype.insertBefore = function(newNode, target, del) {
 	if (del) throw new Error("Can't delete subnode here");

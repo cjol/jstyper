@@ -8,6 +8,7 @@ var Classes = require("./classes.js");
 var UglifyJS = require("uglify-js2");
 
 UglifyJS.AST_Node.prototype.check = function() {
+	var f = this instanceof UglifyJS.AST_Unary;
 	throw new Error("Unhandled node type");
 };
 UglifyJS.AST_Node.prototype.parent = function() {
@@ -99,10 +100,10 @@ UglifyJS.AST_Assign.prototype.check = function(judgement) {
 			this.left.parent = parent(this);
 
 			var j2 = this.right.check(judgement);
-			var j1 = this.left.check(judgement);
+			var j1 = this.left.check(j2);
 			var X = j1.X.concat(j2.X);
 			var C = j1.C.concat(j2.C.concat([new Classes.Constraint(j1.T, this.left, j2.T, this.right)]));
-			var j = new Classes.Judgement(j2.T, judgement.gamma, X, C);
+			var j = new Classes.Judgement(j2.T, j1.gamma, X, C);
 			j.nodes.push(this);
 
 			return j;
@@ -111,13 +112,42 @@ UglifyJS.AST_Assign.prototype.check = function(judgement) {
 	}
 };
 
+UglifyJS.AST_Unary.prototype.check = function(judgement) {
+
+	this.expression.parent = parent(this);
+	var j1 = this.expression.check(judgement);
+	var C, returnType;
+	
+	switch (this.operator) {
+		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Expressions_and_Operators
+		// arithmetic (should be number)
+		case ("++"):
+		case ("--"):
+		case ("-"):
+			C = j1.C.concat([new Classes.Constraint(numType, null, j1.T, this.expression)]);
+			returnType = numType;
+			break;
+		// boolean operators (should be boolean)
+		case ("!"):
+			C = j1.C.concat([new Classes.Constraint(boolType, null, j1.T, this.expression)]);
+			returnType = boolType;
+			break;
+		default:
+			throw new Error("Unhandled unary operator!");
+	}
+	var j = new Classes.Judgement(returnType, j1.gamma, j1.X, C);
+	j.nodes.push(this);
+
+	return j;
+};
+
 UglifyJS.AST_Binary.prototype.check = function(judgement) {
 	this.left.parent = parent(this);
 	this.right.parent = parent(this);
 
 	// NB Assuming left-to-right evaluation
 	var j1 = this.left.check(judgement);
-	var j2 = this.right.check(judgement);
+	var j2 = this.right.check(j1);
 	var X = j1.X.concat(j2.X);
 	var C, returnType;
 
@@ -168,7 +198,7 @@ UglifyJS.AST_Binary.prototype.check = function(judgement) {
 			throw new Error("Unhandled binary operator " + this.operator);
 	}
 
-	var j = new Classes.Judgement(returnType, judgement.gamma, X, C);
+	var j = new Classes.Judgement(returnType, j2.gamma, X, C);
 	j.nodes.push(this);
 
 	return j;
@@ -198,12 +228,11 @@ UglifyJS.AST_VarDef.prototype.check = function(judgement) {
 	this.name.parent = parent(this);
 
 	if (this.value) {
-		// TODO: the type system defines this in terms of separate var + assignment, which doesn't mirror the AST format.
 		this.value.parent = parent(this);
-		var j1 = this.value.check(judgement);
-		if (j1 !== null) {
-			X = j1.X.concat([T]);
-			C = j1.C.concat([new Classes.Constraint(T, this.name, j1.T, this.value)]);
+		judgement = this.value.check(judgement);
+		if (judgement !== null) {
+			X = judgement.X.concat([T]);
+			C = judgement.C.concat([new Classes.Constraint(T, this.name, judgement.T, this.value)]);
 		}
 
 	}
@@ -223,13 +252,12 @@ UglifyJS.AST_Var.prototype.check = function(judgement) {
 	for (var i=0; i<this.definitions.length; i++) {
 
 		this.definitions[i].parent = parent(this);
-		var j1 = this.definitions[i].check(judgement);
+		judgement = this.definitions[i].check(judgement);
 
 		// Pass on judgement to subsequent declarators
 		// TODO: assert X1 n X2 is empty
-		X = X.concat(j1.X);
-		C = C.concat(j1.C);
-		judgement.gamma = j1.gamma;
+		X = X.concat(judgement.X);
+		C = C.concat(judgement.C);
 	}
 
 	var j = new Classes.Judgement(null, judgement.gamma, X, C);
