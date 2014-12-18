@@ -1,6 +1,3 @@
-/*jshint unused:true, bitwise:true, eqeqeq:true, undef:true, latedef:true, eqnull:true */
-/* global module, require */
-
 /* 	This module generates judgements according to the logic set out in the
 	formal specification. Ideally it should be as close to the induction
 	rules as possible.
@@ -48,21 +45,33 @@ function getAnnotations(comments) {
 /***********************************************************************************
  * Checking typability, and also creating type judgements
  ***********************************************************************************/
+
+var numType = new Classes.Type('number', {
+	concrete: true
+});
+var boolType = new Classes.Type('boolean', {
+	concrete: true
+});
+var stringType = new Classes.Type('string', {
+	concrete: true
+});
+var undefinedType = new Classes.Type('undefined', {
+	concrete: true
+});
+var nullType = new Classes.Type('null', {
+	concrete: true
+});
 UglifyJS.AST_Constant.prototype.check = function(judgement) {
 	if (this.constType === undefined) throw new Error("Unhandled constant type " + this);
-	var T = new Classes.Type(this.constType, {
-		concrete: true
-	});
-	var j = new Classes.Judgement(T, judgement.gamma, [], []);
+	var j = new Classes.Judgement(this.constType, judgement.gamma, [], []);
 	j.nodes.push(this);
 	return j;
 };
-
-UglifyJS.AST_String.prototype.constType = "string";
-UglifyJS.AST_Number.prototype.constType = "number";
-UglifyJS.AST_Boolean.prototype.constType = "boolean";
-UglifyJS.AST_Undefined.prototype.constType = "undefined";
-UglifyJS.AST_Null.prototype.constType = "null";
+UglifyJS.AST_String.prototype.constType = stringType;
+UglifyJS.AST_Number.prototype.constType = numType;
+UglifyJS.AST_Boolean.prototype.constType = boolType;
+UglifyJS.AST_Undefined.prototype.constType = undefinedType;
+UglifyJS.AST_Null.prototype.constType = nullType;
 
 UglifyJS.AST_SymbolRef.prototype.check = function(judgement) {
 	var T, X = [],
@@ -103,68 +112,66 @@ UglifyJS.AST_Assign.prototype.check = function(judgement) {
 };
 
 UglifyJS.AST_Binary.prototype.check = function(judgement) {
-	var j1, j2, X, C, j;
+	this.left.parent = parent(this);
+	this.right.parent = parent(this);
+
+	// NB Assuming left-to-right evaluation
+	var j1 = this.left.check(judgement);
+	var j2 = this.right.check(judgement);
+	var X = j1.X.concat(j2.X);
+	var C, returnType;
+
+	// NB both expressions are being READ so they must be second parameter to constraint 
+	// (this is important in case they're dynamic)
 	switch(this.operator) {
 		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Expressions_and_Operators
 		// arithmetic (should both be number)
-		case ("+"):
+		case ("+"): // TODO?: allow string
 		case ("-"):
 		case ("*"):
 		case ("/"):
 		case ("%"):
+			C = j1.C.concat(j2.C.concat([new Classes.Constraint(numType, null, j1.T, this.left), 
+											new Classes.Constraint(numType, null, j2.T, this.right)]));
+			returnType = numType;
+			break;
 		// numeric comparison (should both be number)
 		case ("<"):
 		case (">"):
 		case ("<="):
 		case (">="):
-			this.left.parent = parent(this);
-			this.right.parent = parent(this);
-
-			// NB Left-to-right evaluation
-			j1 = this.left.check(judgement);
-			j2 = this.right.check(judgement);
-			X = j1.X.concat(j2.X);
-
-			var numType = new Classes.Type('number', {
-				concrete: true
-			});
-
-			// For now, say we can only use numbers as parameters for these.
-			// Eventually it might be nice to allow + between two strings too
-			// NB both expressions are being READ so they're the second parameter to constraint (this is important in case they're dynamic)
 			C = j1.C.concat(j2.C.concat([new Classes.Constraint(numType, null, j1.T, this.left), 
 											new Classes.Constraint(numType, null, j2.T, this.right)]));
-			j = new Classes.Judgement(numType, judgement.gamma, X, C);
-			j.nodes.push(this);
-
-			return j;
+			returnType = boolType;
+			break;
+	
+		// boolean operators (should both be boolean)
+		case ("||"):
+		case("&&"):
+			C = j1.C.concat(j2.C.concat([new Classes.Constraint(boolType, null, j1.T, this.left), 
+											new Classes.Constraint(boolType, null, j2.T, this.right)]));
+			returnType = boolType;
+			break;
+	
 		// misc comparison (should both be equal of any type)
 		case ("=="):
 		case ("==="):
 		case ("!="):
 		case ("!=="):
-			this.left.parent = parent(this);
-			this.right.parent = parent(this);
-
-			// NB Left-to-right evaluation
-			j1 = this.left.check(judgement);
-			j2 = this.right.check(judgement);
-			X = j1.X.concat(j2.X);
-
-			// NB both expressions are being READ so they need to be the second parameter to new Constraint
 			// TODO: is this a hacky solution? Create two symmetrical constraints to assert equality
 			C = j1.C.concat(j2.C.concat([new Classes.Constraint(j2.T, this.right, j1.T, this.left), 
 											new Classes.Constraint(j1.T, this.left, j2.T, this.right)]));
-			var boolType = new Classes.Type('boolean', {
-				concrete:true
-			});
-			j = new Classes.Judgement(boolType, judgement.gamma, X, C);
-			j.nodes.push(this);
+			returnType = boolType;
+			break;
 
-			return j;
 		default:
 			throw new Error("Unhandled binary operator " + this.operator);
 	}
+
+	var j = new Classes.Judgement(returnType, judgement.gamma, X, C);
+	j.nodes.push(this);
+
+	return j;
 };
 
 /***********************************************************************************

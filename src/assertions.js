@@ -58,6 +58,9 @@ UglifyJS.AST_Binary.prototype.getTypeChecks = function(type) {
 		case (">"):
 		case ("<="):
 		case (">="):
+		// boolean operators (should both be boolean)
+		case ("||"):
+		case("&&"):
 		// misc comparison (should both be equal of any type)
 		case ("=="):
 		case ("==="):
