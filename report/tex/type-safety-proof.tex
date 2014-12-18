@@ -1,0 +1,69 @@
+
+% type-safety-proof.tex - Proof of progress and proof of preservation for my JavaScript subset
+
+\documentclass[a4paper, english]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+
+	\section{Type Safety}\label{type-safety}
+
+	Type-safety states that a well-typed program doesn't `get stuck' --- i.e.\ there will always be a possible reduction from an statement which is well-typed. We can prove this by induction, using the induction hypothesis 
+	\begin{align*}
+	$\Phi(\Gamma, m, X, C, \Gamma') &=   \\
+	\forall s . \Gamma \vdash m \, |_X\,  C, \, \Gamma' &\wedge dom (\Gamma) \subseteq dom(s) \\ 
+	\implies &(\textrm{m is a value})  \vee \,\, \exists \, m',s'. \langle m,s\rangle \rightarrow \langle m',s' \rangle \\
+	$
+	\end{align*}
+
+	We can prove this by induction on a derivation of $\Gamma \vdash m \, |_X\,  C, \, \Gamma'$. We consider each typing rule as a possible last step for the derivation.
+\\\\
+	\textit{Case} \textsc{DecTypable}:\\
+	$m$ must be of the form \textit{\textbf{var} id}, and from transition rule \textsc{Var1}, we have 
+	$\exists \, m',s'. \langle m,s\rangle \rightarrow \langle m',s' \rangle$
+	with $m'=\epsilon$ and $s'=s$ as witness. Hence we have 
+	$\Phi(\Gamma, m, X, C, \Gamma') $.
+\\ \\
+	\textit{Case} \textsc{MultiDecTypable}:\\
+	$m$ must be of the form $\textrm{\textbf{var} }vd, vd'$, and from transition rule \textsc{Var4}, we have 
+	$\exists \, m',s'. \langle m,s\rangle \rightarrow \langle m',s' \rangle$
+	with $m'= \textrm{\textbf{var} }vd\textrm{; \textbf{var} }vd'$ and $s'=s$ as witness. Hence we have 
+	$\Phi(\Gamma, m, X, C, \Gamma') $.
+\\ \\
+	\textit{Case} \textsc{DefTypable}:\\
+	$m$ must be of the form $\textrm{\textbf{var} }vd = e$, and a previous step of the derivation has shown 
+	$\Gamma \vdash e : T_2 \, |_X_2\,  C_2, \, \Gamma_2$.
+	% NB strictly speaking we're skipping a step between typing the expression and typing the statement
+	From the induction hypothesis we have that $e$ is a value, or 
+	$\exists \, e',s_2'. \langle e,s_2\rangle \rightarrow \langle e',s_2' \rangle$. \\
+	\textit{Sub-case $e$ is a value}: \\
+	Using transition rule \textsc{Var3}, we have 
+	$\exists \, m',s'. \langle m,s\rangle \rightarrow \langle m',s' \rangle$
+	with $m'=\epsilon$ and $s'=put(s,id,e)$ as witness. Hence we have 
+	$\Phi(\Gamma, m, X, C, \Gamma') $. \\
+	\textit{Sub-case transition from $e$}: \\
+	Using transition rule \textsc{Var2}, we have 
+	$\exists \, m',s'. \langle m,s\rangle \rightarrow \langle m',s' \rangle$
+	with $m'=\textrm{\textbf{var} }x=e'$ and $s'=s_2'$ as witness. Hence we have 
+	$\Phi(\Gamma, m, X, C, \Gamma') $.
+\\ \\
+	\textit{Case} \textsc{SeqTypable}:\\
+	$m$ must be of the form \textit{$m_1;m_2$}, and a previous step of the derivation has shown 
+	$\Gamma \vdash m_1 \, |_X_1\,  C_1, \, \Gamma_1$.
+	From the induction hypothesis we have that $m$ is a value, or 
+	$\exists \, m_1',s_1'. \langle m_1,s_1\rangle \rightarrow \langle m_1',s_1' \rangle$. \\
+	\textit{Sub-case m is a value}: \\
+	Using transition rule \textsc{Seq1}, we have 
+	$\exists \, m',s'. \langle m,s\rangle \rightarrow \langle m',s' \rangle$
+	with $m'=m_2$ and $s'=s$ as witness. Hence we have 
+	$\Phi(\Gamma, m, X, C, \Gamma') $. \\
+	\textit{Sub-case transition from $m$}: \\
+	Using transition rule \textsc{Seq2}, we have 
+	$\exists \, m',s'. \langle m,s\rangle \rightarrow \langle m',s' \rangle$
+	with $m'=m_1';m_2$ and $s'=s_1'$ as witness. Hence we have 
+	$\Phi(\Gamma, m, X, C, \Gamma') $.
+\\ \\
+	\textit{Case} \textsc{SeqTypable}:\\
+
+
+\end{document}

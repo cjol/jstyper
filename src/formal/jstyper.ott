@@ -121,34 +121,34 @@ defn
 {{ tex \langle [[m]], [[s]] \rangle [[->]] \langle [[m']], [[s']] \rangle }}
 by
 
-	-------------------                        		            ::   seq1
-	<v; e, s> -> <e, s>
+	-------------------                        		            ::   Seq1
+	<v; m, s> -> <m, s>
 
-	<e1, s> -> <e1', s'>
-	----------------------------              		            ::   seq2
-	<e1; e2, s> -> <e1'; e2, s'>
+	<m1, s> -> <m1', s'>
+	----------------------------              		            ::   Seq2
+	<m1; m2, s> -> <m1'; m2, s'>
 
 	<e, s> -> <e', s'>
-	----------------------------                 		        ::   assign1
+	----------------------------                 		        ::   Assign1
 	<id = e, s> -> <id = e', s'>
 
-	---------------------------------            		        ::   assign2
+	---------------------------------            		        ::   Assign2
 	<id = v, s> -> <v, put(s, id, v)>
 
-	--------------------------                  		        ::   deref
+	--------------------------                  		        ::   Deref
 	<id, s> -> <get(s, id), s>
 
-	-----------------------------                		        ::   var1
+	-----------------------------                		        ::   Var1
 	<var id, s> -> <eps, s>
 
 	<e, s> -> <e', s'>
-	-----------------------------------               		    ::   var2
+	-----------------------------------               		    ::   Var2
 	<var id = e, s> -> <var id = e', s>
 
-	-------------------------------               		        ::   var3
+	-------------------------------               		        ::   Var3
 	<var id = v, s> -> <eps, s>
 
-	----------------------------------------- 			        ::   var4
+	----------------------------------------- 			        ::   Var4
 	<var vd, vd', s> -> <var vd; var vd', s >
 
 defn
@@ -171,10 +171,10 @@ G |- e : T | X C , G' :: ::expType::''
 	------------------------------------                		:: v_undefined
 	G |- undefined : undefined |{} {}, G
 
-	--------------------------                          		:: v_null
+	--------------------------                          		:: v_ull
 	G |- null : null |{} {}, G
 
-	------------------------------                     		    :: SkipTypable
+	------------------------------                     		    :: V_Skip
 	G |- eps : undefined |{} {}, G
 	
 	G(id) = T
@@ -214,6 +214,9 @@ G |- m | X C , G' :: :: typable::''
 	X1 n X2 = {}
 	---------------------------------                		    :: SeqTypable
 	G |- m1 ; m2 |X1 u X2 C1 u C2, G2
+	
+	% NB DefTypable is dubious because we type it with assignment where the AST treats it as separate.
+	% Fixing it would involve making 'var id' an expression though, which would be worse.
 
 	G |- var id | X1 C, G1
 	G1 |- id = e : T |X2 C, G2
