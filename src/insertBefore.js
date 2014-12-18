@@ -38,6 +38,24 @@ UglifyJS.AST_Constant.prototype.insertBefore = noSubchildren;
 
 UglifyJS.AST_SymbolRef.prototype.insertBefore = noSubchildren;
 
+UglifyJS.AST_Binary.prototype.insertBefore = function(newNode, target, del) {
+	if (del) throw new Error("Can't delete subnode here");
+
+	// assuming left-to-right evaluation
+
+	if (target === this.left) {
+		// left is evaluated first, so we can insert before this whole expression
+		return this.parent().insertBefore(newNode, this);
+	} else if (target === this.right) {
+		// wrap the RHS in an IIFE which runs newNode before returning the value of RHS
+		this.right = getIIFE(newNode, this.right);
+		this.right.parent = parent(this);
+		return [];
+	} else {
+		throw new Error("target is not a subnode");
+	}
+};
+
 UglifyJS.AST_Assign.prototype.insertBefore = function(newNode, target, del) {
 	if (del) throw new Error("Can't delete subnode here");
 

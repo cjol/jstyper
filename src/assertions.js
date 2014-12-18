@@ -4,10 +4,10 @@
 var UglifyJS = require("uglify-js2");
 
 // TODO: Assign parents to everything in here
-UglifyJS.AST_SymbolRef.prototype.getTypeCheck = function(type) {
+UglifyJS.AST_SymbolRef.prototype.getTypeChecks = function(type) {
 	// TODO: Could probably generate nothing...
-	if (!type.isConcrete) return;
-	return new UglifyJS.AST_If({
+	if (!type.isConcrete) return [];
+	return [new UglifyJS.AST_If({
 		condition: new UglifyJS.AST_Binary({
 			left: new UglifyJS.AST_UnaryPrefix({
 				operator: 'typeof',
@@ -36,56 +36,41 @@ UglifyJS.AST_SymbolRef.prototype.getTypeCheck = function(type) {
 				})
 			]
 		})
-	});
+	})];
 };
 
-function assertIdentifier(expression, type) {
-	if (!type.isConcrete) return [];
-	return [{
-		"type": "IfStatement",
-		"test": {
-			"type": "BinaryExpression",
-			"operator": "!==",
-			"left": {
-				"type": "UnaryExpression",
-				"operator": "typeof",
-				"argument": {
-					"type": "Identifier",
-					"name": expression.name
-				},
-				"prefix": true
-			},
-			"right": {
-				"type": "Literal",
-				"value": type.type
-			}
-		},
-		"consequent": {
-			"type": "BlockStatement",
-			"body": [{
-				"type": "ThrowStatement",
-				"argument": {
-					"type": "NewExpression",
-					"callee": {
-						"type": "Identifier",
-						"name": "TypeError"
-					},
-					"arguments": [{
-						"type": "Literal",
-						"value": expression.name + " must be " + type.type + " at this point."
-					}]
-				}
-			}]
-		},
-		"alternate": null
-	}];
-}
-
-UglifyJS.AST_Assign.prototype.getTypeCheck = function(type) {
+UglifyJS.AST_Assign.prototype.getTypeChecks = function(type) {
 	// to ascertain the value of an assignment, just check the RHS type
-	return this.right.getTypeCheck(type);	
+	return this.right.getTypeChecks(type);	
 };
 
-UglifyJS.AST_Node.prototype.getTypeCheck = function() {
+UglifyJS.AST_Binary.prototype.getTypeChecks = function(type) {
+	switch (this.operator) {
+		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Expressions_and_Operators
+		// arithmetic (should both be number)
+		case ("+"):
+		case ("-"):
+		case ("*"):
+		case ("/"):
+		case ("%"):
+		// numeric comparison (should both be number)
+		case ("<"):
+		case (">"):
+		case ("<="):
+		case (">="):
+		// misc comparison (should both be equal of any type)
+		case ("=="):
+		case ("==="):
+		case ("!="):
+		case ("!=="):
+			// for these operators, we need to assert both left and right 
+			// have the desired type
+			return this.right.getTypeChecks(type).concat(this.left.getTypeChecks(type));
+		default:
+			throw new Error("Not yet implemented!");
+	}
+};
+
+UglifyJS.AST_Node.prototype.getTypeChecks = function() {
 	throw new Error("Unhandled Expression type ");
 };

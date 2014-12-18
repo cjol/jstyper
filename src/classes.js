@@ -22,7 +22,9 @@ Type.prototype.applySubstitution = function(sub) {
 		this.isConcrete = sub.to.isConcrete;
 	}
 };
-
+Type.prototype.equals = function(type) {
+	return (this.type === type.type);
+};
 
 
 

@@ -36,7 +36,7 @@ function solveConstraints(constraints) {
 	var remainder = constraints.slice(1);
 
 	// types are equal => constraint satisfied
-	if (left.type === right.type)
+	if (left.equals(right))
 		return solveConstraints(remainder);
 
 	var sub;
@@ -108,15 +108,18 @@ module.exports = function(src) {
 		for (var l = 0; l<solution.checks.length; l++) {
 			// insert the checks as appropriate
 			// unfortunately we're replacing nodes as we go, so we'll need to substitute nodes as we go along
-			var typeCheck = solution.checks[l].node.getTypeCheck( solution.checks[l].type );
-			if (typeCheck) {
-				var subs = solution.checks[l].node.parent().insertBefore(typeCheck, solution.checks[l].node);
-				for (var m = 0; m<subs.length; m++) {
-					for (var n=l; n<solution.checks.length; n++) {
-						if (solution.checks[n].node === subs[m].from) {
-							solution.checks[n].node = subs[m].to;
+			var typeChecks = solution.checks[l].node.getTypeChecks( solution.checks[l].type );
+			if (typeChecks) {
+				for (var p = 0; p < typeChecks.length; p++) {
+					var subs = solution.checks[l].node.parent().insertBefore(typeChecks[p], solution.checks[l].node);
+					for (var m = 0; m<subs.length; m++) {
+						for (var n=l; n<solution.checks.length; n++) {
+							if (solution.checks[n].node === subs[m].from) {
+								solution.checks[n].node = subs[m].to;
+							}
 						}
 					}
+					
 				}
 			}
 		}

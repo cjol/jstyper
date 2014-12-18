@@ -102,6 +102,71 @@ UglifyJS.AST_Assign.prototype.check = function(judgement) {
 	}
 };
 
+UglifyJS.AST_Binary.prototype.check = function(judgement) {
+	var j1, j2, X, C, j;
+	switch(this.operator) {
+		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Expressions_and_Operators
+		// arithmetic (should both be number)
+		case ("+"):
+		case ("-"):
+		case ("*"):
+		case ("/"):
+		case ("%"):
+		// numeric comparison (should both be number)
+		case ("<"):
+		case (">"):
+		case ("<="):
+		case (">="):
+			this.left.parent = parent(this);
+			this.right.parent = parent(this);
+
+			// NB Left-to-right evaluation
+			j1 = this.left.check(judgement);
+			j2 = this.right.check(judgement);
+			X = j1.X.concat(j2.X);
+
+			var numType = new Classes.Type('number', {
+				concrete: true
+			});
+
+			// For now, say we can only use numbers as parameters for these.
+			// Eventually it might be nice to allow + between two strings too
+			// NB both expressions are being READ so they're the second parameter to constraint (this is important in case they're dynamic)
+			C = j1.C.concat(j2.C.concat([new Classes.Constraint(numType, null, j1.T, this.left), 
+											new Classes.Constraint(numType, null, j2.T, this.right)]));
+			j = new Classes.Judgement(numType, judgement.gamma, X, C);
+			j.nodes.push(this);
+
+			return j;
+		// misc comparison (should both be equal of any type)
+		case ("=="):
+		case ("==="):
+		case ("!="):
+		case ("!=="):
+			this.left.parent = parent(this);
+			this.right.parent = parent(this);
+
+			// NB Left-to-right evaluation
+			j1 = this.left.check(judgement);
+			j2 = this.right.check(judgement);
+			X = j1.X.concat(j2.X);
+
+			// NB both expressions are being READ so they need to be the second parameter to new Constraint
+			// TODO: is this a hacky solution? Create two symmetrical constraints to assert equality
+			C = j1.C.concat(j2.C.concat([new Classes.Constraint(j2.T, this.right, j1.T, this.left), 
+											new Classes.Constraint(j1.T, this.left, j2.T, this.right)]));
+			var boolType = new Classes.Type('boolean', {
+				concrete:true
+			});
+			j = new Classes.Judgement(boolType, judgement.gamma, X, C);
+			j.nodes.push(this);
+
+			return j;
+		default:
+			throw new Error("Unhandled binary operator " + this.operator);
+	}
+};
+
 /***********************************************************************************
  * Creating typability judgements 
  ***********************************************************************************/
