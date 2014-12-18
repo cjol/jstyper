@@ -87,12 +87,9 @@ function TypeEnv(cloneFrom) {
 		for (var i=0; i<cloneFrom.length; i++) {
 			this.push(cloneFrom[i]);
 		}
-		this.nextType = cloneFrom.nextType;
-	} else {
-		this.nextType = 1;
 	}
 }
-
+TypeEnv.nextType = 1;
 TypeEnv.prototype = new Array();
 TypeEnv.prototype.get = function(varName) {
 	// TODO: does this model scope suitably?
@@ -105,7 +102,7 @@ TypeEnv.prototype.get = function(varName) {
 	return null;
 };
 TypeEnv.prototype.getFreshType = function(opts) {
-	return new Type("T" + (this.nextType++), opts);
+	return new Type("T" + (TypeEnv.nextType++), opts);
 };
 TypeEnv.prototype.applySubstitution = function(sub) {
 	for (var i = 0; i < this.length; i++) {
