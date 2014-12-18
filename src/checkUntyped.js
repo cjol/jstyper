@@ -14,7 +14,7 @@ var Classes = require("./classes.js");
 var UglifyJS = require("uglify-js2");
 
 UglifyJS.AST_Node.prototype.checkUntyped = function() {
-	throw new Error("Unhandled node type");
+	return [];
 };
 UglifyJS.AST_Node.prototype.parent = function() {
 	throw new Error("Parent has not been defined yet!");

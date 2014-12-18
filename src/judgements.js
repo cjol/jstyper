@@ -219,6 +219,8 @@ UglifyJS.AST_Binary.prototype.check = function(gamma) {
 /***********************************************************************************
  * Creating typability judgements 
  ***********************************************************************************/
+
+// Rule SeqTypable
 UglifyJS.AST_Block.prototype.check = function(gamma) {
 	var judgement = new Classes.Judgement(null, gamma, [], []);
 	for (var i=0; i<this.body.length; i++) {
@@ -321,5 +323,3 @@ UglifyJS.AST_Var.prototype.check = function(gamma) {
 
 	return j;
 };
-
-// NB Rule SeqTypable is effectively contained in checkUntyped
