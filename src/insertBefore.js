@@ -167,7 +167,7 @@ UglifyJS.AST_Var.prototype.insertBefore = function(newStatement, target, del) {
 	return deleted;
 };
 
-UglifyJS.AST_Toplevel.prototype.insertBefore = function(newStatement, target, del) {
+UglifyJS.AST_Block.prototype.insertBefore = function(newStatement, target, del) {
 	var pos = this.body.indexOf(target);
 	if (pos < 0) throw new Error("target is not a subnode");
 	var deleted = this.body.splice(pos, del?1:0, newStatement);

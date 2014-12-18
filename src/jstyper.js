@@ -13,6 +13,7 @@ var UglifyJS = require("uglify-js2");
 // for our jstyper objects
 var Classes = require("./classes.js");
 require("./judgements.js");
+require("./checkUntyped.js");
 require("./assertions.js");
 require("./insertBefore.js");
 
@@ -89,7 +90,8 @@ module.exports = function(src) {
 	}
 
 	// generate a judgement for (each annotated section of) the entire tree
-	var chunks = ast.check();
+	// it's checkUntyped because, at the time of calling, we're not in the typed world yet
+	var chunks = ast.checkUntyped();
 
 	// check the judgement is valid and do gradual typing for each chunk
 	for (var i = 0; i< chunks.length; i++) {

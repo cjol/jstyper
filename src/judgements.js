@@ -8,7 +8,6 @@ var Classes = require("./classes.js");
 var UglifyJS = require("uglify-js2");
 
 UglifyJS.AST_Node.prototype.check = function() {
-	var f = this instanceof UglifyJS.AST_Unary;
 	throw new Error("Unhandled node type");
 };
 UglifyJS.AST_Node.prototype.parent = function() {
@@ -93,7 +92,6 @@ UglifyJS.AST_SymbolRef.prototype.check = function(gamma) {
 	return j;
 };
 
-// Rule AssignType
 UglifyJS.AST_Assign.prototype.check = function(gamma) {
 	this.right.parent = parent(this);
 	this.left.parent = parent(this);
@@ -282,60 +280,4 @@ UglifyJS.AST_Var.prototype.check = function(gamma) {
 	return j;
 };
 
-// Rule SeqTypable
-UglifyJS.AST_Toplevel.prototype.check = function() {
-
-	// we will only store judgements for the typed sections of program
-	var judgements = [];
-
-	// I only consider this level when looking for annotations (is this limiting?)
-	var directives;
-	var currentlyTyping = false;
-
-	for (var i = 0; i < this.body.length; i++) {
-		// get any new directives for this statement
-		directives = getAnnotations(this.body[i].start.comments_before);
-
-		// determine if we should be type-checking the next chunk or not
-		for (var j = 0; j < directives.length; j++) {
-			if (directives[j].search("start") === 0) {
-
-				if (currentlyTyping)
-					throw new Error("Unexpected start directive (already in typed world at program statement " + i + ")");
-				currentlyTyping = true;
-				var directive = directives[j].substr("start".length);
-				// initialise a new judgement with imported variables
-				judgements.push(Classes.Judgement.InitFromDirective(directive));
-
-			} else if (directives[j].search("end") === 0) {
-
-				if (!currentlyTyping)
-					throw new Error("Unexpected end directive (not in typed world at program statement " + i + ")");
-				currentlyTyping = false;
-
-
-			} else {
-				throw new Error("Unexpected directive " + directives[j]);
-			}
-		}
-
-
-		if (!currentlyTyping) {
-			// TODO: check subexpressions for annotations
-
-		} else {
-			var judgement = judgements[judgements.length - 1];
-			judgement.nodes.push(this.body[i]);
-
-			// carry the new judgement into the next statement
-
-			this.body[i].parent = parent(this);
-			var newJudgement = this.body[i].check(judgement.gamma);
-			judgement.gamma = newJudgement.gamma;
-			judgement.X = judgement.X.concat(newJudgement.X);
-			judgement.C = judgement.C.concat(newJudgement.C);
-		}
-	}
-
-	return judgements;
-};
+// NB Rule SeqTypable is effectively contained in checkUntyped
