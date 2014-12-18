@@ -95,22 +95,34 @@ UglifyJS.AST_SymbolRef.prototype.check = function(gamma) {
 
 // Rule AssignType
 UglifyJS.AST_Assign.prototype.check = function(gamma) {
+	this.right.parent = parent(this);
+	this.left.parent = parent(this);
+
+	var j2 = this.right.check(gamma);
+	var j1 = this.left.check(j2.gamma);
+	var X = j1.X.concat(j2.X);
+	var C = j1.C.concat(j2.C);
+	var returnType;
 	switch(this.operator) {
+		case ("+="):
+		case ("*="):
+		case ("/="):
+		case ("-="):
+			// these operators have the added constraint that both left and right must be numbers
+			// since we're about to say the two types are equal, can just say left must be number
+			C.push(new Classes.Constraint(numType, null, j1.T, this.left));
+		/* falls through */
 		case ("="):
-			this.right.parent = parent(this);
-			this.left.parent = parent(this);
-
-			var j2 = this.right.check(gamma);
-			var j1 = this.left.check(j2.gamma);
-			var X = j1.X.concat(j2.X);
-			var C = j1.C.concat(j2.C.concat([new Classes.Constraint(j1.T, this.left, j2.T, this.right)]));
-			var j = new Classes.Judgement(j2.T, j1.gamma, X, C);
-			j.nodes.push(this);
-
-			return j;
+			C.push(new Classes.Constraint(j1.T, this.left, j2.T, this.right));
+			returnType = j2.T;
+		break;
 		default:
 			throw new Error("Unhandled assignment operator " + this.operator);
 	}
+	var j = new Classes.Judgement(returnType, j1.gamma, X, C);
+	j.nodes.push(this);
+
+	return j;
 };
 
 UglifyJS.AST_Unary.prototype.check = function(gamma) {
