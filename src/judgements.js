@@ -62,9 +62,9 @@ var undefinedType = new Classes.Type('undefined', {
 var nullType = new Classes.Type('null', {
 	concrete: true
 });
-UglifyJS.AST_Constant.prototype.check = function(judgement) {
+UglifyJS.AST_Constant.prototype.check = function(gamma) {
 	if (this.constType === undefined) throw new Error("Unhandled constant type " + this);
-	var j = new Classes.Judgement(this.constType, judgement.gamma, [], []);
+	var j = new Classes.Judgement(this.constType, gamma, [], []);
 	j.nodes.push(this);
 	return j;
 };
@@ -74,10 +74,10 @@ UglifyJS.AST_Boolean.prototype.constType = boolType;
 UglifyJS.AST_Undefined.prototype.constType = undefinedType;
 UglifyJS.AST_Null.prototype.constType = nullType;
 
-UglifyJS.AST_SymbolRef.prototype.check = function(judgement) {
+// Rule IdType / IdTypeUndef
+UglifyJS.AST_SymbolRef.prototype.check = function(gamma) {
 	var T, X = [],
-		C = [],
-		gamma = judgement.gamma;
+		C = [];
 
 	T = gamma.get(this.name);
 
@@ -93,14 +93,15 @@ UglifyJS.AST_SymbolRef.prototype.check = function(judgement) {
 	return j;
 };
 
-UglifyJS.AST_Assign.prototype.check = function(judgement) {
+// Rule AssignType
+UglifyJS.AST_Assign.prototype.check = function(gamma) {
 	switch(this.operator) {
 		case ("="):
 			this.right.parent = parent(this);
 			this.left.parent = parent(this);
 
-			var j2 = this.right.check(judgement);
-			var j1 = this.left.check(j2);
+			var j2 = this.right.check(gamma);
+			var j1 = this.left.check(j2.gamma);
 			var X = j1.X.concat(j2.X);
 			var C = j1.C.concat(j2.C.concat([new Classes.Constraint(j1.T, this.left, j2.T, this.right)]));
 			var j = new Classes.Judgement(j2.T, j1.gamma, X, C);
@@ -112,10 +113,10 @@ UglifyJS.AST_Assign.prototype.check = function(judgement) {
 	}
 };
 
-UglifyJS.AST_Unary.prototype.check = function(judgement) {
+UglifyJS.AST_Unary.prototype.check = function(gamma) {
 
 	this.expression.parent = parent(this);
-	var j1 = this.expression.check(judgement);
+	var j1 = this.expression.check(gamma);
 	var C, returnType;
 	
 	switch (this.operator) {
@@ -141,13 +142,13 @@ UglifyJS.AST_Unary.prototype.check = function(judgement) {
 	return j;
 };
 
-UglifyJS.AST_Binary.prototype.check = function(judgement) {
+UglifyJS.AST_Binary.prototype.check = function(gamma) {
 	this.left.parent = parent(this);
 	this.right.parent = parent(this);
 
 	// NB Assuming left-to-right evaluation
-	var j1 = this.left.check(judgement);
-	var j2 = this.right.check(j1);
+	var j1 = this.left.check(gamma);
+	var j2 = this.right.check(j1.gamma);
 	var X = j1.X.concat(j2.X);
 	var C, returnType;
 
@@ -208,43 +209,44 @@ UglifyJS.AST_Binary.prototype.check = function(judgement) {
  * Creating typability judgements 
  ***********************************************************************************/
 
-UglifyJS.AST_SimpleStatement.prototype.check = function(judgement) {
+// Rule ExpTypable
+UglifyJS.AST_SimpleStatement.prototype.check = function(gamma) {
 	this.body.parent = parent(this);
-	return this.body.check(judgement);
+	return this.body.check(gamma);
 };
 
-UglifyJS.AST_EmptyStatement.prototype.check = function(judgement) {
-	var j = new Classes.Judgement(null, judgement.gamma, [], []);
+// Rule V_Skip / ExpTypable (special case of expression when e is skip)
+UglifyJS.AST_EmptyStatement.prototype.check = function(gamma) {
+	var j = new Classes.Judgement(null, gamma, [], []);
 	j.nodes.push(this);
 	return j;
 };
 
-UglifyJS.AST_VarDef.prototype.check = function(judgement) {
+// Rule DecTypable / DefTypable
+UglifyJS.AST_VarDef.prototype.check = function(gamma) {
 	var X = [],
 		C = [];
 	// need to select a new type (we are redefining the type from here on)
-	var T = judgement.gamma.getFreshType();
+	var T = gamma.getFreshType();
 	
 	this.name.parent = parent(this);
 
 	if (this.value) {
 		this.value.parent = parent(this);
-		judgement = this.value.check(judgement);
-		if (judgement !== null) {
-			X = judgement.X.concat([T]);
-			C = judgement.C.concat([new Classes.Constraint(T, this.name, judgement.T, this.value)]);
-		}
-
+		var judgement = this.value.check(gamma);
+		X = judgement.X.concat([T]);
+		C = judgement.C.concat([new Classes.Constraint(T, this.name, judgement.T, this.value)]);
 	}
 
-	judgement.gamma.push(new Classes.TypeEnvEntry(this.name.name, this.name, T));
-	var j = new Classes.Judgement(null, judgement.gamma, X, C);
+	gamma.push(new Classes.TypeEnvEntry(this.name.name, this.name, T));
+	var j = new Classes.Judgement(null, gamma, X, C);
 	j.nodes.push(this);
 
 	return j;
 };
 
-UglifyJS.AST_Var.prototype.check = function(judgement) {
+// Rule MultiDecTypable
+UglifyJS.AST_Var.prototype.check = function(gamma) {
 
 	// VariableDeclaration.declarations is a list of VariableDeclarators
 	var X = [],
@@ -252,21 +254,23 @@ UglifyJS.AST_Var.prototype.check = function(judgement) {
 	for (var i=0; i<this.definitions.length; i++) {
 
 		this.definitions[i].parent = parent(this);
-		judgement = this.definitions[i].check(judgement);
+		var judgement = this.definitions[i].check(gamma);
 
 		// Pass on judgement to subsequent declarators
 		// TODO: assert X1 n X2 is empty
 		X = X.concat(judgement.X);
 		C = C.concat(judgement.C);
+		gamma = judgement.gamma;
 	}
 
-	var j = new Classes.Judgement(null, judgement.gamma, X, C);
+	var j = new Classes.Judgement(null, gamma, X, C);
 	j.nodes.push(this);
 
 
 	return j;
 };
 
+// Rule SeqTypable
 UglifyJS.AST_Toplevel.prototype.check = function() {
 
 	// we will only store judgements for the typed sections of program
@@ -314,7 +318,7 @@ UglifyJS.AST_Toplevel.prototype.check = function() {
 			// carry the new judgement into the next statement
 
 			this.body[i].parent = parent(this);
-			var newJudgement = this.body[i].check(judgement);
+			var newJudgement = this.body[i].check(judgement.gamma);
 			judgement.gamma = newJudgement.gamma;
 			judgement.X = judgement.X.concat(newJudgement.X);
 			judgement.C = judgement.C.concat(newJudgement.C);
