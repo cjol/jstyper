@@ -82,9 +82,17 @@ TypeEnvEntry.prototype.applySubstitution = function(sub) {
 
 
 
-function TypeEnv() {
-	this.nextType = 1;
+function TypeEnv(cloneFrom) {
+	if (cloneFrom !== undefined) {
+		for (var i=0; i<cloneFrom.length; i++) {
+			this.push(cloneFrom[i]);
+		}
+		this.nextType = cloneFrom.nextType;
+	} else {
+		this.nextType = 1;
+	}
 }
+
 TypeEnv.prototype = new Array();
 TypeEnv.prototype.get = function(varName) {
 	// TODO: does this model scope suitably?

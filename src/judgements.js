@@ -81,7 +81,8 @@ UglifyJS.AST_SymbolRef.prototype.check = function(gamma) {
 	T = gamma.get(this.name);
 
 	if (T === null) {
-		// need to select a new type
+		// need to select a new type, but create a new env for it
+		gamma = new Classes.TypeEnv(gamma);
 		T = gamma.getFreshType();
 		X.push(T);
 		gamma.push(new Classes.TypeEnvEntry(this.name, this, T));
@@ -218,6 +219,19 @@ UglifyJS.AST_Binary.prototype.check = function(gamma) {
 /***********************************************************************************
  * Creating typability judgements 
  ***********************************************************************************/
+UglifyJS.AST_Block.prototype.check = function(gamma) {
+	var judgement = new Classes.Judgement(null, gamma, [], []);
+	for (var i=0; i<this.body.length; i++) {
+
+		this.body[i].parent = parent(this);
+		var j = this.body[i].check(gamma);
+		judgement.X = judgement.X.concat(j.X);
+		judgement.C = judgement.C.concat(j.C);
+		judgement.gamma = gamma = j.gamma;
+	}
+	judgement.nodes.push(this);
+	return judgement;
+};
 
 UglifyJS.AST_If.prototype.check = function(gamma) {
 	var X, C;
@@ -275,6 +289,7 @@ UglifyJS.AST_VarDef.prototype.check = function(gamma) {
 		C = judgement.C.concat([new Classes.Constraint(T, this.name, judgement.T, this.value)]);
 	}
 
+	gamma = new Classes.TypeEnv(gamma);
 	gamma.push(new Classes.TypeEnvEntry(this.name.name, this.name, T));
 	var j = new Classes.Judgement(null, gamma, X, C);
 	j.nodes.push(this);
