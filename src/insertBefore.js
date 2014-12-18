@@ -33,10 +33,6 @@
 
 var UglifyJS = require("uglify-js2");
 
-function parent(par) {
-	return function() { return par; };
-}
-
 UglifyJS.AST_Node.prototype.insertBefore = function() {
 	throw new Error("insertBefore not implemented yet...");			
 };
@@ -73,8 +69,10 @@ UglifyJS.AST_Binary.prototype.insertBefore = function(newNode, target, del) {
 		return this.parent().insertBefore(newNode, this);
 	} else if (target === this.right) {
 		// wrap the RHS in an IIFE which runs newNode before returning the value of RHS
-		this.right = getIIFE(newNode, this.right);
-		this.right.parent = parent(this);
+		var iife = getIIFE(newNode, this.right);
+		transferComments(this.right, iife);
+		iife.parent = parent(this);
+		this.right = iife;
 		return [];
 	} else {
 		throw new Error("target is not a subnode");
@@ -86,8 +84,10 @@ UglifyJS.AST_Assign.prototype.insertBefore = function(newNode, target, del) {
 
 	if (target === this.left) {
 		// wrap the value with an IIFE which runs the new node before returning the expression value
-		this.right = getIIFE(newNode, this.left);
-		this.right.parent = parent(this);
+		var iife = getIIFE(newNode, this.left);
+		transferComments(this.right, iife);
+		iife = parent(this);
+		this.right = iife;
 		return [];
 	} else if (target === this.right) {
 		// RHS is executed first, so can safely execute before the whole assignment
@@ -109,13 +109,21 @@ UglifyJS.AST_If.prototype.insertBefore = function(newNode, target, del) {
 	if (del) {
 		var deleted = [];
 		if (target === this.body) {
-			deleted = [this.body];
+			deleted = [{
+				from:this.body,
+				to: newNode
+			}];
 			this.body = newNode;
+			transferComments(this.body, newNode);
 			newNode.parent = parent(this);
 
 		} else if (target === this.alternative) {
-			deleted = [this.alternative];
+			deleted = [{
+				from:this.alternative,
+				to: newNode
+			}];
 			this.alternative = newNode;
+			transferComments(this.alternative, newNode);
 			newNode.parent = parent(this);
 
 		} else {
@@ -134,11 +142,14 @@ UglifyJS.AST_If.prototype.insertBefore = function(newNode, target, del) {
 			block.body.push(this.body);
 			this.body.parent = parent(block);
 			this.body = block;
+			transferComments(this.body, newNode);
 
 		} else if (target === this.alternative) {
 			block.body.push(this.alternative);
 			this.alternative.parent = parent(block);
 			this.alternative = block;
+			transferComments(this.alternative, newNode);
+
 		} else {
 			throw new Error("target is not a subnode");
 		}
@@ -159,13 +170,18 @@ UglifyJS.AST_EmptyStatement.prototype.insertBefore = noSubchildren;
 // e.g. var ___x=y+z___;
 UglifyJS.AST_VarDef.prototype.insertBefore = function(newNode, target, del) {
 	if (del) throw new Error("Can't delete subnode here");
+
 	if (target === this.name) {
 		// wrap the value with an IIFE which check's the identifier's type before returning
-		this.value = getIIFE(newNode, this.value);
-		this.value.parent = parent(this); 
+		var iife = getIIFE(newNode, this.value);
+		iife.parent = parent(this); 
+		transferComments(this.value, iife);
+		this.value = iife;
 		return [];
+
 	} else if (target === this.value) {
 		return this.parent().insertBefore(newNode, this);
+
 	} else {
 		throw new Error("target is not a subnode");
 	}
@@ -190,6 +206,7 @@ UglifyJS.AST_Var.prototype.insertBefore = function(newStatement, target, del) {
 		});
 		pos += 1; // skip the VarDef we want to delete
 	}
+	transferComments(this.definitions[pos], newStatement);
 	var postVarDefs = this.definitions.slice(pos);
 	var postVar = new UglifyJS.AST_Var({
 		definitions: postVarDefs
@@ -219,8 +236,11 @@ UglifyJS.AST_Var.prototype.insertBefore = function(newStatement, target, del) {
 UglifyJS.AST_Block.prototype.insertBefore = function(newStatement, target, del) {
 	var pos = this.body.indexOf(target);
 	if (pos < 0) throw new Error("target is not a subnode");
+	
+	transferComments(this.body[pos], newStatement);
 	var deleted = this.body.splice(pos, del?1:0, newStatement);
 	newStatement.parent = parent(this);
+	
 	if (del) {
 		return [{from: deleted[0], to: newStatement}];
 	} else {
@@ -237,10 +257,12 @@ function noSubchildren() {
 	throw new Error("Cannot insert before this node type");
 }
 
+function parent(par) {
+	return function() { return par; };
+}
 
-// TODO: Assign parents to everything in here
 function getIIFE(newStatement, expression) {
-	return new UglifyJS.AST_Call({
+	var iife = new UglifyJS.AST_Call({
 		expression: new UglifyJS.AST_Function({
 			argnames:[
 				new UglifyJS.AST_SymbolFunarg({
@@ -260,4 +282,33 @@ function getIIFE(newStatement, expression) {
 			expression
 		]
 	});
+
+	iife.expression.parent = parent(iife);
+	iife.expression.argnames.parent = parent(iife.expression);
+	iife.expression.argnames[0].parent = parent(iife.expression.argnames);
+	iife.expression.body.parent = parent(iife.expression);
+	iife.expression.body[0].parent = parent(iife.expression.body);
+	iife.expression.body[1].parent = parent(iife.expression.body);
+	iife.expression.body[1].value.parent = parent(iife.expression.body[1]);
+	iife.args.parent = parent(iife);
+	iife.args[0].parent = parent(iife.args);
+
+	return iife;
+}
+
+function transferComments(from, to) {
+	if (from.start !== undefined && from.start.comments_before !== undefined &&
+		 from.start !== null && from.start.comments_before !== null) {
+		if (to.start === undefined || to.start === null) {
+			to.start = {
+				comments_before: []
+			};
+			for (var i=0; i<from.start.comments_before.length; i++){
+				to.start.comments_before.push(from.start.comments_before[i]);
+			}
+		} else {
+			to.start.comments_before = to.start.comments_before.concat(from.start.comments_before);	
+		}
+		from.start.comments_before = [];
+	}
 }

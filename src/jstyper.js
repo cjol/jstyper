@@ -107,24 +107,6 @@ module.exports = function(src) {
 			}
 		}
 
-		for (var l = 0; l<solution.checks.length; l++) {
-			// insert the checks as appropriate
-			// unfortunately we're replacing nodes as we go, so we'll need to substitute nodes as we go along
-			var typeChecks = solution.checks[l].node.getTypeChecks( solution.checks[l].type );
-			if (typeChecks) {
-				for (var p = 0; p < typeChecks.length; p++) {
-					var subs = solution.checks[l].node.parent().insertBefore(typeChecks[p], solution.checks[l].node);
-					for (var m = 0; m<subs.length; m++) {
-						for (var n=l; n<solution.checks.length; n++) {
-							if (solution.checks[n].node === subs[m].from) {
-								solution.checks[n].node = subs[m].to;
-							}
-						}
-					}
-					
-				}
-			}
-		}
 		// Prepare a helpful message for each typed chunk
 		var typeComment = " jstyper types: ";
 		var sep = "";
@@ -143,8 +125,6 @@ module.exports = function(src) {
 			sep = "; ";
 		}
 
-
-		// TODO: nodes[0] isn't always the start, since we may insert something before it
 		// prepend the types in a comment at the start of the chunk
 		chunks[i].nodes[0].start.comments_before.push(
 			new UglifyJS.AST_Token({
@@ -155,19 +135,24 @@ module.exports = function(src) {
 
 		// TODO: append a notice indicating the end of the typed section (not easy without a trailing comments property!)
 		
-
-		// // finally insert checks before the necessary statements
-		// // loop backwards to avoid invalidating location numbers
-		// // TODO: if you haven't got the memo yet, this is broken: see line 50
-		// for (var l = ast.body.length - 1; l>=0; l--) {
-		// 	for (var m = 0; m<assertions.length; m++) {
-		// 		if (assertions[m].location === l) {
-		// 			// I'm using function.apply to avoid unpacking assertions
-		// 			var args = [l, 0].concat(assertions[m].assertion);
-		// 			ast.body.splice.apply(ast.body, args);
-		// 		}
-		// 	}
-		// }
+		for (var l = 0; l<solution.checks.length; l++) {
+			// insert the checks as appropriate
+			// unfortunately we're replacing nodes as we go, so we'll need to substitute nodes as we go along
+			var typeChecks = solution.checks[l].node.getTypeChecks( solution.checks[l].type );
+			if (typeChecks) {
+				for (var p = 0; p < typeChecks.length; p++) {
+					var subs = solution.checks[l].node.parent().insertBefore(typeChecks[p], solution.checks[l].node);
+					for (var m = 0; m<subs.length; m++) {
+						for (var n=l; n<solution.checks.length; n++) {
+							if (solution.checks[n].node === subs[m].from) {
+								solution.checks[n].node = subs[m].to;
+							}
+						}
+					}
+					
+				}
+			}
+		}
 	}
 
 	var checkRes = chunks;
