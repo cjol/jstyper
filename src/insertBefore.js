@@ -97,6 +97,55 @@ UglifyJS.AST_Assign.prototype.insertBefore = function(newNode, target, del) {
 	}
 };
 
+UglifyJS.AST_If.prototype.insertBefore = function(newNode, target, del) {
+	if (target === this.condition) {
+		if (del) throw new Error("Can't delete in condition here");
+		// condition is the first code executed, so can just insert before the if
+		return this.parent().insertBefore(newNode, this, del);
+	}
+
+	// body and alternative are single statements, so if we want to prepend we
+	// will need to wrap the whole in a BlockStatement (or we can just replace)
+	if (del) {
+		var deleted = [];
+		if (target === this.body) {
+			deleted = [this.body];
+			this.body = newNode;
+			newNode.parent = parent(this);
+
+		} else if (target === this.alternative) {
+			deleted = [this.alternative];
+			this.alternative = newNode;
+			newNode.parent = parent(this);
+
+		} else {
+			throw new Error("target is not a subnode");
+		}
+		return deleted;
+	} else {
+		var block = new UglifyJS.AST_BlockStatement({
+			body: [
+				newNode
+			]
+		});
+		block.parent = parent(this);
+		newNode.parent = parent(block);
+		if (target === this.body) {
+			block.body.push(this.body);
+			this.body.parent = parent(block);
+			this.body = block;
+
+		} else if (target === this.alternative) {
+			block.body.push(this.alternative);
+			this.alternative.parent = parent(block);
+			this.alternative = block;
+		} else {
+			throw new Error("target is not a subnode");
+		}
+		return [];
+	}
+};
+
 UglifyJS.AST_SimpleStatement.prototype.insertBefore = function(newNode, target, del) {
 	if (target === this.body) {
 		return this.parent().insertBefore(newNode, this, del);

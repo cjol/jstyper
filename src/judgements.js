@@ -25,7 +25,7 @@ function parent(par) {
 function getAnnotations(comments) {
 	var annotations = [];
 	
-	if (typeof comments === "undefined")
+	if (comments === undefined || comments === null)
 		return annotations;
 
 	var keyword = " jstyper ";
@@ -218,6 +218,33 @@ UglifyJS.AST_Binary.prototype.check = function(gamma) {
 /***********************************************************************************
  * Creating typability judgements 
  ***********************************************************************************/
+
+UglifyJS.AST_If.prototype.check = function(gamma) {
+	var X, C;
+
+	this.condition.parent = parent(this);
+	var j1 = this.condition.check(gamma);
+	X = j1.X;
+	C = j1.C;
+	C.push(new Classes.Constraint(boolType, null, j1.T, this.condition));
+	
+	this.body.parent = parent(this);
+	var j2 = this.body.check(j1.gamma);
+	X = X.concat(j2.X);
+	C = C.concat(j2.C);
+
+	if (this.alternative !== undefined && this.alternative !== null) {
+		this.alternative.parent = parent(this);
+		var j3 = this.alternative.check(j1.gamma);
+		X = X.concat(j3.X);
+		C = C.concat(j3.C);
+	}	
+
+	// TODO: Check that using j1.gamma is the right thing to do!)
+	var j = new Classes.Judgement(null, j1.gamma, X, C);
+	j.nodes.push(this);
+	return j;
+};
 
 // Rule ExpTypable
 UglifyJS.AST_SimpleStatement.prototype.check = function(gamma) {

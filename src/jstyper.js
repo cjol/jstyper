@@ -143,6 +143,8 @@ module.exports = function(src) {
 			sep = "; ";
 		}
 
+
+		// TODO: nodes[0] isn't always the start, since we may insert something before it
 		// prepend the types in a comment at the start of the chunk
 		chunks[i].nodes[0].start.comments_before.push(
 			new UglifyJS.AST_Token({

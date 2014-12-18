@@ -31,7 +31,7 @@ function parent(par) {
 function getAnnotations(comments) {
 	var annotations = [];
 	
-	if (typeof comments === "undefined")
+	if (comments === undefined || comments === null)
 		return annotations;
 
 	var keyword = " jstyper ";
@@ -116,8 +116,8 @@ UglifyJS.AST_Block.prototype.checkUntyped = function() {
 UglifyJS.AST_If.prototype.checkUntyped = function() {
 	// body is a single statement (but it could be a Block statement)
 	var judgements = this.body.checkUntyped();
-	if (this.alternative === undefined)
-		judgements = judgements.concat(this.alternative.checkUntyped);
+	if (this.alternative !== undefined && this.alternative !== null)
+		judgements = judgements.concat(this.alternative.checkUntyped());
 	return judgements;
 };
 
@@ -158,7 +158,7 @@ UglifyJS.AST_VarDef.prototype.checkUntyped = function() {
 	var judgements = [];
 
 	this.name.parent = parent(this);
-	if (this.value !== undefined) {
+	if (this.value !== undefined && this.value !== null) {
 		this.value.parent = parent(this);
 		judgements = judgements.concat(this.value.checkUntyped());
 	}
