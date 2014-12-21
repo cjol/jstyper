@@ -93,20 +93,22 @@ UglifyJS.AST_SymbolRef.prototype.check = function(gamma) {
 	return j;
 };
 
+// *AssignType (Plus, minus, )
 UglifyJS.AST_Assign.prototype.check = function(gamma) {
 	this.right.parent = parent(this);
 	this.left.parent = parent(this);
 
-	var j2 = this.right.check(gamma);
-	var j1 = this.left.check(j2.gamma);
+	var j1 = this.right.check(gamma);
+	var j2 = this.left.check(j1.gamma);
 	var X = j1.X.concat(j2.X);
 	var C = j1.C.concat(j2.C);
 	var returnType;
 	switch(this.operator) {
 		case ("+="):
+		case ("-="):
 		case ("*="):
 		case ("/="):
-		case ("-="):
+		case ("%="):
 			// these operators have the added constraint that both left and right must be numbers
 			// since we're about to say the two types are equal, can just say left must be number
 			C.push(new Classes.Constraint(numType, null, j1.T, this.left));
@@ -118,36 +120,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma) {
 		default:
 			throw new Error("Unhandled assignment operator " + this.operator);
 	}
-	var j = new Classes.Judgement(returnType, j1.gamma, X, C);
-	j.nodes.push(this);
-
-	return j;
-};
-
-UglifyJS.AST_Unary.prototype.check = function(gamma) {
-
-	this.expression.parent = parent(this);
-	var j1 = this.expression.check(gamma);
-	var C, returnType;
-	
-	switch (this.operator) {
-		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Expressions_and_Operators
-		// arithmetic (should be number)
-		case ("++"):
-		case ("--"):
-		case ("-"):
-			C = j1.C.concat([new Classes.Constraint(numType, null, j1.T, this.expression)]);
-			returnType = numType;
-			break;
-		// boolean operators (should be boolean)
-		case ("!"):
-			C = j1.C.concat([new Classes.Constraint(boolType, null, j1.T, this.expression)]);
-			returnType = boolType;
-			break;
-		default:
-			throw new Error("Unhandled unary operator!");
-	}
-	var j = new Classes.Judgement(returnType, j1.gamma, j1.X, C);
+	var j = new Classes.Judgement(returnType, j2.gamma, X, C);
 	j.nodes.push(this);
 
 	return j;
@@ -177,16 +150,6 @@ UglifyJS.AST_Binary.prototype.check = function(gamma) {
 											new Classes.Constraint(numType, null, j2.T, this.right)]));
 			returnType = numType;
 			break;
-		// numeric comparison (should both be number)
-		case ("<"):
-		case (">"):
-		case ("<="):
-		case (">="):
-			C = j1.C.concat(j2.C.concat([new Classes.Constraint(numType, null, j1.T, this.left), 
-											new Classes.Constraint(numType, null, j2.T, this.right)]));
-			returnType = boolType;
-			break;
-	
 		// boolean operators (should both be boolean)
 		case ("||"):
 		case("&&"):
@@ -194,23 +157,64 @@ UglifyJS.AST_Binary.prototype.check = function(gamma) {
 											new Classes.Constraint(boolType, null, j2.T, this.right)]));
 			returnType = boolType;
 			break;
-	
+		
 		// misc comparison (should both be equal of any type)
 		case ("=="):
-		case ("==="):
 		case ("!="):
+		case ("==="):
 		case ("!=="):
 			// TODO: is this a hacky solution? Create two symmetrical constraints to assert equality
 			C = j1.C.concat(j2.C.concat([new Classes.Constraint(j2.T, this.right, j1.T, this.left), 
 											new Classes.Constraint(j1.T, this.left, j2.T, this.right)]));
 			returnType = boolType;
 			break;
-
+		
+		// numeric comparison (should both be number)
+		case ("<"):
+		case ("<="):
+		case (">"):
+		case (">="):
+			C = j1.C.concat(j2.C.concat([new Classes.Constraint(numType, null, j1.T, this.left), 
+											new Classes.Constraint(numType, null, j2.T, this.right)]));
+			returnType = boolType;
+			break;
+	
 		default:
 			throw new Error("Unhandled binary operator " + this.operator);
 	}
 
 	var j = new Classes.Judgement(returnType, j2.gamma, X, C);
+	j.nodes.push(this);
+
+	return j;
+};
+
+// NB We're combining prefix and postfix operators here because I don't need to distinguish so far
+UglifyJS.AST_Unary.prototype.check = function(gamma) {
+
+	this.expression.parent = parent(this);
+	var j1 = this.expression.check(gamma);
+	var C, returnType;
+	
+	switch (this.operator) {
+		// boolean operators (should be boolean)
+		case ("!"):
+			C = j1.C.concat([new Classes.Constraint(boolType, null, j1.T, this.expression)]);
+			returnType = boolType;
+			break;
+		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Expressions_and_Operators
+		// arithmetic (should be number)
+		case ("-"):
+		case ("++"):
+		case ("--"):
+			C = j1.C.concat([new Classes.Constraint(numType, null, j1.T, this.expression)]);
+			returnType = numType;
+			break;
+		
+		default:
+			throw new Error("Unhandled unary operator!");
+	}
+	var j = new Classes.Judgement(returnType, j1.gamma, j1.X, C);
 	j.nodes.push(this);
 
 	return j;
