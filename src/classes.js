@@ -1,6 +1,3 @@
-/*jshint unused:true, bitwise:true, eqeqeq:true, undef:true, latedef:true, eqnull:true */
-/* global module */
-
 /*
 	This module contains a bunch of classes representing structures in our program.
 	Some of the classes (those without prototype stuff) could almost be done away
@@ -13,17 +10,65 @@ function Type(type, options) {
 	this.type = type;
 	this.isConcrete = (options.concrete === true);
 	this.isDynamic = (options.dynamic === true);
+	if (this.type === "object") {
+		this.memberTypes = {};
+
+		// Not sure it's strictly necessary to copy one by one but there we go
+		for (var i in options.members) {
+			this.memberTypes[i] = options.members[i];
+		}
+	}
 }
+
 Type.prototype.applySubstitution = function(sub) {
 	// NB I don't think this will ever be called for a dynamic type
 
 	if (sub.from.type === this.type) {
 		this.type = sub.to.type;
 		this.isConcrete = sub.to.isConcrete;
+
+		if (this.type === "object") {
+			this.memberTypes = {};
+
+			// It's probably not necessary to copy one-by-one EVERYWHERE...
+			for (var i in sub.to.memberTypes) {
+				this.memberTypes[i] = sub.to.memberTypes[i];
+			}
+		}
+	}
+
+	// need to apply substitution to child types too if they exist
+	if (this.type === "object") {
+		for (var j in this.memberTypes) {
+			this.memberTypes[j].applySubstitution(sub);
+		}
 	}
 };
+// TODO: subsumption
 Type.prototype.equals = function(type) {
-	return (this.type === type.type);
+	if (this.type !== type.type) return false;
+	
+	if (this.type !== "object") return true;
+
+	// need to check inclusion in both directions
+	for (var i in this.memberTypes) {
+		if (type.memberTypes[i] === undefined) return false;
+	}
+	for (i in type.memberTypes) {
+		if (this.memberTypes[i] === undefined) return false;
+	}
+	
+	return true;
+};
+
+Type.prototype.toString = function() {
+	if (this.type !== "object") return this.type;
+	var types = [];
+	for (var lab in this.memberTypes) {
+		types.push(lab + ":" + this.memberTypes[lab].toString());
+	}
+	
+	return "{" + types.join(", ") + "}";
 };
 
 
@@ -32,13 +77,23 @@ Type.prototype.equals = function(type) {
 function Substitution(from, to) {
 	this.from = {
 		type: from.type,
-		isConcrete: from.isConcrete,
-		isDynamic: from.isDynamic
+		// isConcrete will always be false (we only substitute non-concrete types)
+		// isConcrete: from.isConcrete,
+		// I don't think we care if the from type was dynamic or not
+		// isDynamic: from.isDynamic
 	};
 	this.to = {
 		type: to.type,
-		isConcrete: to.isConcrete,
+		isConcrete: to.isConcrete
 	};
+	if (to.type === "object") {
+		this.to.memberTypes = {};
+
+		// Again not sure it's strictly necessary to copy one by one 
+		for (var i in to.memberTypes) {
+			this.to.memberTypes[i] = to.memberTypes[i];
+		}
+	}
 }
 // shortcut method
 Substitution.prototype.apply = function(element) {
@@ -49,14 +104,13 @@ Substitution.prototype.apply = function(element) {
 
 
 
-function Constraint(type1, node1, type2, node2, statementNum) {
+function Constraint(type1, node1, type2, node2) {
 	this.left = type1;
 	this.right = type2;
 	
+	// pretty sure leftNode isn't used anywhere
 	this.leftNode = node1;
 	this.rightNode = node2;
-	// TODO: this is broken, see jstyper.js ~line 50
-	this.statementNum = statementNum;
 
 	this.description = type1.type + " must be " + type2.type;
 }

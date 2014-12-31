@@ -19,30 +19,6 @@ function parent(par) {
 }
 
 /***********************************************************************************
- * helper function - could be refactored somewhere else if there were any more
- ***********************************************************************************/
-
-function getAnnotations(comments) {
-	var annotations = [];
-	
-	if (comments === undefined || comments === null)
-		return annotations;
-
-	var keyword = " jstyper ";
-	for (var i = 0; i < comments.length; i++) {
-		if (comments[i].value.search(keyword) === 0) {
-			var directive = comments[i].value.substr(keyword.length);
-			annotations.push(directive);
-
-			// remove the annotation from the AST
-			comments.splice(i, 1);
-		}
-	}
-	return annotations;
-}
-
-
-/***********************************************************************************
  * Checking typability, and also creating type judgements
  ***********************************************************************************/
 
@@ -72,6 +48,38 @@ UglifyJS.AST_Number.prototype.constType = numType;
 UglifyJS.AST_Boolean.prototype.constType = boolType;
 UglifyJS.AST_Undefined.prototype.constType = undefinedType;
 UglifyJS.AST_Null.prototype.constType = nullType;
+
+UglifyJS.AST_Object.prototype.check = function(gamma) {
+	
+	// An object literal will generate a fresh type which we will bind properties to
+	var memberType = {};
+	var X = [], C = [];
+	// an object's type can be derived as long as each of its members has a valid type
+	for (var i =0; i<this.properties.length; i++) {
+		this.properties[i].parent = parent(this);
+		this.properties[i].value.parent = parent(this.properties[i]);
+
+		var judgement = this.properties[i].value.check(gamma);
+		X = X.concat(judgement.X);
+		C = C.concat(judgement.C);
+
+		// generate a new Type for this property, which will be constrained by the value type
+		var propType = gamma.getFreshType();
+		C.push(new Classes.Constraint(propType, this.properties[i], judgement.T, this.properties[i].value));
+		memberType[this.properties[i].key] = propType;
+		memberType[this.properties[i].key].node = this.properties[i];
+
+		// thread gamma through to the next property
+		gamma = judgement.gamma;
+	}
+
+	var T = new Classes.Type('object', {
+		concrete: true,
+		members: memberType
+	});
+
+	return new Classes.Judgement(T, gamma, X, C);
+};
 
 // Rule IdType / IdTypeUndef
 UglifyJS.AST_SymbolRef.prototype.check = function(gamma) {

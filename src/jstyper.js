@@ -37,8 +37,21 @@ function solveConstraints(constraints) {
 	var remainder = constraints.slice(1);
 
 	// types are equal => constraint satisfied
-	if (left.equals(right))
-		return solveConstraints(remainder);
+	if (left.equals(right)) {
+
+		if (left.type !== "object")	
+			return solveConstraints(remainder);
+		
+		// if we're talking about objects, though, we need to explode the
+		// object constraints into constraints for each of the object
+		// properties.
+		var newConstraints = [];
+		for (var label in left.memberTypes) {
+			newConstraints.push(new Classes.Constraint(left.memberTypes[label], left.memberTypes[label].node,
+														 right.memberTypes[label], right.memberTypes[label].node));
+		}
+		return solveConstraints(remainder.concat(newConstraints));
+	}
 
 	var sub;
 
@@ -63,7 +76,7 @@ function solveConstraints(constraints) {
 
 	} // both are different concrete types
 	else {
-		throw new Error(" Failed Unification: " + left.type + " != " + right.type);
+		throw new Error(" Failed Unification: " + left.toString() + " != " + right.toString());
 	}
 
 	// apply the substitution to the remaining constraints
@@ -88,6 +101,9 @@ module.exports = function(src) {
 		e.message = "Parse Error: " + e.message;
 		throw e;
 	}
+
+	// reset the fresh type counter for consistency
+	Classes.TypeEnv.nextType = 1;
 
 	// generate a judgement for (each annotated section of) the entire tree
 	// it's checkUntyped because, at the time of calling, we're not in the typed world yet
@@ -121,7 +137,7 @@ module.exports = function(src) {
 			typeComment += "%s (%s): %s".format(
 				chunks[i].gamma[o].name,
 				location,
-				chunks[i].gamma[o].type.type);
+				chunks[i].gamma[o].type.toString());
 			sep = "; ";
 		}
 

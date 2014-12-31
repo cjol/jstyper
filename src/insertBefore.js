@@ -39,6 +39,41 @@ UglifyJS.AST_Node.prototype.insertBefore = function() {
 
 UglifyJS.AST_Constant.prototype.insertBefore = noSubchildren;
 
+UglifyJS.AST_Object.prototype.insertBefore = function(newNode, target, del) {
+	if (del) throw new Error("Can't delete expressions");
+
+	// I need to insert newNode immediately before target, which will be a
+	// property. I could potentially try and put newNode at the end of the
+	// previous property, but that seems messy so I'm inserting just before
+	// the property value instead
+
+	for (var i =0; i<this.properties.length; i++) {
+		if (target === this.properties[i].value) {
+			return this.properties[i].insertBefore(newNode, target, del);
+		}
+	}
+
+	throw new Error("target is not a subnode");
+};
+UglifyJS.AST_ObjectProperty.prototype.insertBefore = function(newNode, target, del) {
+	
+	// target must be this.value
+	
+	var deleted;
+	if (!del) {
+		// if I'm not replacing, there's nowhere to put newNode except in an iife
+		newNode = getIIFE(newNode, this.value);
+		deleted = [];
+	} else {
+		deleted = [this.value];
+	}
+	
+	transferComments(this.value, newNode);
+	newNode.parent = parent(this);
+	this.value = newNode;
+	return deleted;
+};
+
 UglifyJS.AST_SymbolRef.prototype.insertBefore = noSubchildren;
 
 // Might want to split this into pre/postfix?

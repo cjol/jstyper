@@ -3,21 +3,17 @@
 
 var UglifyJS = require("uglify-js2");
 
-// TODO: Assign parents to everything in here
-UglifyJS.AST_SymbolRef.prototype.getTypeChecks = function(type) {
-	// TODO: Could probably generate nothing...
-	if (!type.isConcrete) return [];
-	return [new UglifyJS.AST_If({
+function primCheck(expression, name, primType) {
+	// TODO: Assign parents to everything in here
+	return new UglifyJS.AST_If({
 		condition: new UglifyJS.AST_Binary({
 			left: new UglifyJS.AST_UnaryPrefix({
 				operator: 'typeof',
-				expression: new UglifyJS.AST_SymbolRef({
-					name: this.name
-				})
+				expression: this
 			}),
 			operator: '!==',
 			right: new UglifyJS.AST_String({
-				value: type.type
+				value: primType
 			})
 		}),
 		body: new UglifyJS.AST_BlockStatement({
@@ -29,14 +25,40 @@ UglifyJS.AST_SymbolRef.prototype.getTypeChecks = function(type) {
 						}),
 						args: [
 							new UglifyJS.AST_String({
-								value: this.name + ' should have type ' + type.type
+								value: name + ' should have type ' + primType
 							})
 						]
 					})
 				})
 			]
 		})
-	})];
+	});
+}
+
+UglifyJS.AST_SymbolRef.prototype.getTypeChecks = function(type) {
+	// TODO: Could probably generate nothing...
+	if (!type.isConcrete) return [];
+	if (type !== "object") return [primCheck(this, this.name, type.type)];
+
+	// need to generate more checks for each of the object member types...
+	for (var label in type.memberTypes) {
+		// we can't generate a check directly because the member type may
+		// still be nonprimitive. Instead construct an expression and recurse
+
+		var expression = new UglifyJS.AST_Dot({
+			expression: this,
+			property: label
+		});
+
+		expression.getTypeChecks(type.memberTypes[label]);
+	}
+
+	return [];
+};
+
+UglifyJS.AST_Dot.prototype.getTypeChecks = function(type) {
+	if (!type.isConcrete) return [];
+	if (type !== "object") return [primCheck()]
 };
 
 UglifyJS.AST_Assign.prototype.getTypeChecks = function(type) {
