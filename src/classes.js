@@ -44,18 +44,15 @@ Type.prototype.applySubstitution = function(sub) {
 		}
 	}
 };
-// TODO: subsumption
+
 Type.prototype.equals = function(type) {
 	if (this.type !== type.type) return false;
 	
 	if (this.type !== "object") return true;
 
-	// need to check inclusion in both directions
+	// Deliberately only check that type has at least the same fields as this
 	for (var i in this.memberTypes) {
 		if (type.memberTypes[i] === undefined) return false;
-	}
-	for (i in type.memberTypes) {
-		if (this.memberTypes[i] === undefined) return false;
 	}
 	
 	return true;
@@ -104,19 +101,17 @@ Substitution.prototype.apply = function(element) {
 
 
 
-function Constraint(type1, node1, type2, node2) {
-	this.left = type1;
-	this.right = type2;
+function Constraint(writeType, readType, readNode) {
+	this.writeType = writeType;
+	this.readType = readType;
 	
-	// pretty sure leftNode isn't used anywhere
-	this.leftNode = node1;
-	this.rightNode = node2;
+	this.readNode = readNode;
 
-	this.description = type1.type + " must be " + type2.type;
+	this.description = writeType.type + " must be " + readType.type;
 }
 Constraint.prototype.applySubstitution = function(sub) {
-	this.left.applySubstitution(sub);
-	this.right.applySubstitution(sub);
+	this.writeType.applySubstitution(sub);
+	this.readType.applySubstitution(sub);
 };
 
 

@@ -65,7 +65,7 @@ UglifyJS.AST_Object.prototype.check = function(gamma) {
 
 		// generate a new Type for this property, which will be constrained by the value type
 		var propType = gamma.getFreshType();
-		C.push(new Classes.Constraint(propType, this.properties[i], judgement.T, this.properties[i].value));
+		C.push(new Classes.Constraint(propType, judgement.T, this.properties[i].value));
 		memberType[this.properties[i].key] = propType;
 		memberType[this.properties[i].key].node = this.properties[i];
 
@@ -119,10 +119,10 @@ UglifyJS.AST_Assign.prototype.check = function(gamma) {
 		case ("%="):
 			// these operators have the added constraint that both left and right must be numbers
 			// since we're about to say the two types are equal, can just say left must be number
-			C.push(new Classes.Constraint(numType, null, j1.T, this.left));
+			C.push(new Classes.Constraint(numType, j1.T, this.left));
 		/* falls through */
 		case ("="):
-			C.push(new Classes.Constraint(j1.T, this.left, j2.T, this.right));
+			C.push(new Classes.Constraint(j2.T, j1.T, this.right));
 			returnType = j2.T;
 		break;
 		default:
@@ -154,15 +154,15 @@ UglifyJS.AST_Binary.prototype.check = function(gamma) {
 		case ("*"):
 		case ("/"):
 		case ("%"):
-			C = j1.C.concat(j2.C.concat([new Classes.Constraint(numType, null, j1.T, this.left), 
-											new Classes.Constraint(numType, null, j2.T, this.right)]));
+			C = j1.C.concat(j2.C.concat([new Classes.Constraint(numType, j1.T, this.left), 
+											new Classes.Constraint(numType, j2.T, this.right)]));
 			returnType = numType;
 			break;
 		// boolean operators (should both be boolean)
 		case ("||"):
 		case("&&"):
-			C = j1.C.concat(j2.C.concat([new Classes.Constraint(boolType, null, j1.T, this.left), 
-											new Classes.Constraint(boolType, null, j2.T, this.right)]));
+			C = j1.C.concat(j2.C.concat([new Classes.Constraint(boolType, j1.T, this.left), 
+											new Classes.Constraint(boolType, j2.T, this.right)]));
 			returnType = boolType;
 			break;
 		
@@ -172,8 +172,8 @@ UglifyJS.AST_Binary.prototype.check = function(gamma) {
 		case ("==="):
 		case ("!=="):
 			// TODO: is this a hacky solution? Create two symmetrical constraints to assert equality
-			C = j1.C.concat(j2.C.concat([new Classes.Constraint(j2.T, this.right, j1.T, this.left), 
-											new Classes.Constraint(j1.T, this.left, j2.T, this.right)]));
+			C = j1.C.concat(j2.C.concat([new Classes.Constraint(j2.T, j1.T, this.left), 
+											new Classes.Constraint(j1.T, j2.T, this.right)]));
 			returnType = boolType;
 			break;
 		
@@ -182,8 +182,8 @@ UglifyJS.AST_Binary.prototype.check = function(gamma) {
 		case ("<="):
 		case (">"):
 		case (">="):
-			C = j1.C.concat(j2.C.concat([new Classes.Constraint(numType, null, j1.T, this.left), 
-											new Classes.Constraint(numType, null, j2.T, this.right)]));
+			C = j1.C.concat(j2.C.concat([new Classes.Constraint(numType, j1.T, this.left), 
+											new Classes.Constraint(numType, j2.T, this.right)]));
 			returnType = boolType;
 			break;
 	
@@ -207,7 +207,7 @@ UglifyJS.AST_Unary.prototype.check = function(gamma) {
 	switch (this.operator) {
 		// boolean operators (should be boolean)
 		case ("!"):
-			C = j1.C.concat([new Classes.Constraint(boolType, null, j1.T, this.expression)]);
+			C = j1.C.concat([new Classes.Constraint(boolType, j1.T, this.expression)]);
 			returnType = boolType;
 			break;
 		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Expressions_and_Operators
@@ -215,7 +215,7 @@ UglifyJS.AST_Unary.prototype.check = function(gamma) {
 		case ("-"):
 		case ("++"):
 		case ("--"):
-			C = j1.C.concat([new Classes.Constraint(numType, null, j1.T, this.expression)]);
+			C = j1.C.concat([new Classes.Constraint(numType, j1.T, this.expression)]);
 			returnType = numType;
 			break;
 		
@@ -254,7 +254,7 @@ UglifyJS.AST_If.prototype.check = function(gamma) {
 	var j1 = this.condition.check(gamma);
 	X = j1.X;
 	C = j1.C;
-	C.push(new Classes.Constraint(boolType, null, j1.T, this.condition));
+	C.push(new Classes.Constraint(boolType, j1.T, this.condition));
 	
 	this.body.parent = parent(this);
 	var j2 = this.body.check(j1.gamma);
@@ -300,7 +300,7 @@ UglifyJS.AST_VarDef.prototype.check = function(gamma) {
 		this.value.parent = parent(this);
 		var judgement = this.value.check(gamma);
 		X = judgement.X.concat([T]);
-		C = judgement.C.concat([new Classes.Constraint(T, this.name, judgement.T, this.value)]);
+		C = judgement.C.concat([new Classes.Constraint(T, judgement.T, this.value)]);
 	}
 
 	gamma = new Classes.TypeEnv(gamma);

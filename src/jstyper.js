@@ -32,23 +32,23 @@ function solveConstraints(constraints) {
 	if (constraints.length < 1)
 		return {substitutions:[], checks:[]};
 
-	var left = constraints[0].left;
-	var right = constraints[0].right;
+	var writeType = constraints[0].writeType;
+	var readType = constraints[0].readType;
 	var remainder = constraints.slice(1);
 
 	// types are equal => constraint satisfied
-	if (left.equals(right)) {
+	if (writeType.equals(readType)) {
 
-		if (left.type !== "object")	
+		if (writeType.type !== "object")	
 			return solveConstraints(remainder);
+
 		
 		// if we're talking about objects, though, we need to explode the
 		// object constraints into constraints for each of the object
 		// properties.
 		var newConstraints = [];
-		for (var label in left.memberTypes) {
-			newConstraints.push(new Classes.Constraint(left.memberTypes[label], left.memberTypes[label].node,
-														 right.memberTypes[label], right.memberTypes[label].node));
+		for (var label in writeType.memberTypes) {
+			newConstraints.push(new Classes.Constraint(writeType.memberTypes[label], readType.memberTypes[label], readType.memberTypes[label].node));
 		}
 		return solveConstraints(remainder.concat(newConstraints));
 	}
@@ -56,27 +56,27 @@ function solveConstraints(constraints) {
 	var sub;
 
 	// constraints involving dynamic types are trivially satisfied
-	// if the left (write) type is dynamic, we always allow
-	if (left.isDynamic)
+	// if the writeType (write) type is dynamic, we always allow
+	if (writeType.isDynamic)
 		return solveConstraints(remainder);
 
-	// if the right (read) type is dynamic, we allow but must typecheck
-	if (right.isDynamic) {
+	// if the readType (read) type is dynamic, we allow but must typecheck
+	if (readType.isDynamic) {
 		var solution1 = solveConstraints(remainder);
-		solution1.checks.push({node:constraints[0].rightNode, type:left});
+		solution1.checks.push({node:constraints[0].readNode, type:writeType});
 		return solution1;
 	}
 
 
 	// if one type is not concrete, it can be substituted by the other
-	if (!left.isConcrete) {
-		sub = new Classes.Substitution(left, right);
-	} else if (!right.isConcrete) {
-		sub = new Classes.Substitution(right, left);
+	if (!writeType.isConcrete) {
+		sub = new Classes.Substitution(writeType, readType);
+	} else if (!readType.isConcrete) {
+		sub = new Classes.Substitution(readType, writeType);
 
 	} // both are different concrete types
 	else {
-		throw new Error(" Failed Unification: " + left.toString() + " != " + right.toString());
+		throw new Error(" Failed Unification: " + writeType.toString() + " != " + readType.toString());
 	}
 
 	// apply the substitution to the remaining constraints
