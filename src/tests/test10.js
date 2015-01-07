@@ -1,12 +1,20 @@
 // jstyper start import p
 var x = {
 	"hello": "world",
-	myValue: true
+	myValue: {
+		i:true
+	}
 };
 var y = {
 	"hello": "jupiter",
-	myValue: p
+	myValue: {
+		i:false	
+	},
+	extra:5
 };
 
+// e.g. function call with actual parameter y, formal parameter x
 x = y;
 // jstyper end
+
+
