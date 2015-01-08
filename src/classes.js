@@ -4,6 +4,15 @@
 	with if we had a reasonable type checker... 
 */
 
+module.exports = {
+	Type: Type,
+	Substitution: Substitution,
+	Constraint: Constraint,
+	TypeEnvEntry: TypeEnvEntry,
+	TypeEnv: TypeEnv,
+	Judgement: Judgement,
+};
+
 function Type(type, options) {
 	options = options || {};
 
@@ -45,12 +54,36 @@ Type.prototype.applySubstitution = function(sub) {
 	}
 };
 
+Type.prototype.makeEqualTo = function(type) {
+	if (this.type !== "object" || type.type !== "object") {
+		throw new Error("Can only make object types equal");
+	}
+
+	var constraints = [];
+
+	for (var label in type.memberTypes) {
+
+		// if this has a field missing, we just add it
+		if (this.memberTypes[label] === undefined) {
+			this.memberTypes[label] = TypeEnv.getFreshType();
+		}
+
+		// either way, we need constraints stating that this has the same
+		// field types as the other
+		// TODO: not sure this is a valid node...
+		constraints.push(new Constraint(type.memberTypes[label], this.memberTypes[label], this.memberTypes[label].node));
+	}
+	return constraints;
+};
+
 Type.prototype.equals = function(type) {
 	if (this.type !== type.type) return false;
 	
 	if (this.type !== "object") return true;
 
-	// Deliberately only check that type has at least the same fields as this
+	// return true;
+
+	// Deliberately only check that 'type' has at least the same fields as this
 	for (var i in this.memberTypes) {
 		if (type.memberTypes[i] === undefined) return false;
 	}
@@ -101,13 +134,13 @@ Substitution.prototype.apply = function(element) {
 
 
 
-function Constraint(writeType, readType, readNode) {
+function Constraint(writeType, readType, readNode, desc) {
 	this.writeType = writeType;
 	this.readType = readType;
 	
 	this.readNode = readNode;
 
-	this.description = writeType.type + " must be " + readType.type;
+	this.description = (desc || "") +  writeType.toString() + " must be " + readType.toString();
 }
 Constraint.prototype.applySubstitution = function(sub) {
 	this.writeType.applySubstitution(sub);
@@ -150,9 +183,10 @@ TypeEnv.prototype.get = function(varName) {
 	}
 	return null;
 };
-TypeEnv.prototype.getFreshType = function(opts) {
+TypeEnv.getFreshType = function(opts) {
 	return new Type("T" + (TypeEnv.nextType++), opts);
 };
+TypeEnv.prototype.getFreshType = TypeEnv.getFreshType;
 TypeEnv.prototype.applySubstitution = function(sub) {
 	for (var i = 0; i < this.length; i++) {
 		this[i].applySubstitution(sub);
@@ -195,28 +229,4 @@ Judgement.InitFromDirective = function(directive) {
 	}
 
 	return new Judgement(null, gamma, [], []);
-};
-
-
-
-
-
-// // debugger aids, toString getters:
-// Object.defineProperty(Type.prototype, "toString", {
-// 	get: function() {
-// 		return this.type + (this.isDynamic?"?":"");
-// 	}
-// });
-
-
-
-
-
-module.exports = {
-	Substitution: Substitution,
-	Judgement: Judgement,
-	Constraint: Constraint,
-	Type: Type,
-	TypeEnv: TypeEnv,
-	TypeEnvEntry: TypeEnvEntry,
 };

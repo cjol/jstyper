@@ -66,6 +66,7 @@ UglifyJS.AST_Object.prototype.check = function(gamma) {
 		// generate a new Type for this property, which will be constrained by the value type
 		var propType = gamma.getFreshType();
 		C.push(new Classes.Constraint(propType, judgement.T, this.properties[i].value));
+		X.push(propType);
 		memberType[this.properties[i].key] = propType;
 		memberType[this.properties[i].key].node = this.properties[i];
 
@@ -77,8 +78,29 @@ UglifyJS.AST_Object.prototype.check = function(gamma) {
 		concrete: true,
 		members: memberType
 	});
+	X.push(T);
 
 	return new Classes.Judgement(T, gamma, X, C);
+};
+
+UglifyJS.AST_Dot.prototype.check = function(gamma) {
+	// get the type of the containing object
+	var j1 = this.expression.check(gamma);
+	var X = j1.X;
+	var C = j1.C;
+
+	var T = gamma.getFreshType();
+	X.push(T);
+
+	// add a new constraint stating the containing object much have this as a property
+	var memberType = {};
+	memberType[this.property] = T;
+	var containerType = new Classes.Type('object', {
+		concrete: true,
+		members: memberType
+	});
+	C.push(new Classes.Constraint(containerType, j1.T, this.expression));
+	return new Classes.Judgement(T, j1.gamma, X, C);
 };
 
 // Rule IdType / IdTypeUndef
@@ -105,11 +127,13 @@ UglifyJS.AST_SymbolRef.prototype.check = function(gamma) {
 UglifyJS.AST_Assign.prototype.check = function(gamma) {
 	this.right.parent = parent(this);
 	this.left.parent = parent(this);
-
 	var j1 = this.right.check(gamma);
-	var j2 = this.left.check(j1.gamma);
-	var X = j1.X.concat(j2.X);
-	var C = j1.C.concat(j2.C);
+	var j2, X, C, j;
+
+	j2 = this.left.check(j1.gamma);
+	
+	X = j1.X.concat(j2.X);
+	C = j1.C.concat(j2.C);
 	var returnType;
 	switch(this.operator) {
 		case ("+="):
@@ -120,15 +144,41 @@ UglifyJS.AST_Assign.prototype.check = function(gamma) {
 			// these operators have the added constraint that both left and right must be numbers
 			// since we're about to say the two types are equal, can just say left must be number
 			C.push(new Classes.Constraint(numType, j1.T, this.left));
-		/* falls through */
-		case ("="):
 			C.push(new Classes.Constraint(j2.T, j1.T, this.right));
-			returnType = j2.T;
+			returnType = j1.T;
+		break;
+		case ("="):
+			if (this.left instanceof UglifyJS.AST_Dot) {
+				// this is a property assignment, so all we require is that the property expression be an object
+				j2 = this.left.expression.check(j1.gamma);
+				X = j1.X.concat(j2.X);
+				C = j1.C.concat(j2.C);
+
+				var memberType = {};
+
+				memberType[this.left.property] = j1.T;
+
+				var T = new Classes.Type('object',{
+					concrete: true,
+					members: memberType
+				});
+
+				X.push(T);	
+				var constraint = new Classes.Constraint(T, j2.T, this.left.expression);
+				constraint.enforce = true;
+				C.push(constraint);
+
+				j = new Classes.Judgement(returnType, j2.gamma, X, C);
+				j.nodes.push(this);
+				return j;
+			} 
+			C.push(new Classes.Constraint(j2.T, j1.T, this.right));
+			returnType = j1.T;
 		break;
 		default:
 			throw new Error("Unhandled assignment operator " + this.operator);
 	}
-	var j = new Classes.Judgement(returnType, j2.gamma, X, C);
+	j = new Classes.Judgement(returnType, j2.gamma, X, C);
 	j.nodes.push(this);
 
 	return j;

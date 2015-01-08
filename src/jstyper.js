@@ -36,20 +36,22 @@ function solveConstraints(constraints) {
 	var readType = constraints[0].readType;
 	var remainder = constraints.slice(1);
 
+	if (constraints[0].enforce) {
+		remainder = remainder.concat(readType.makeEqualTo(writeType));
+	}
+
 	// types are equal => constraint satisfied
+	// for objects, readType has at least the structure of writeType
 	if (writeType.equals(readType)) {
 
 		if (writeType.type !== "object")	
 			return solveConstraints(remainder);
 
-		
-		// if we're talking about objects, though, we need to explode the
-		// object constraints into constraints for each of the object
-		// properties.
 		var newConstraints = [];
 		for (var label in writeType.memberTypes) {
 			newConstraints.push(new Classes.Constraint(writeType.memberTypes[label], readType.memberTypes[label], readType.memberTypes[label].node));
 		}
+
 		return solveConstraints(remainder.concat(newConstraints));
 	}
 
@@ -113,7 +115,7 @@ module.exports = function(src) {
 	for (var i = 0; i< chunks.length; i++) {
 
 		// solve the generated constraints, or throw an error if this isn't possible
-		var solution = solveConstraints(chunks[i].C);
+		var solution = solveConstraints(chunks[i].C, chunks[i].gamma);
 
 		// apply the solution substitutions to the type environment
 		for (var j=0; j<solution.substitutions.length; j++) {
