@@ -32,24 +32,37 @@ function solveConstraints(constraints) {
 	if (constraints.length < 1)
 		return {substitutions:[], checks:[]};
 
-	var writeType = constraints[0].writeType;
-	var readType = constraints[0].readType;
+	var leftType = constraints[0].leftType;
+	var rightType = constraints[0].rightType;
 	var remainder = constraints.slice(1);
+	var label;
 
+	// if this is an 'enforcing' constraint, then we generate extra members
 	if (constraints[0].enforce) {
-		remainder = remainder.concat(readType.makeEqualTo(writeType));
+		for (label in leftType.memberTypes) {
+
+			// if rightType has a field missing, we add it here. Adding these
+			// will make the equals check below return true, and then
+			// constraints will be generated to assert that each of rightType's
+			// members are the same type as leftType's members
+			if (rightType.memberTypes[label] === undefined) {
+				rightType.memberTypes[label] = Classes.TypeEnv.getFreshType();
+			}
+		}
 	}
 
 	// types are equal => constraint satisfied
-	// for objects, readType has at least the structure of writeType
-	if (writeType.equals(readType)) {
+	// for objects, rightType has at least the structure of leftType
+	if (leftType.equals(rightType)) {
 
-		if (writeType.type !== "object")	
+		if (leftType.type !== "object")	
 			return solveConstraints(remainder);
 
+		// generate new constraints asserting that the members of leftType
+		// and of rightType have the same type
 		var newConstraints = [];
-		for (var label in writeType.memberTypes) {
-			newConstraints.push(new Classes.Constraint(writeType.memberTypes[label], readType.memberTypes[label], readType.memberTypes[label].node));
+		for (label in leftType.memberTypes) {
+			newConstraints.push(new Classes.Constraint(leftType.memberTypes[label], rightType.memberTypes[label], null));
 		}
 
 		return solveConstraints(remainder.concat(newConstraints));
@@ -58,27 +71,28 @@ function solveConstraints(constraints) {
 	var sub;
 
 	// constraints involving dynamic types are trivially satisfied
-	// if the writeType (write) type is dynamic, we always allow
-	if (writeType.isDynamic)
+	// if the leftType (write) type is dynamic, we always allow
+	if (leftType.isDynamic)
 		return solveConstraints(remainder);
 
-	// if the readType (read) type is dynamic, we allow but must typecheck
-	if (readType.isDynamic) {
+	// if the rightType (read) type is dynamic, we allow but must typecheck
+	// TODO: object types don't get type-checks, they get guarded
+	if (rightType.isDynamic && rightType !== "object") {
 		var solution1 = solveConstraints(remainder);
-		solution1.checks.push({node:constraints[0].readNode, type:writeType});
+		solution1.checks.push({node:constraints[0].rightNode, type:leftType});
 		return solution1;
 	}
 
 
 	// if one type is not concrete, it can be substituted by the other
-	if (!writeType.isConcrete) {
-		sub = new Classes.Substitution(writeType, readType);
-	} else if (!readType.isConcrete) {
-		sub = new Classes.Substitution(readType, writeType);
+	if (!leftType.isConcrete) {
+		sub = new Classes.Substitution(leftType, rightType);
+	} else if (!rightType.isConcrete) {
+		sub = new Classes.Substitution(rightType, leftType);
 
 	} // both are different concrete types
 	else {
-		throw new Error(" Failed Unification: " + writeType.toString() + " != " + readType.toString());
+		throw new Error(" Failed Unification: " + leftType.toString() + " != " + rightType.toString());
 	}
 
 	// apply the substitution to the remaining constraints

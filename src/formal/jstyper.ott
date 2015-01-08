@@ -30,11 +30,13 @@ vd :: 'vd_' ::=                                 {{ com VariableDeclaration }}
 e :: 'e_' ::=                                   {{ com Expression }}
 	| v         ::  :: Value 									{{ com Value }}
 	| id        ::  :: Deref 									{{ com Deref }}
-	| id Ass e   ::  :: Assign									{{ com Assign }}
+	| id Ass e  ::  :: Assign									{{ com Assign }}
+	| e . l Ass e' ::  :: PropAssign							{{ com PropAssign }}
 	| e op e'   ::  :: BinExp 									{{ com BinExp }}
 	| e postOp  ::  :: PostExp 									{{ com PostExp }}
 	| preOp e   ::  :: PreExp 									{{ com PreExp }}
-	| { l1 : e1 , .. , li : ei } ::  :: ObjExp				{{ com ObjExp }}
+	| { l1 : e1 , .. , li : ei } ::  :: ObjExp					{{ com ObjExp }}
+	| e . l 	::  :: PropExp									{{ com PropExp }} 
 
 Ass :: 'a_' ::=	                                {{ com Assignments }}
 				                                	{{ tex \approx }}
@@ -105,7 +107,7 @@ T :: 'Tval_' ::=				                {{ com Value Type }}
 	| string    ::  :: String 									{{ com String }}
 	| undefined ::  :: undefined 								{{ com undefined }}
 	| null      ::  :: null 									{{ com null }}
-	| { l1 : T1 , .. , li : Ti } ::  :: ObjType			{{ com ObjType }}
+	| { l1 : T1 , .. , li : Ti } ::  :: ObjType					{{ com ObjType }}
 
 % Things Ott wants
 
@@ -127,6 +129,8 @@ C :: 'C_' ::= 					                {{ com Constraint }}
 	| { T = T2 } ::  :: ConstraintEquation 						{{ com ConstraintEquation }}
 	| ( C )		 ::  :: BracketedConstraint  					{{ com BracketedConstraint }}
 																	{{ tex [[C]] }}
+	| ` C `		 ::  :: EnforcedConstraint  					{{ com EnforcedConstraint }}
+																	{{ tex \underline{[[C]]} }}
 
 X :: 'X_' ::= 					                {{ com Variable }}
 	| \{}		::  :: EmptyVariable							{{ com EmptyVariable }}
@@ -367,6 +371,14 @@ Jop :: '' ::=
 		---------------------------------------------				::   Obj
 		< {l1: v1, .., lj: vj, l: e, l1': e1', .., lj': ej'}, s> -> <{l1: v1, .., lj: vj, l: e', l1': e1', .., lj': ej'}, s'>
 
+		<e, s> -> <e', s'>
+		----------------------- 									::   Prop1
+		<e.l, s> -> <e'.l, s'>
+
+		----------------------- 									::   Prop2
+		< {l1: v1, .., lj: vj, l: v, l1': v1', .., lj': vj'}.l, s> -> <v, s'>
+
+
 
 
 	defn
@@ -401,7 +413,7 @@ Jop :: '' ::=
 		G |- e1 : T1 |X1 C1, G1 --- Gk-1 |- ek : Tk |Xk Ck, Gk 
 		---------------------------------------------------------   :: V_Obj
 		G |- {l1: e1, .., lk: ek} : {l1: T1', .., lk: Tk'} |X C, Gk
-	
+
 
 
 
@@ -415,6 +427,10 @@ Jop :: '' ::=
 		----------------------------------- 						:: IdTypeUndef
 		G |- id : T |{ T } \{}, G u {id : T}
 
+		G |- e : T1 |X C, G1
+		---------------------------------------------------------   :: Prop
+		G |- e.l : T2 |X C u {{l:T2} = T1}, G1
+	
 
 
 
@@ -423,8 +439,14 @@ Jop :: '' ::=
 		G |- e : T1 |X1 C1, G1
 		G1 |- id : T2 |X2 C2, G2
 		X1 n X2 = \{}
-		------------------------------------------------------	 	:: AssignType
-		G |- id = e : T2 |X1 u X2 (C1 u C2) u { T2 = T1 }, G2
+		------------------------------------------------------	 	:: AssignType 
+		G |- id = e : T1 |X1 u X2 (C1 u C2) u { T2 = T1 }, G2
+
+		G |- e' : T1 |X1 C1, G1
+		G1 |- e : T2 |X2 C2, G2
+		X1 n X2 = \{}
+		------------------------------------------------------	 	:: PropAssignType
+		G |- e.l = e' : T1 |X1 u X2 (C1 u C2) u `{ {l:T1} = T2 }`, G2
 
 		G |- e : T1 |X1 C1, G1
 		G1 |- id : T2 |X2 C2, G2

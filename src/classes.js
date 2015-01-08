@@ -54,28 +54,6 @@ Type.prototype.applySubstitution = function(sub) {
 	}
 };
 
-Type.prototype.makeEqualTo = function(type) {
-	if (this.type !== "object" || type.type !== "object") {
-		throw new Error("Can only make object types equal");
-	}
-
-	var constraints = [];
-
-	for (var label in type.memberTypes) {
-
-		// if this has a field missing, we just add it
-		if (this.memberTypes[label] === undefined) {
-			this.memberTypes[label] = TypeEnv.getFreshType();
-		}
-
-		// either way, we need constraints stating that this has the same
-		// field types as the other
-		// TODO: not sure this is a valid node...
-		constraints.push(new Constraint(type.memberTypes[label], this.memberTypes[label], this.memberTypes[label].node));
-	}
-	return constraints;
-};
-
 Type.prototype.equals = function(type) {
 	if (this.type !== type.type) return false;
 	
@@ -134,17 +112,17 @@ Substitution.prototype.apply = function(element) {
 
 
 
-function Constraint(writeType, readType, readNode, desc) {
-	this.writeType = writeType;
-	this.readType = readType;
+function Constraint(leftType, rightType, rightNode, desc) {
+	this.leftType = leftType;
+	this.rightType = rightType;
 	
-	this.readNode = readNode;
+	this.rightNode = rightNode;
 
-	this.description = (desc || "") +  writeType.toString() + " must be " + readType.toString();
+	this.description = (desc || "") +  leftType.toString() + " must be " + rightType.toString();
 }
 Constraint.prototype.applySubstitution = function(sub) {
-	this.writeType.applySubstitution(sub);
-	this.readType.applySubstitution(sub);
+	this.leftType.applySubstitution(sub);
+	this.rightType.applySubstitution(sub);
 };
 
 
