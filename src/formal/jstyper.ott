@@ -1,7 +1,7 @@
-% v0.3.0
+% v0.4.1
 % Version numbering: (project_goals_met?1:0).(added syntax).(refined spec)
-metavar termvar, x, id, l ::=  
-indexvar index, i, j, k ::= {{ isa num }} {{ coq nat }} {{ hol num }} 
+metavar termvar, x, y, z, id, l ::=  
+indexvar index, i, j, k ::= 
 
 
 grammar
@@ -15,8 +15,10 @@ v :: 'v_' ::=                                   {{ com Values }}
 	| undefined ::  :: Undefined 								{{ com Undefined }}
 	| null      ::  :: null 									{{ com null }}
 	| eps  		::  :: EmptyStatement							{{ com EmptyStatement }}
-																{{ tex \epsilon }}
-	| { l1 : v1 , .. , li : vi } ::  :: ObjVal				{{ com ObjVal }}
+																	{{ tex \epsilon }}
+	| { l1 : v1 , .. , li : vi } ::  :: ObjVal					{{ com ObjVal }}
+	| function id ( x1 , .. , xk ) { m1 ; .. ; mj } :: :: FunVal	{{ com FunVal }}
+	| function ( x1 , .. , xk ) { m1 ; .. ; mj } :: :: AnonFunVal	{{ com AnonFunVal }}
 	| get( s , id ) :: M:: GetStore 							{{ com GetStore }}
 
 s :: 's_' ::=                                   {{ com Store }}
@@ -37,6 +39,7 @@ e :: 'e_' ::=                                   {{ com Expression }}
 	| preOp e   ::  :: PreExp 									{{ com PreExp }}
 	| { l1 : e1 , .. , li : ei } ::  :: ObjExp					{{ com ObjExp }}
 	| e . l 	::  :: PropExp									{{ com PropExp }} 
+	| e ( e1 , .. , e2 ) ::  :: CallExp							{{ com CallExp }} 
 
 Ass :: 'a_' ::=	                                {{ com Assignments }}
 				                                	{{ tex \approx }}
@@ -54,9 +57,11 @@ Ass :: 'a_' ::=	                                {{ com Assignments }}
 
 m :: 'm_' ::=                                   {{ com Statement }}
 	| e         ::  :: Expression 								{{ com Expression }}
-	| m ; m'    ::  :: Seq          							{{ com Seq }}
+	| m1 ; .. ; mi    ::  :: Seqs          						{{ com Seqs }}
 	| var vd    ::  :: VarDeclaration 							{{ com VarDeclaration }}
 	| if ( e ) { m1 } else { m2 }  ::  :: IfElseStatement		{{ com IfStatement }}
+	| return e  ::  :: ReturnStatement							{{ com ReturnStatement}}
+	| { m } [ v1 / id1 , .. , vi / idi ] :: :: SubStatement		{{ com SubStatement (meta) }}
 
 op :: 'op_' ::=                                 {{ com BinaryOperation }}
 	| + 		::  :: Addition                                 {{ com Addition }}
@@ -107,7 +112,10 @@ T :: 'Tval_' ::=				                {{ com Value Type }}
 	| string    ::  :: String 									{{ com String }}
 	| undefined ::  :: undefined 								{{ com undefined }}
 	| null      ::  :: null 									{{ com null }}
+	| @UNDEF 	::  :: UNDEF 									{{ com UNDEF }}
+																	{{ tex \textit{@Undef} }}
 	| { l1 : T1 , .. , li : Ti } ::  :: ObjType					{{ com ObjType }}
+	| T1 , ... , Ti -> Tj ::   :: FunType						{{ com FunType }} 
 
 % Things Ott wants
 
@@ -117,6 +125,7 @@ G {{ tex \Gamma }} :: 'G_' ::= 					{{ com Context }}
 	| G u G'	::  :: UnionContext								{{ com UnionContext }}
 																	{{ tex [[G]] \cup [[G']] }}
 	| id : T 	::  :: ContextItem								{{ com ContextItem }}
+	| { id1 : T1 , .. , idk : Tk } 	::  :: ContextItems			{{ com ContextItems }}
 
 C :: 'C_' ::= 					                {{ com Constraint }}
 	| \{}		 ::  :: EmptyConstraint							{{ com EmptyConstraint }}
@@ -218,11 +227,11 @@ Jop :: '' ::=
 	by
 
 		-------------------                        		            ::   Seq1
-		<v; m, s> -> <m, s>
+		<v; m1; ..; mi, s> -> <m1; ..; mi, s>
 
 		<m1, s> -> <m1', s'>
 		----------------------------              		            ::   Seq2
-		<m1; m2, s> -> <m1'; m2, s'>
+		<m1;m2; ..; mi, s> -> <m1'; m2; ..; mi, s'>
 
 		<e, s> -> <e', s'>
 		----------------------------                 		        ::   Assign1
@@ -230,8 +239,6 @@ Jop :: '' ::=
 
 		---------------------------------            		        ::   Assign
 		<id = v, s> -> <v, put(s, id, v)>
-
-		% TODO: Verify this is fine (we reduce all Ass and substitute after exp reduction?)
 
 		----------------------------                 		        ::   AssignPlus
 		<id += v, s> -> <id = id + v, s>
@@ -258,11 +265,14 @@ Jop :: '' ::=
 		-----------------------------------               		    ::   Var2
 		<var id = e, s> -> <var id = e', s>
 
-		-------------------------------               		        ::   Var3
-		<var id = v, s> -> <eps, s>
+		----------------------------------------       		        ::   Var3
+		<var id = v, s> -> <eps, put(s, id, v)>
 
 		----------------------------------------- 			        ::   Var4
 		<var vd, vd', s> -> <var vd; var vd', s >
+
+		------------------------------------------------- 			::   Fun1 {{ com (Only stmts) }}
+		<function x(y1,..,yi) {m1;..;mj}, s> -> <eps, put(s, x, function (y1,..,yi) {m1;..;mj})> 
 
 		<e, s> -> <e', s'>
 		--------------------------------                            ::   UnOp1
@@ -378,6 +388,18 @@ Jop :: '' ::=
 		----------------------- 									::   Prop2
 		< {l1: v1, .., lj: vj, l: v, l1': v1', .., lj': vj'}.l, s> -> <v, s'>
 
+		<e, s> -> <e', s'>
+		----------------------- 									::   Call1
+		< e(e1,..,ei), s> -> <e'(e1,..,ei), s'>
+
+		<e1, s> -> <e1', s'>
+		----------------------- 									::   Call2
+		< v(v1,..,vi,e1,e2,..,ej), s> -> <v(v1,..,vi,e1',e2,..,ej), s'>
+
+		% NOTE 's' is totally insufficient
+		----------------------- 									::   Call3
+		< function id(id1,..,idi){m1;..;mj}(v1,..,vi), s> -> <{m1;..;mj}[v1/id1,..,vi/idi], s'>
+
 
 
 
@@ -414,7 +436,13 @@ Jop :: '' ::=
 		---------------------------------------------------------   :: V_Obj
 		G |- {l1: e1, .., lk: ek} : {l1: T1', .., lk: Tk'} |X C, Gk
 
+		G u {x1:T1, .., xi:Ti} |- @RET{m1; ..; mj} : T |X C, G
+		----------------------------------------------------------------------- :: V_Fun1
+		G |- function (x1, .., xi) { m1; ..; mj } : T1, .., Ti -> T |X C, G
 
+		G u {x1:T1, .., xi:Ti, id:T1, .., Ti -> T} |- @RET{m1; ..; mj} : T |X C, G
+		----------------------------------------------------------------------- :: V_Fun2
+		G |- function id(x1, .., xi) { m1; ..; mj } : T1, .., Ti -> T |X C, G
 
 
 		% Variable retrieval
@@ -431,6 +459,7 @@ Jop :: '' ::=
 		---------------------------------------------------------   :: Prop
 		G |- e.l : T2 |X C u {{l:T2} = T1}, G1
 	
+
 
 
 
@@ -612,6 +641,52 @@ Jop :: '' ::=
 		G |- e-- : number |X C u {T1 = number}, G'
 
 
+	% @RET Typable checks whether statements are typable (similar to typable below)
+	% but also determines the return type for the given block
+
+	defn
+	G |- @RET{ m } : T | X C , G' :: :: retTypable ::''
+	 {{ tex [[G]] [[|-]] \textit{@RET}\{[[m]]\} : [[T]]\hspace{5pt}| _{ [[X]] } \hspace{3pt}[[C]], [[G']] }}
+	 by
+
+	 	G |- e : T | X C, G'
+	 	-------------------------------------------- 	:: RetRetTypable
+	 	G |- @RET{return e} : T1 |X C u {T1 = T}, G'
+
+	 	G |- @RET{m1} : T1 | X1 C1, G1'
+	 	G1 |- @RET{m2; ..; mi} : T2 | X2 C2, G2'
+		X1 n X2 = \{}
+	 	--------------------------------------------------------------------- 	:: RetSeqTypable
+	 	G |- @RET{m1; m2; ..; mi} : T |X1 u X2 (C1 u C2) u ({T = T1} u {T = T2}), G2'
+
+		----------------------------------------------                		    :: RetDecTypable
+		G |- @RET{var id} : @UNDEF |{T} \{}, G u {id : T}
+
+		G |- e : T |X C, G'
+		----------------------------------------------                		    :: RetExpTypable
+		G |- @RET{e} : @UNDEF |X C, G'
+
+		G |- e : T1 |X1 C1, G1
+		G1 |- @RET{m1} : T2 | X2 C2, G2
+		G1 |- @RET{m2} : T3 | X3 C3, G3
+		X1 n X2 = \{}
+		---------------------------------                					    :: RetIfTypable
+		G |- @RET{if (e) {m1} else {m2}} : T |(X1 u X2) u X3 (C1 u (C2 u C3)) u ({T1 = boolean} u ({T=T2} u {T=T3})), G1
+
+		G |- var id | X1 C, G1
+		G1 |- id = e : T |X2 C, G2
+		X1 n X2 = \{}
+		---------------------------------                		    :: RetDefTypable
+		G |- @RET{var id = e} : @UNDEF |X1 u X2 C1 u C2, G2
+
+		G |- var vd |X1 C1, G1
+		G1 |- var vd' |X1 C2, G2
+		X1 n X2 = \{}
+		---------------------------------------            		    :: RetMultiDecTypable
+		G |- @RET{var vd , vd'} : @UNDEF |X1 u X2 C1 u C2, G2
+
+
+
 	defn
 	G |- m | X C , G' :: :: typable::'' 
 	 {{ tex [[G]] [[|-]] [[m]] \hspace{5pt}| _{ [[X]] } \hspace{3pt}[[C]], [[G']]}}
@@ -626,10 +701,10 @@ Jop :: '' ::=
 		G |- e |X C, G'
 
 		G |- m1 |X1 C1, G1
-		G1 |- m2 |X2 C2, G2
+		G1 |- m2; ...; mi |X2 C2, G2
 		X1 n X2 = \{}
 		---------------------------------                		    :: SeqTypable
-		G |- m1 ; m2 |X1 u X2 C1 u C2, G2
+		G |- m1; m2; ...; mi |X1 u X2 C1 u C2, G2
 
 		G |- e : T1 |X1 C1, G1
 		G1 |- m1 | X2 C2, G2

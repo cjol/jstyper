@@ -4,6 +4,22 @@
 		"selected_items":
 		[
 			[
+				"enfo",
+				"enforcedConstraints"
+			],
+			[
+				"get",
+				"getFreshType"
+			],
+			[
+				"empt",
+				"emptyObjType"
+			],
+			[
+				"conta",
+				"containerType"
+			],
+			[
 				"insert",
 				"insertBefore"
 			],
@@ -91,66 +107,58 @@
 			"file": "src/formal/jstyper.ott",
 			"settings":
 			{
-				"buffer_size": 8258,
+				"buffer_size": 26268,
 				"line_ending": "Unix"
 			}
 		},
 		{
-			"file": "src/tests/test5.js",
+			"file": "jstyper.sublime-project",
 			"settings":
 			{
-				"buffer_size": 144,
+				"buffer_size": 426,
 				"line_ending": "Unix"
 			}
 		},
 		{
-			"file": "src/tests/test6.js",
-			"settings":
-			{
-				"buffer_size": 76,
-				"line_ending": "Unix"
-			}
-		},
-		{
+			"contents": "/*jshint unused:true, bitwise:true, eqeqeq:true, undef:true, latedef:true, eqnull:true */\n/* global require, module, console */\n\n/* this module is the central point for type-checking provided\n	code, and for generating gradual-typing-compiled source code */\n\n\n// for constructing and deconstructing the AST respectively\n// var acorn = require(\"acorn\");\n// var escodegen = require(\"escodegen\");\nvar UglifyJS = require(\"uglify-js2\");\n\n// for our jstyper objects\nvar Classes = require(\"./classes.js\");\nrequire(\"./judgements.js\");\nrequire(\"./checkUntyped.js\");\nrequire(\"./assertions.js\");\nrequire(\"./insertBefore.js\");\n\nString.prototype.format = function() {\n	var newStr = this,\n		i = 0;\n	while (/%s/.test(newStr))\n		newStr = newStr.replace(\"%s\", arguments[i++]);\n	return newStr;\n};\n\n// obtain a set of substitutions which will make the constraints unifiable\n// also generate checks for dynamic types\nfunction solveConstraints(constraints) {\n	// originally from Pierce p. 327\n	\n	// base case\n	if (constraints.length < 1)\n		return {substitutions:[], checks:[]};\n\n	var constraint = constraints[0];\n	var remainder = constraints.slice(1);\n\n	var leftType = constraint.leftType;\n	var rightType = constraint.rightType;\n	var label;\n\n	// if this is an 'enforcing' constraint, then we generate extra members\n	if (constraint.enforce === true) {\n		for (label in leftType.memberTypes) {\n\n			// if rightType has a field missing, we add it here. Adding these\n			// will make the equals check below return true, and then\n			// constraints will be generated to assert that each of rightType's\n			// members are the same type as leftType's members\n			if (rightType.memberTypes[label] === undefined) {\n				rightType.memberTypes[label] = Classes.TypeEnv.getFreshType();\n			}\n		}\n	}\n\n	// types are equal => constraint satisfied\n	// for objects, 'equal' means rightType has at least the structure of leftType\n	if (leftType.equals(rightType)) {\n\n		if (leftType.type !== \"object\")	\n			return solveConstraints(remainder);\n\n		// generate new constraints asserting that the members of leftType\n		// and of rightType have the same type\n		var newConstraints = [];\n		for (label in leftType.memberTypes) {\n			newConstraints.push(new Classes.Constraint(leftType.memberTypes[label], rightType.memberTypes[label], null));\n		}\n\n		return solveConstraints(remainder.concat(newConstraints));\n	}\n\n\n	// constraints involving dynamic types are trivially satisfied\n	// if the leftType (write) type is dynamic, we always allow\n	if (leftType.isDynamic)\n		return solveConstraints(remainder);\n\n	// if the rightType (read) type is dynamic, we allow but must typecheck\n	// TODO: object types don't get type-checks, they should get guarded\n	if (rightType.isDynamic && rightType !== \"object\") {\n		var solution1 = solveConstraints(remainder);\n		solution1.checks.push({node:constraint.rightNode, type:leftType});\n		return solution1;\n	}\n\n\n	// if one type is not concrete, it can be substituted by the other\n	var sub;\n	if (!leftType.isConcrete) {\n		sub = new Classes.Substitution(leftType, rightType);\n	} else if (!rightType.isConcrete) {\n		sub = new Classes.Substitution(rightType, leftType);\n\n	} // both are different concrete types\n	else {\n		throw new Error(\" Failed Unification: \" + leftType.toString() + \" != \" + rightType.toString());\n	}\n\n	// apply the substitution to the remaining constraints\n	for (var i = 0; i < remainder.length; i++) {\n		sub.apply(remainder[i]);\n	}\n\n	// it's quite important that substitutions are applied in the right order\n	// here first item should be applied first\n	var solution = solveConstraints(remainder);\n	solution.substitutions = [sub].concat(solution.substitutions);\n	return solution;\n}\n\nmodule.exports = function(src) {\n\n	// obtain AST\n	var ast;\n	try {\n		ast = UglifyJS.parse(src);\n	} catch (e) {\n		e.message = \"Parse Error: \" + e.message;\n		throw e;\n	}\n\n	// reset the fresh type counter for consistency\n	Classes.TypeEnv.nextType = 1;\n\n	// generate a judgement for (each annotated section of) the entire tree\n	// it's checkUntyped because, at the time of calling, we're not in the typed world yet\n	var chunks = ast.checkUntyped();\n\n	// check the judgement is valid and do gradual typing for each chunk\n	for (var i = 0; i< chunks.length; i++) {\n\n		// solve the generated constraints, or throw an error if this isn't possible\n		var solution = solveConstraints(chunks[i].C, chunks[i].gamma);\n\n		// apply the solution substitutions to the type environment\n		for (var j=0; j<solution.substitutions.length; j++) {\n			chunks[i].gamma.applySubstitution(solution.substitutions[j]);\n			for (var k = 0; k<solution.checks.length; k++) {\n				solution.checks[k].type.applySubstitution(solution.substitutions[j]);\n			}\n		}\n\n		// Prepare a helpful message for each typed chunk\n		var typeComment = \" jstyper types: \";\n		var sep = \"\";\n		for (var o = 0; o < chunks[i].gamma.length; o++) {\n			var location = (chunks[i].gamma[o].node)?\n				\"l%s c%s\".format(\n					chunks[i].gamma[o].node.start.line,\n					chunks[i].gamma[o].node.start.col)\n				:\"imported\";\n\n			typeComment += sep;\n			typeComment += \"%s (%s): %s\".format(\n				chunks[i].gamma[o].name,\n				location,\n				chunks[i].gamma[o].type.toString());\n			sep = \"; \";\n		}\n\n		// prepend the types in a comment at the start of the chunk\n		chunks[i].nodes[0].start.comments_before.push(\n			new UglifyJS.AST_Token({\n				type: 'comment1',\n				value: typeComment\n			})\n		);\n\n		// TODO: append a notice indicating the end of the typed section (not easy without a trailing comments property!)\n		\n		for (var l = 0; l<solution.checks.length; l++) {\n			// insert the checks as appropriate\n			// unfortunately we're replacing nodes as we go, so we'll also need to substitute nodes as we go along\n			var typeChecks = solution.checks[l].node.getTypeChecks( solution.checks[l].type );\n			if (typeChecks) {\n				for (var p = 0; p < typeChecks.length; p++) {\n					var subs = solution.checks[l].node.parent().insertBefore(typeChecks[p], solution.checks[l].node);\n					for (var m = 0; m<subs.length; m++) {\n						for (var n=l; n<solution.checks.length; n++) {\n							if (solution.checks[n].node === subs[m].from) {\n								solution.checks[n].node = subs[m].to;\n							}\n						}\n					}\n					\n				}\n			}\n		}\n	}\n\n	var checkRes = chunks;\n	var stream = UglifyJS.OutputStream({\n		beautify: true,\n		comments: true,\n		width: 60\n	});\n	ast.print(stream);\n\n	return {\n		src: stream.toString(),\n		check: checkRes\n	};\n};",
 			"file": "src/jstyper.js",
-			"settings":
-			{
-				"buffer_size": 15892,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "src/tests/test4.js",
-			"settings":
-			{
-				"buffer_size": 67,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "src/main.js",
-			"settings":
-			{
-				"buffer_size": 3047,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"contents": "{\n	\"type\": \"Program\",\n	\"start\": 1,\n	\"end\": 36,\n	\"range\": [\n		1,\n		36\n	],\n	\"body\": [\n		{\n			\"type\": \"VariableDeclaration\",\n			\"start\": 1,\n			\"end\": 12,\n			\"range\": [\n				1,\n				12\n			],\n			\"declarations\": [\n				{\n					\"type\": \"VariableDeclarator\",\n					\"start\": 5,\n					\"end\": 6,\n					\"range\": [\n						5,\n						6\n					],\n					\"id\": {\n						\"type\": \"Identifier\",\n						\"start\": 5,\n						\"end\": 6,\n						\"range\": [\n							5,\n							6\n						],\n						\"name\": \"x\"\n					},\n					\"init\": null\n				},\n				{\n					\"type\": \"VariableDeclarator\",\n					\"start\": 8,\n					\"end\": 11,\n					\"range\": [\n						8,\n						11\n					],\n					\"id\": {\n						\"type\": \"Identifier\",\n						\"start\": 8,\n						\"end\": 9,\n						\"range\": [\n							8,\n							9\n						],\n						\"name\": \"y\"\n					},\n					\"init\": {\n						\"type\": \"Literal\",\n						\"start\": 10,\n						\"end\": 11,\n						\"range\": [\n							10,\n							11\n						],\n						\"value\": 5,\n						\"raw\": \"5\"\n					}\n				}\n			],\n			\"kind\": \"var\"\n		},\n		{\n			\"type\": \"ExpressionStatement\",\n			\"start\": 13,\n			\"end\": 18,\n			\"range\": [\n				13,\n				18\n			],\n			\"expression\": {\n				\"type\": \"Literal\",\n				\"start\": 13,\n				\"end\": 17,\n				\"range\": [\n					13,\n					17\n				],\n				\"value\": true,\n				\"raw\": \"true\"\n			}\n		},\n		{\n			\"type\": \"ExpressionStatement\",\n			\"start\": 19,\n			\"end\": 31,\n			\"range\": [\n				19,\n				31\n			],\n			\"expression\": {\n				\"type\": \"AssignmentExpression\",\n				\"start\": 19,\n				\"end\": 30,\n				\"range\": [\n					19,\n					30\n				],\n				\"operator\": \"=\",\n				\"left\": {\n					\"type\": \"Identifier\",\n					\"start\": 19,\n					\"end\": 20,\n					\"range\": [\n						19,\n						20\n					],\n					\"name\": \"z\"\n				},\n				\"right\": {\n					\"type\": \"AssignmentExpression\",\n					\"start\": 21,\n					\"end\": 30,\n					\"range\": [\n						21,\n						30\n					],\n					\"operator\": \"=\",\n					\"left\": {\n						\"type\": \"Identifier\",\n						\"start\": 21,\n						\"end\": 22,\n						\"range\": [\n							21,\n							22\n						],\n						\"name\": \"x\"\n					},\n					\"right\": {\n						\"type\": \"Literal\",\n						\"start\": 23,\n						\"end\": 30,\n						\"range\": [\n							23,\n							30\n						],\n						\"value\": \"hello\",\n						\"raw\": \"\\\"hello\\\"\"\n					}\n				}\n			}\n		},\n		{\n			\"type\": \"ExpressionStatement\",\n			\"start\": 32,\n			\"end\": 36,\n			\"range\": [\n				32,\n				36\n			],\n			\"expression\": {\n				\"type\": \"AssignmentExpression\",\n				\"start\": 32,\n				\"end\": 35,\n				\"range\": [\n					32,\n					35\n				],\n				\"operator\": \"=\",\n				\"left\": {\n					\"type\": \"Identifier\",\n					\"start\": 32,\n					\"end\": 33,\n					\"range\": [\n						32,\n						33\n					],\n					\"name\": \"x\"\n				},\n				\"right\": {\n					\"type\": \"Identifier\",\n					\"start\": 34,\n					\"end\": 35,\n					\"range\": [\n						34,\n						35\n					],\n					\"name\": \"y\"\n				}\n			}\n		}\n	]\n}\n",
-			"file": "src/temp.txt",
 			"file_size": -1,
 			"file_write_time": -1,
 			"settings":
 			{
-				"buffer_size": 2654,
+				"buffer_size": 6397,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "src/classes.js",
+			"settings":
+			{
+				"buffer_size": 4860,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "src/judgements.js",
+			"settings":
+			{
+				"buffer_size": 11394,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"contents": "\n% function calls\n% Object, Exception\n% @Fun, @Call\n\n% Calling a method\n\n------------------------------------------ [E-Call-Ref]\nH,l,ln*m([va~]) -> H,l,@Fun(ln,ln*m[,va~])\n\n% Calling a function\n\n------------------------------------------- [E-Call]\nH,l,va([va~]) -> H,l,@Fun(#Global,va[,va~])\n\n% Actually making the function call\n\n----------------------------------------------- [E-@Fun-Call]\nH,l,@Fun(l1,l2[,va~]) -> H,l,l2.@Call(l1[,va~])    \n		",
+			"settings":
+			{
+				"buffer_size": 446,
 				"line_ending": "Unix"
 			}
 		}
 	],
-	"build_system": "Packages/User/CustomOtt.sublime-build",
+	"build_system": "Ott to PDF",
 	"command_palette":
 	{
-		"height": 374.0,
+		"height": 392.0,
 		"selected_items":
 		[
 			[
@@ -330,7 +338,7 @@
 				"Preferences: Browse Packages"
 			]
 		],
-		"width": 435.0
+		"width": 593.0
 	},
 	"console":
 	{
@@ -351,15 +359,17 @@
 	},
 	"expanded_folders":
 	[
-		"/home/christoph/Documents/dev/jstyper",
-		"/home/christoph/Documents/dev/jstyper/report",
-		"/home/christoph/Documents/dev/jstyper/report/Proposal",
-		"/home/christoph/Documents/dev/jstyper/src",
-		"/home/christoph/Documents/dev/jstyper/src/formal",
-		"/home/christoph/Documents/dev/jstyper/src/tests"
+		"/home/christoph/dev/jstyper"
 	],
 	"file_history":
 	[
+		"/home/christoph/dev/jstyper/src/main.js",
+		"/home/christoph/dev/jstyper/src/tests/test4.js",
+		"/home/christoph/dev/jstyper/src/tests/test11.js",
+		"/home/christoph/dev/jstyper/src/tests/test6.js",
+		"/home/christoph/dev/jstyper/src/tests/test5.js",
+		"/home/christoph/dev/jstyper/src/tests/test12.js",
+		"/home/christoph/dev/jstyper/src/temp.txt",
 		"/home/christoph/.config/sublime-text-3/Packages/Javascript Beautify/JavascriptBeautify.sublime-settings",
 		"/home/christoph/.config/sublime-text-3/Packages/User/JavascriptBeautify.sublime-settings",
 		"/home/christoph/Documents/FBMessageBackup - copy/litty_0.csv",
@@ -393,13 +403,14 @@
 	],
 	"find":
 	{
-		"height": 36.0
+		"height": 35.0
 	},
 	"find_in_files":
 	{
 		"height": 100.0,
 		"where_history":
 		[
+			"",
 			"/home/christoph/Documents/FBMessageBackup - copy"
 		]
 	},
@@ -408,6 +419,32 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"mj",
+			"put",
+			"m2",
+			"s",
+			"function",
+			"\" \"",
+			" ",
+			"\"\n",
+			" ",
+			"2",
+			"PropAssign",
+			"readNode",
+			"readType",
+			"writeType",
+			"readType",
+			"writeType",
+			"add",
+			"constraints",
+			", gamma",
+			"emptyObjType",
+			"solveConstraints",
+			"node2",
+			"type2",
+			"type1",
+			"Classes.Constraint",
+			"Constraint",
 			"makeSubstitution",
 			"insertBefore",
 			"	newNode.leadingComments = treeNode.parent.body[i].leadingComments;\n		",
@@ -509,33 +546,7 @@
 			"typecheck",
 			"jstyper",
 			" +",
-			"\\s\\s",
-			"{{",
-			"	::",
-			"{{",
-			" \n",
-			"{{",
-			"   {{",
-			"     ::",
-			"	:: ",
-			"::",
-			"makeRef",
-			"Gamma",
-			" (G(\\d|')*$)",
-			"ref",
-			"Ref",
-			"ref",
-			"::",
-			"assign",
-			"makeConstraint",
-			"gamma",
-			"makeJudgement",
-			"judgement",
-			"statement",
-			"acornwalker",
-			"accornwalker",
-			"scopeVisitor",
-			"walk"
+			"\\s\\s"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -568,7 +579,7 @@
 	"groups":
 	[
 		{
-			"selected": 3,
+			"selected": 0,
 			"sheets":
 			[
 				{
@@ -577,51 +588,57 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 8258,
+						"buffer_size": 26268,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								1448,
-								1448
+								24957,
+								24957
 							]
 						],
 						"settings":
 						{
+							"WordCountShouldRun": true,
+							"WordCountSyntax": "plain text",
 							"syntax": "Packages/Text/Plain text.tmLanguage",
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 9235.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 1,
+					"stack_index": 0,
 					"type": "text"
 				},
 				{
 					"buffer": 1,
-					"file": "src/tests/test5.js",
+					"file": "jstyper.sublime-project",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 144,
+						"buffer_size": 426,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								78,
-								78
+								363,
+								363
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage"
+							"WordCountShouldRun": false,
+							"WordCountSyntax": "json",
+							"syntax": "Packages/JavaScript/JSON.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
 						},
-						"translation.x": 0.0,
+						"translation.x": 365.0,
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
@@ -630,85 +647,97 @@
 				},
 				{
 					"buffer": 2,
-					"file": "src/tests/test6.js",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 76,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								11,
-								11
-							]
-						],
-						"settings":
-						{
-							"auto_name": "",
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 3,
-					"type": "text"
-				},
-				{
-					"buffer": 3,
 					"file": "src/jstyper.js",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 15892,
+						"buffer_size": 6397,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								2475,
-								2475
+								1316,
+								1316
 							]
 						],
 						"settings":
 						{
+							"WordCountShouldRun": false,
+							"WordCountSyntax": "javascript",
 							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 656.0,
+						"translation.y": 315.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 0,
+					"stack_index": 1,
 					"type": "text"
 				},
 				{
-					"buffer": 4,
-					"file": "src/tests/test4.js",
+					"buffer": 3,
+					"file": "src/classes.js",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 67,
+						"buffer_size": 4860,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								19,
-								19
+								2701,
+								2701
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage"
+							"WordCountSyntax": "javascript",
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 1440.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 5,
+					"type": "text"
+				}
+			]
+		},
+		{
+			"selected": 1,
+			"sheets":
+			[
+				{
+					"buffer": 4,
+					"file": "src/judgements.js",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 11394,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								3195,
+								3195
+							]
+						],
+						"settings":
+						{
+							"WordCountShouldRun": false,
+							"WordCountSyntax": "javascript",
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 510.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 4,
@@ -716,60 +745,32 @@
 				},
 				{
 					"buffer": 5,
-					"file": "src/main.js",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 3047,
+						"buffer_size": 446,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								2113,
-								2113
+								328,
+								328
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage"
+							"WordCountShouldRun": true,
+							"WordCountSyntax": "plain text",
+							"auto_name": "",
+							"syntax": "Packages/Text/Plain text.tmLanguage"
 						},
 						"translation.x": 0.0,
-						"translation.y": 1100.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 5,
-					"type": "text"
-				},
-				{
-					"buffer": 6,
-					"file": "src/temp.txt",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 2654,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								2055,
-								2055
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
-							"tab_size": 2,
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 1749.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 6,
+					"stack_index": 3,
 					"type": "text"
 				}
 			]
@@ -777,7 +778,7 @@
 	],
 	"incremental_find":
 	{
-		"height": 36.0
+		"height": 34.0
 	},
 	"input":
 	{
@@ -792,11 +793,18 @@
 				0,
 				1,
 				1
+			],
+			[
+				1,
+				0,
+				2,
+				1
 			]
 		],
 		"cols":
 		[
 			0.0,
+			0.5,
 			1.0
 		],
 		"rows":
@@ -825,16 +833,28 @@
 		"height": 0.0,
 		"selected_items":
 		[
+			[
+				"class",
+				"src/classes.js"
+			]
 		],
 		"width": 0.0
 	},
 	"select_project":
 	{
-		"height": 0.0,
+		"height": 500.0,
 		"selected_items":
 		[
+			[
+				"",
+				"~/dev/mabel/mabel.sublime-project"
+			],
+			[
+				"mab",
+				"~/dev/mabel/mabel.sublime-project"
+			]
 		],
-		"width": 0.0
+		"width": 380.0
 	},
 	"select_symbol":
 	{
@@ -857,8 +877,8 @@
 	"show_minimap": false,
 	"show_open_files": false,
 	"show_tabs": true,
-	"side_bar_visible": true,
-	"side_bar_width": 168.0,
+	"side_bar_visible": false,
+	"side_bar_width": 221.0,
 	"status_bar_visible": true,
 	"template_settings":
 	{
