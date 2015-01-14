@@ -44,16 +44,7 @@ e :: 'e_' ::=                                   {{ com Expression }}
 Ass :: 'a_' ::=	                                {{ com Assignments }}
 				                                	{{ tex \approx }}
 	| = 		::  :: PlainAssign                              {{ com PlainAssign }}
-	| += 		::  :: PlusAssign                               {{ com PlusAssign }}
-				                                                	{{ tex +\!= }}
-	| -= 		::  :: MinusAssign                              {{ com MinusAssign }}
-				                                                	{{ tex -\!\!= }}
-	| *= 		::  :: MultAssign                               {{ com MultAssign }}
-				                                                	{{ tex *\!= }}
-	| /= 		::  :: DivAssign                                {{ com DivAssign }}
-				                                                	{{ tex /\!\!= }}
-	| %= 		::  :: ModAssign                                {{ com ModAssign }}
-				                                                	{{ tex \%\!= }}
+	| numOp =	::  :: NumAssign 								{{ com NumAssign }}
 
 m :: 'm_' ::=                                   {{ com Statement }}
 	| e         ::  :: Expression 								{{ com Expression }}
@@ -64,40 +55,56 @@ m :: 'm_' ::=                                   {{ com Statement }}
 	| { m } [ v1 / id1 , .. , vi / idi ] :: :: SubStatement		{{ com SubStatement (meta) }}
 
 op :: 'op_' ::=                                 {{ com BinaryOperation }}
+	| numOp  	::  :: NumOp 									{{ com NumOp }}
+	| cmpOp 	::  :: CmpOp 									{{ com CmpOp }}
+	| numcmpOp 	::  :: NumCmpOp									{{ com NumCmpOp }}
+	| boolOp 	::  :: BoolOp									{{ com BoolOp }}
+
+
+numOp :: 'nop_' ::=
 	| + 		::  :: Addition                                 {{ com Addition }}
 	| - 		::  :: Subtraction                              {{ com Subtraction }}
 	| / 		::  :: Division                                 {{ com Division }}
 	| * 		::  :: Multiplication                           {{ com Multiplication }}
 	| % 		::  :: Modulo                                   {{ com Modulo }}
+
+
+numcmpOp :: 'ncop_' ::=
 	| < 		::  :: LessThan                                 {{ com LessThan }}
 	| > 		::  :: GreaterThan                              {{ com GreaterThan }}
 	| <= 		::  :: LessEqual                                {{ com LessEqual }}
 																	{{ tex \leq }}
 	| >= 		::  :: GreaterEqual                             {{ com GreaterEqual }}
 																	{{ tex \geq }}
+
+cmpOp :: 'cop_' ::=
 	| == 		::  :: Equal                                    {{ com Equal }}
 	| != 		::  :: Unequal                                  {{ com Unequal }}
 																	{{ tex !\!\!= }}
 	| === 		::  :: StrictEqual                              {{ com StrictEqual }}
 	| !== 		::  :: StrictUnequal                            {{ com StrictUnequal }}
 																	{{ tex !\!\!== }}
+boolOp :: 'bop_' ::=
 	| || 		::  :: BooleanOr                                {{ com BooleanOr }}
 	| && 		::  :: BooleanAnd                               {{ com BooleanAnd }}
 
 preOp :: 'preop_' ::=                           {{ com PrefixOperation }}
-	| ~ 		::  :: Negation                                 {{ com Negation }}
-																	{{ tex -\! }}
+	| preNum 	::  :: PreNum 									{{ com PreNum }}
 	| !			::  :: BoolNegation                             {{ com BoolNegation }}
 																	{{ tex !\! }}
+
+preNum :: 'prenum_' ::=                           {{ com PreNum }}
+	| ~ 		::  :: Negation                                 {{ com Negation }}
+																	{{ tex -\! }}
 	| --		::  :: PreDecrement                             {{ com PreDecrement }}
 																	{{ tex -\!\!-\!\! }}
 	| ++		::  :: PreIncrement                             {{ com PreIncrement }}
 																	{{ tex +\!\!+\!\! }}
 
 postOp :: 'postop_' ::=                         {{ com PostfixOperation }}
-	| --		::  :: PreDecrement                             {{ com PreDecrement }}
+	| --		::  :: PostDecrement                             {{ com PostDecrement }}
 																	{{ tex \!\!\!-\!\!- }}
-	| ++		::  :: PerIncrement                             {{ com PreIncrement }}
+	| ++		::  :: PostIncrement                             {{ com PostIncrement }}
 																	{{ tex \!\!+\!\!+ }}
 
 % Typing definitions
@@ -240,20 +247,8 @@ Jop :: '' ::=
 		---------------------------------            		        ::   Assign
 		<id = v, s> -> <v, put(s, id, v)>
 
-		----------------------------                 		        ::   AssignPlus
-		<id += v, s> -> <id = id + v, s>
-
-		----------------------------                 		        ::   AssignMinus
-		<id -= v, s> -> <id = id - v, s>
-
-		----------------------------                 		        ::   AssignMult
-		<id *= v, s> -> <id = id * v, s>
-
-		----------------------------                 		        ::   AssignDiv
-		<id /= v, s> -> <id = id / v, s>
-
-		----------------------------                 		        ::   AssignMod
-		<id %= v, s> -> <id = id % v, s>
+		----------------------------                 		        ::   AssignNum
+		<id numOp= v, s> -> <id = id numOp v, s>
 
 		--------------------------                  		        ::   Deref
 		<id, s> -> <get(s, id), s>
@@ -290,55 +285,9 @@ Jop :: '' ::=
 		-------------------------------                             ::   BinOp2
 		<v op e2, s> -> <v op e2', s'>
 
-		n1 + n2 = n
-		-----------------------                                     ::   OpPlus
-		<n1 + n2, s> -> <n, s>
-
-		n1 - n2 = n
-		-----------------------                                     ::   OpSub
-		<n1 - n2, s> -> <n, s>
-
-		n1 * n2 = n
-		-----------------------                                     ::   OpMult
-		<n1 * n2, s> -> <n, s>
-
-		n1 / n2 = n
-		-----------------------                                     ::   OpDiv
-		<n1 / n2, s> -> <n, s>
-
-		n1 % n2 = n
-		-----------------------                                     ::   OpMod
-		<n1 % n2, s> -> <n, s>
-
-		b1 || b2 = b
-		-----------------------                                     ::   OpOr
-		<b1 || b2, s> -> <b, s>
-
-		b1 && b2 = b
-		-----------------------                                     ::   OpAnd
-		<b1 && b2, s> -> <b, s>
-
-		v1 == v2 = b
-		-----------------------                                     ::   OpEqEq
-		<v1 == v2, s> -> <b, s>
-
-		v1 != v2 = b
-		-----------------------                                     ::   OpNEq
-		<v1 != v2, s> -> <b, s>
-
-		% NB on type coercion in JavaScript
-
-		% == converts the objects if they're not of the same type (=== checks for
-		% equality without type coercion). IMO that's silly behaviour, so in my
-		% type system == is only applicable to objects of the same type.
-
-		v1 === v2 = b
-		-----------------------                                     ::   OpEqEqEq
-		<v1 === v2, s> -> <b, s>
-
-		v1 !== v2 = b
-		-----------------------                                     ::   OpNEqEq
-		<v1 !== v2, s> -> <b, s>
+		n1 op n2 = n
+		-----------------------                                     ::   BinOp3
+		<n1 op n2, s> -> <n, s>
 
 		!b1 = b2
 		-----------------------                                     ::   BoolNeg
@@ -480,34 +429,9 @@ Jop :: '' ::=
 		G |- e : T1 |X1 C1, G1
 		G1 |- id : T2 |X2 C2, G2
 		X1 n X2 = \{}
-		------------------------------------------------------	 	:: PlusAssignType
-		G |- id += e : T2 |X1 u X2 (C1 u C2) u ({ T2 = T1 } u {T1 = number}), G2
+		------------------------------------------------------	 	:: NumAssignType
+		G |- id numOp= e : T2 |X1 u X2 (C1 u C2) u ({ T2 = T1 } u {T1 = number}), G2
 
-		G |- e : T1 |X1 C1, G1
-		G1 |- id : T2 |X2 C2, G2
-		X1 n X2 = \{}
-		-----------------------------------------------------	 	:: MinusAssignType
-		G |- id -= e : T2 |X1 u X2 (C1 u C2) u ({ T2 = T1 } u {T1 = number}), G2
-
-		G |- e : T1 |X1 C1, G1
-		G1 |- id : T2 |X2 C2, G2
-		X1 n X2 = \{}
-		------------------------------------------------------	 	:: TimesAssignType
-		G |- id *= e : T2 |X1 u X2 (C1 u C2) u ({ T2 = T1 } u {T1 = number}), G2
-
-		G |- e : T1 |X1 C1, G1
-		G1 |- id : T2 |X2 C2, G2
-		X1 n X2 = \{}
-		------------------------------------------------------	 	:: DivAssignType
-		G |- id /= e : T2 |X1 u X2 (C1 u C2) u ({ T2 = T1 } u {T1 = number}), G2
-
-		G |- e : T1 |X1 C1, G1
-		G1 |- id : T2 |X2 C2, G2
-		X1 n X2 = \{}
-		------------------------------------------------------	 	:: ModAssignType
-		G |- id %= e : T2 |X1 u X2 (C1 u C2) u ({ T2 = T1 } u {T1 = number}), G2
-
-		
 
 
 		% Mathematical Binary Operations
@@ -515,32 +439,8 @@ Jop :: '' ::=
 		G |- e1 : T1 | X1 C1, G1
 		G1 |- e2 : T2 | X2 C2, G2
 		X1 n X2 = \{}
-		------------------------------------------------------------  :: AddType
-		G |- e1 + e2 : number | X1 u X2 (C1 u C2) u ({T1 = number} u {T2 = number}), G2
-
-		G |- e1 : T1 | X1 C1, G1
-		G1 |- e2 : T2 | X2 C2, G2
-		X1 n X2 = \{}
-		------------------------------------------------------------  :: SubtractType
-		G |- e1 - e2 : number | X1 u X2 (C1 u C2) u ({T1 = number} u {T2 = number}), G2
-
-		G |- e1 : T1 | X1 C1, G1
-		G1 |- e2 : T2 | X2 C2, G2
-		X1 n X2 = \{}
-		------------------------------------------------------------  :: MultType
-		G |- e1 * e2 : number | X1 u X2 (C1 u C2) u ({T1 = number} u {T2 = number}), G2
-
-		G |- e1 : T1 | X1 C1, G1
-		G1 |- e2 : T2 | X2 C2, G2
-		X1 n X2 = \{}
-		------------------------------------------------------------  :: DivType
-		G |- e1 / e2 : number | X1 u X2 (C1 u C2) u ({T1 = number} u {T2 = number}), G2
-
-		G |- e1 : T1 | X1 C1, G1
-		G1 |- e2 : T2 | X2 C2, G2
-		X1 n X2 = \{}
-		------------------------------------------------------------  :: ModType
-		G |- e1 % e2 : number | X1 u X2 (C1 u C2) u ({T1 = number} u {T2 = number}), G2
+		------------------------------------------------------------  :: NumOpType
+		G |- e1 numOp e2 : number | X1 u X2 (C1 u C2) u ({T1 = number} u {T2 = number}), G2
 
 
 
@@ -550,15 +450,8 @@ Jop :: '' ::=
 		G |- e1 : T1 | X1 C1, G1
 		G1 |- e2 : T2 | X2 C2, G2
 		X1 n X2 = \{}
-		------------------------------------------------------------  :: OrType
-		G |- e1 || e2 : boolean | X1 u X2 (C1 u C2) u ({T1 = boolean} u {T2 = boolean}), G2
-
-		G |- e1 : T1 | X1 C1, G1
-		G1 |- e2 : T2 | X2 C2, G2
-		X1 n X2 = \{}
-		------------------------------------------------------------  :: AndType
-		G |- e1 && e2 : boolean | X1 u X2 (C1 u C2) u ({T1 = boolean} u {T2 = boolean}), G2
-
+		------------------------------------------------------------  :: BoolOpType
+		G |- e1 boolOp e2 : boolean | X1 u X2 (C1 u C2) u ({T1 = boolean} u {T2 = boolean}), G2
 
 
 
@@ -567,78 +460,29 @@ Jop :: '' ::=
 		G |- e1 : T1 | X1 C1, G1
 		G1 |- e2 : T2 | X2 C2, G2
 		X1 n X2 = \{}
-		-------------------------------------------------------		  :: EqEqType
-		G |- e1 == e2 : boolean | X1 u X2 (C1 u C2) u {T1 = T2}, G2
+		-------------------------------------------------------		  :: CmpOpType
+		G |- e1 cmpOp e2 : boolean | X1 u X2 (C1 u C2) u {T1 = T2}, G2
 
 		G |- e1 : T1 | X1 C1, G1
 		G1 |- e2 : T2 | X2 C2, G2
 		X1 n X2 = \{}
-		-------------------------------------------------------		  :: NotEqEqType
-		G |- e1 != e2 : boolean | X1 u X2 (C1 u C2) u {T1 = T2}, G2
-
-		G |- e1 : T1 | X1 C1, G1
-		G1 |- e2 : T2 | X2 C2, G2
-		X1 n X2 = \{}
-		-------------------------------------------------------		  :: EqEqEqType
-		G |- e1 === e2 : boolean | X1 u X2 (C1 u C2) u {T1 = T2}, G2
-
-		G |- e1 : T1 | X1 C1, G1
-		G1 |- e2 : T2 | X2 C2, G2
-		X1 n X2 = \{}
-		-------------------------------------------------------		  :: NotEqEqEqType
-		G |- e1 !== e2 : boolean | X1 u X2 (C1 u C2) u {T1 = T2}, G2
-
-		G |- e1 : T1 | X1 C1, G1
-		G1 |- e2 : T2 | X2 C2, G2
-		X1 n X2 = \{}
-		-------------------------------------------------------		  :: LessType
-		G |- e1 < e2 : boolean | X1 u X2 (C1 u C2) u ({T1 = T2} u {T1 = number}), G2
-
-		G |- e1 : T1 | X1 C1, G1
-		G1 |- e2 : T2 | X2 C2, G2
-		X1 n X2 = \{}
-		-------------------------------------------------------		  :: LEqType
-		G |- e1 <= e2 : boolean | X1 u X2 (C1 u C2) u ({T1 = T2} u {T1 = number}), G2
-
-		G |- e1 : T1 | X1 C1, G1
-		G1 |- e2 : T2 | X2 C2, G2
-		X1 n X2 = \{}
-		-------------------------------------------------------		  :: GreaterType
-		G |- e1 > e2 : boolean | X1 u X2 (C1 u C2) u ({T1 = T2} u {T1 = number}), G2
-
-		G |- e1 : T1 | X1 C1, G1
-		G1 |- e2 : T2 | X2 C2, G2
-		X1 n X2 = \{}
-		-------------------------------------------------------		  :: GEqType
-		G |- e1 >= e2 : boolean | X1 u X2 (C1 u C2) u ({T1 = T2} u {T1 = number}), G2
-
+		-------------------------------------------------------		  :: NumCmpOpType
+		G |- e1 numcmpOp e2 : boolean | X1 u X2 (C1 u C2) u ({T1 = T2} u {T1 = number}), G2
 
 
 		% Unary Operation
 
 		G |- e : T1 |X C, G'
-		------------------------------------------- 	:: BoolNegType
+		------------------------------------------- 	:: NegType
 		G |- !e : boolean |X C u {T1 = boolean}, G'
 
 		G |- e : T1 |X C, G'
-		------------------------------------------- 	:: NumNegType
-		G |- ~e : number |X C u {T1 = number}, G'
+		------------------------------------------- 	:: PreNumType
+		G |- preNum e : number |X C u {T1 = number}, G'
 
 		G |- e : T1 |X C, G'
-		------------------------------------------- 	:: PreIncType
-		G |- ++e : number |X C u {T1 = number}, G'
-
-		G |- e : T1 |X C, G'
-		------------------------------------------- 	:: PostIncType
-		G |- e++ : number |X C u {T1 = number}, G'
-
-		G |- e : T1 |X C, G'
-		------------------------------------------- 	:: PreDecType
-		G |- --e : number |X C u {T1 = number}, G'
-
-		G |- e : T1 |X C, G'
-		------------------------------------------- 	:: PostDecType
-		G |- e-- : number |X C u {T1 = number}, G'
+		------------------------------------------- 	:: PostOpType
+		G |- e postOp : number |X C u {T1 = number}, G'
 
 
 	% @RET Typable checks whether statements are typable (similar to typable below)
