@@ -878,7 +878,7 @@
 \newcommand{\ottdruleRetTypableThree}[1]{\ottdrule[#1]{%
 \ottpremise{ \ottmv{return}  \notin  \ottsym{dom(}  \Gamma  \ottsym{)} }%
 }{
- \Gamma   \vdash   \ottmv{return}  \hspace{5pt}| _{  \ottnt{C}  } \hspace{5pt}   \Gamma  \cup  \ottsym{\{}  \ottmv{return}  \ottsym{:}  \ottkw{undefined}  \ottsym{\}}  }{%
+ \Gamma   \vdash   \ottmv{return}  \hspace{5pt}| _{  \varnothing  } \hspace{5pt}   \Gamma  \cup  \ottsym{\{}  \ottmv{return}  \ottsym{:}  \ottkw{undefined}  \ottsym{\}}  }{%
 {\ottdrulename{RetTypable3}}{}%
 }}
 
@@ -886,7 +886,7 @@
 \newcommand{\ottdruleRetTypableFour}[1]{\ottdrule[#1]{%
 \ottpremise{ \ottmv{return}  \in  \ottsym{dom(}  \Gamma  \ottsym{)} }%
 }{
- \Gamma   \vdash   \ottmv{return}  \hspace{5pt}| _{   \ottnt{C}  \cup   \{  \ottkw{undefined}  \preceq  \Gamma  \ottsym{["return"]}  \}    } \hspace{5pt}  \Gamma }{%
+ \Gamma   \vdash   \ottmv{return}  \hspace{5pt}| _{   \{  \ottkw{undefined}  \preceq  \Gamma  \ottsym{["return"]}  \}   } \hspace{5pt}  \Gamma }{%
 {\ottdrulename{RetTypable4}}{}%
 }}
 

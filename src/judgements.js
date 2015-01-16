@@ -116,18 +116,26 @@ UglifyJS.AST_Lambda.prototype.check = function(gamma) {
 	}
 
 	// V_Fun2
-	if (this.name !== undefined) {
+	if (this.name !== undefined && this.name !== null) {
 		gamma1.push(new Classes.TypeEnvEntry(this.name, this, funType));
 	}
 
 	// type the body using the new gamma (treat it as a block statement)
-	var j = UglifyJS.AST_Block.prototype.check.call(this, gamma1);
+	var j1 = UglifyJS.AST_Block.prototype.check.call(this, gamma1);
 
-	// TODO: potentially don't want this to be null...
-	var C = j.C.concat(new Constraint(j.gamma.get('return'), retType, null));
+	var C;
+	if (j1.gamma.get('return') === null) {
+		// there are no return statements in the block
+		C = j1.C.concat(new Classes.Constraint(undefinedType, retType, null));
+	} else {
+		// TODO: potentially don't want this to be null...
+		C = j1.C.concat(new Classes.Constraint(j1.gamma.get('return'), retType, null));
+	}
 
 	// return the original gamma
-	return new Classes.judgement(funType, C, gamma);
+	var j = new Classes.Judgement(funType, C, gamma);
+	j.nodes.push(this);
+	return j;
 };
 
 // Rule IdType / IdTypeUndef
@@ -342,8 +350,39 @@ UglifyJS.AST_SimpleStatement.prototype.check = function(gamma) {
 	return this.body.check(gamma);
 };
 
-// TODO: RetTypable
+// RetTypable1/2/3/4
+UglifyJS.AST_Return.prototype.check = function(gamma) {
+	// type the return value if present
+	var C, T, newGamma;
 
+	// RetTypable 1/2
+	if (this.value !== undefined && this.value !== null) {
+		var j = this.value.check(gamma);
+		C = j.C;
+		newGamma = j.gamma;
+		T = j.T;
+	} else 
+	// RetTypable 3/4
+	{
+		newGamma = gamma;
+		C = [];
+		T = undefinedType;
+	}
+
+	// check if 'return' has already been defined in this scope
+	// RetTypable 1/3
+	if (gamma.get('return') === null) {
+		newGamma.push(new Classes.TypeEnvEntry('return', this, T));
+	} else
+	// RetTypable 2/4
+	{
+		C.push(new Classes.Constraint(T, gamma.get('return'), this));
+	}
+
+	var judgement = new Classes.Judgement(null, C, newGamma);
+	judgement.nodes.push(this);
+	return judgement;
+};
 // Rule SeqTypable
 UglifyJS.AST_Block.prototype.check = function(gamma) {
 	var judgement = new Classes.Judgement(null, [], gamma);

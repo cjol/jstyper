@@ -390,6 +390,8 @@ Jop :: '' ::=
 		---------------------------------------------------------   :: V_Obj
 		G |- {l1: e1, .., lk: ek} : {l1: T1', .., lk: Tk'} |C Gk
 
+		% TODO: Case when G'["return"] doesn't exist
+
 		T0, T1, .., Ti are fresh
 		G u {this: T0, x1:T1, .., xi:Ti} |- m1; ..; mj |C G'
 		----------------------------------------------------------------------- :: V_Fun1
@@ -527,11 +529,11 @@ Jop :: '' ::=
 
 		return !in dom(G)
 		-------------------                                		    :: RetTypable3
-		G |- return |C G u {return: undefined}
+		G |- return |\{} G u {return: undefined}
 
 		return in dom(G)
 		-------------------                                		    :: RetTypable4
-		G |- return |C u {undefined <G["return"]} G
+		G |- return |{undefined < G["return"]} G
 
 		G |- m1 |C1 G1 --- Gi-1 |- mi |Ci Gi
 		C = U i=0-k Ci
