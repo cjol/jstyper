@@ -100,7 +100,6 @@ function seq(statements, par) {
 			
 			// carry the new judgement into the next statement
 			judgement.gamma = newJudgement.gamma;
-			judgement.X = judgement.X.concat(newJudgement.X);
 			judgement.C = judgement.C.concat(newJudgement.C);
 		}
 	}

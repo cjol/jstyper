@@ -381,7 +381,6 @@ UglifyJS.AST_Var.prototype.check = function(gamma) {
 
 		// Pass on judgement to subsequent declarators
 		// TODO: assert X1 n X2 is empty
-		X = X.concat(judgement.X);
 		C = C.concat(judgement.C);
 		gamma = judgement.gamma;
 	}

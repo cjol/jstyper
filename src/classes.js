@@ -174,10 +174,9 @@ TypeEnv.prototype.applySubstitution = function(sub) {
 
 
 
-function Judgement(type, gamma, defVars, constraints) {
+function Judgement(type, constraints, gamma) {
 	this.T = type;
 	this.gamma = gamma;
-	this.X = defVars || [];
 	this.C = constraints || [];
 	this.nodes = [];
 }
@@ -206,5 +205,5 @@ Judgement.InitFromDirective = function(directive) {
 		}
 	}
 
-	return new Judgement(null, gamma, [], []);
+	return new Judgement(null, [], gamma);
 };
