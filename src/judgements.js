@@ -43,9 +43,9 @@ UglifyJS.AST_Constant.prototype.check = function(gamma) {
 	j.nodes.push(this);
 	return j;
 };
-UglifyJS.AST_String.prototype.constType = stringType;
 UglifyJS.AST_Number.prototype.constType = numType;
 UglifyJS.AST_Boolean.prototype.constType = boolType;
+UglifyJS.AST_String.prototype.constType = stringType;
 UglifyJS.AST_Undefined.prototype.constType = undefinedType;
 UglifyJS.AST_Null.prototype.constType = nullType;
 
