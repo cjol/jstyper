@@ -1,16 +1,14 @@
 // jstyper start
 var areaCalculators = {};
-function rectangleArea(rectangle) {
-	return this.height * this.width;
-}
-function circleArea() {
-	return this.radius * this.radius;
-}
+areaCalculators.rectangle = function(rectangle) {
+	return rectangle.height * rectangle.width;
+};
+areaCalculators.circle = function(circle) {
+	return circle.radius * circle.radius;
+};
 
-var circle = {radius:3, area: circleArea};
-
-var rectangle = {height:2, width:3, area:circleArea};
-
-var totalArea = circle.area() + rectangle.area();
-
+var circle = {radius:3};
+var rectangle = {height:2, width:3};
+areaCalculators.circle(circle);
+areaCalculators.square(circle);
 // jstyper end
