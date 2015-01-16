@@ -1,6 +1,6 @@
 % v0.4.1
 % Version numbering: (project_goals_met?1:0).(added syntax).(refined spec)
-metavar termvar, x, y, z, id, l, this ::=  
+metavar termvar, x, y, z, id, l, this, return ::=  
 indexvar index, i, j, k ::= 
 
 
@@ -396,7 +396,7 @@ Jop :: '' ::=
 		G |- function (x1, .., xi) { m1; ..; mj } : T0, T1, .., Ti -> T |C u {G'["return"] < T} G
 
 		T0, T1, .., Ti are fresh
-		G u {this: T0, x1:T1, .., xi:Ti, id:T1, .., Ti -> T} |- m1; ..; mj |C G
+		G u {this: T0, x1:T1, .., xi:Ti, id:T1, .., Ti -> T} |- m1; ..; mj |C G'
 		----------------------------------------------------------------------- :: V_Fun2
 		G |- function id(x1, .., xi) { m1; ..; mj } : T0, T1, .., Ti -> T |C u {G'["return"] < T} G
 
@@ -515,11 +515,23 @@ Jop :: '' ::=
 		G |- e |C G'
 
 		G |- e : T |C G'
+		return !in dom(G)
 		-------------------                                		    :: RetTypable1
-		G |- return e |C G'
+		G |- return e |C G' u {return: T}
 
+		% Check constraint direction...
+		G |- e : T |C G'
+		return in dom(G)
 		-------------------                                		    :: RetTypable2
-		G |- return |C G'
+		G |- return e |C u {T < G["return"]} G' 
+
+		return !in dom(G)
+		-------------------                                		    :: RetTypable3
+		G |- return |C G u {return: undefined}
+
+		return in dom(G)
+		-------------------                                		    :: RetTypable4
+		G |- return |C u {undefined <G["return"]} G
 
 		G |- m1 |C1 G1 --- Gi-1 |- mi |Ci Gi
 		C = U i=0-k Ci

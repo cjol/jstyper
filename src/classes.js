@@ -26,6 +26,14 @@ function Type(type, options) {
 		for (var i in options.members) {
 			this.memberTypes[i] = options.members[i];
 		}
+	} else if (this.type === "function") {
+		this.argTypes = [];
+
+		// It's probably not necessary to copy one-by-one EVERYWHERE...
+		for (var j in options.argTypes) {
+			this.argTypes[j] = options.argTypes[j];
+		}
+		this.returnType = options.returnType;
 	}
 }
 
@@ -43,27 +51,48 @@ Type.prototype.applySubstitution = function(sub) {
 			for (var i in sub.to.memberTypes) {
 				this.memberTypes[i] = sub.to.memberTypes[i];
 			}
+		} else if (this.type === "function") {
+			this.argTypes = [];
+
+			// It's probably not necessary to copy one-by-one EVERYWHERE...
+			for (var j in options.argTypes) {
+				this.argTypes[j] = sub.to.argTypes[j];
+			}
+			this.returnType = sub.to.returnType;
+
 		}
 	}
 
 	// need to apply substitution to child types too if they exist
 	if (this.type === "object") {
-		for (var j in this.memberTypes) {
-			this.memberTypes[j].applySubstitution(sub);
+		for (var k in this.memberTypes) {
+			this.memberTypes[k].applySubstitution(sub);
 		}
+	} else if (this.type === "function") {
+		for (var l in this.argTypes) {
+			this.argTypes[l].applySubstitution(sub);
+		}
+		this.returnType[l].applySubstitution(sub);
 	}
 };
 
+// TODO: Rename this - we're only here checking "structure", not actual (sub)types
 Type.prototype.equals = function(type) {
 	if (this.type !== type.type) return false;
 	
-	if (this.type !== "object") return true;
+	if (this.type !== "object") {
 
-	// return true;
+		// return true;
 
-	// Deliberately only check that 'type' has at least the same fields as this
-	for (var i in this.memberTypes) {
-		if (type.memberTypes[i] === undefined) return false;
+		// Deliberately only check that 'type' has at least the same fields as this
+		for (var i in this.memberTypes) {
+			if (type.memberTypes[i] === undefined) return false;
+		}
+	} else if (this.type === "function") {
+
+		// check arity
+		// TODO: can we have "extra" structure here (e.g. unused arguments?)
+		return type.argTypes.length === this.argTypes.length;
 	}
 	
 	return true;

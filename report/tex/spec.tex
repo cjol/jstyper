@@ -35,7 +35,7 @@
 \newcommand{\ottafterlastrule}{\\}
 \newcommand{\ottmetavars}{
 \ottmetavartabular{
- $ \ottmv{termvar} ,\, \ottmv{x} ,\, \ottmv{y} ,\, \ottmv{z} ,\, \ottmv{id} ,\, \ottmv{l} ,\, \ottmv{this} $ &  \\
+ $ \ottmv{termvar} ,\, \ottmv{x} ,\, \ottmv{y} ,\, \ottmv{z} ,\, \ottmv{id} ,\, \ottmv{l} ,\, \ottmv{this} ,\, \ottmv{return} $ &  \\
  $ \ottmv{index} ,\, \ottmv{i} ,\, \ottmv{j} ,\, \ottmv{k} $ &  \\
 }}
 
@@ -91,15 +91,15 @@
 \ottprodline{|}{\ottkw{var} \, \ottnt{vd_{{\mathrm{1}}}}  \ottsym{,} \, ... \, \ottsym{,}  \ottnt{vd_{\ottmv{k}}}}{}{}{}{\ottcom{VarDeclaration}}\ottprodnewline
 \ottprodline{|}{\ottkw{if} \, \ottsym{(}  \ottnt{e}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{\}}}{}{}{}{\ottcom{IfStatement}}\ottprodnewline
 \ottprodline{|}{\ottkw{if} \, \ottsym{(}  \ottnt{e}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{\}} \, \ottkw{else} \, \ottsym{\{}  \ottnt{m_{{\mathrm{2}}}}  \ottsym{\}}}{}{}{}{\ottcom{IfElseStatement}}\ottprodnewline
-\ottprodline{|}{\ottkw{return} \, \ottnt{e}}{}{}{}{\ottcom{ReturnStatement}}\ottprodnewline
-\ottprodline{|}{\ottkw{return}}{}{}{}{\ottcom{Return}}\ottprodnewline
+\ottprodline{|}{\ottmv{return} \, \ottnt{e}}{}{}{}{\ottcom{ReturnStatement}}\ottprodnewline
+\ottprodline{|}{\ottmv{return}}{}{}{}{\ottcom{Return}}\ottprodnewline
 \ottprodline{|}{\ottsym{\{}  \ottnt{m}  \ottsym{\}}  \ottsym{[}  \ottnt{v_{{\mathrm{1}}}}  \ottsym{/}  \ottmv{id_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{v_{\ottmv{i}}}  \ottsym{/}  \ottmv{id_{\ottmv{i}}}  \ottsym{]}}{}{}{}{\ottcom{SubstStatement (meta)}}\ottprodnewline
 \ottprodline{|}{\ottsym{@def} \, \ottkw{function} \, \ottmv{id}  \ottsym{(}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{k}}}  \ottsym{)}  \ottsym{\{}  \ottnt{m}  \ottsym{\}}}{}{}{}{\ottcom{FuncDef}}}
 
 \newcommand{\ottret}{
 \ottrulehead{\ottnt{ret}}{::=}{}\ottprodnewline
-\ottfirstprodline{|}{\ottkw{return} \, \ottnt{e}}{}{}{}{\ottcom{ReturnExp}}\ottprodnewline
-\ottprodline{|}{\ottkw{return}}{}{}{}{\ottcom{Return}}}
+\ottfirstprodline{|}{\ottmv{return} \, \ottnt{e}}{}{}{}{\ottcom{ReturnExp}}\ottprodnewline
+\ottprodline{|}{\ottmv{return}}{}{}{}{\ottcom{Return}}}
 
 \newcommand{\ottop}{
 \ottrulehead{\ottnt{op}}{::=}{\ottcom{BinaryOperation}}\ottprodnewline
@@ -558,7 +558,7 @@
 
 
 \newcommand{\ottdruleCallThree}[1]{\ottdrule[#1]{%
-\ottpremise{ \langle  \ottnt{m} ,  \ottsym{put(}  \ottnt{s}  \ottsym{,}  \ottsym{[}  \ottmv{id}  \ottsym{,}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{i}}}  \ottsym{]}  \ottsym{,}  \ottsym{[}  \ottkw{function} \, \ottmv{id}  \ottsym{(}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{i}}}  \ottsym{)}  \ottsym{\{}  \ottnt{m}  \ottsym{\}}  \ottsym{,}  \ottnt{v_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{v_{\ottmv{i}}}  \ottsym{]}  \ottsym{)}  \rangle  \rightarrow  \langle  \ottkw{return} \, \ottnt{v}  \ottsym{;}  \ottnt{m'} ,  \ottnt{s'}  \rangle }%
+\ottpremise{ \langle  \ottnt{m} ,  \ottsym{put(}  \ottnt{s}  \ottsym{,}  \ottsym{[}  \ottmv{id}  \ottsym{,}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{i}}}  \ottsym{]}  \ottsym{,}  \ottsym{[}  \ottkw{function} \, \ottmv{id}  \ottsym{(}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{i}}}  \ottsym{)}  \ottsym{\{}  \ottnt{m}  \ottsym{\}}  \ottsym{,}  \ottnt{v_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{v_{\ottmv{i}}}  \ottsym{]}  \ottsym{)}  \rangle  \rightarrow  \langle  \ottmv{return} \, \ottnt{v}  \ottsym{;}  \ottnt{m'} ,  \ottnt{s'}  \rangle }%
 }{
  \langle  \ottkw{function} \, \ottmv{id}  \ottsym{(}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{i}}}  \ottsym{)}  \ottsym{\{}  \ottnt{m}  \ottsym{\}}  \ottsym{(}  \ottnt{v_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{v_{\ottmv{i}}}  \ottsym{)} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{v} ,  \ottsym{del(}  \ottnt{s'}  \ottsym{,}  \ottsym{[}  \ottmv{id}  \ottsym{,}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{i}}}  \ottsym{]}  \ottsym{)}  \rangle }{%
 {\ottdrulename{Call3}}{}%
@@ -566,7 +566,7 @@
 
 
 \newcommand{\ottdruleCallFour}[1]{\ottdrule[#1]{%
-\ottpremise{ \langle  \ottnt{m} ,  \ottsym{put(}  \ottnt{s}  \ottsym{,}  \ottsym{[}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{i}}}  \ottsym{]}  \ottsym{,}  \ottsym{[}  \ottnt{v_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{v_{\ottmv{i}}}  \ottsym{]}  \ottsym{)}  \rangle  \rightarrow  \langle  \ottkw{return} \, \ottnt{v}  \ottsym{;}  \ottnt{m'} ,  \ottnt{s'}  \rangle }%
+\ottpremise{ \langle  \ottnt{m} ,  \ottsym{put(}  \ottnt{s}  \ottsym{,}  \ottsym{[}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{i}}}  \ottsym{]}  \ottsym{,}  \ottsym{[}  \ottnt{v_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{v_{\ottmv{i}}}  \ottsym{]}  \ottsym{)}  \rangle  \rightarrow  \langle  \ottmv{return} \, \ottnt{v}  \ottsym{;}  \ottnt{m'} ,  \ottnt{s'}  \rangle }%
 }{
  \langle  \ottkw{function} \, \ottsym{(}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{i}}}  \ottsym{)}  \ottsym{\{}  \ottnt{m}  \ottsym{\}}  \ottsym{(}  \ottnt{v_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{v_{\ottmv{i}}}  \ottsym{)} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{v} ,  \ottsym{del(}  \ottnt{s'}  \ottsym{,}  \ottsym{[}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{i}}}  \ottsym{]}  \ottsym{)}  \rangle }{%
 {\ottdrulename{Call4}}{}%
@@ -681,7 +681,7 @@
 
 \newcommand{\ottdruleVXXFunTwo}[1]{\ottdrule[#1]{%
 \ottpremise{\ottnt{T_{{\mathrm{0}}}}  \ottsym{,}  \ottnt{T_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{T_{\ottmv{i}}} \, \ottkw{are} \, \ottkw{fresh}}%
-\ottpremise{  \Gamma  \cup  \ottsym{\{}  \ottmv{this}  \ottsym{:}  \ottnt{T_{{\mathrm{0}}}}  \ottsym{,}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{:}  \ottnt{T_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{i}}}  \ottsym{:}  \ottnt{T_{\ottmv{i}}}  \ottsym{,}  \ottmv{id}  \ottsym{:}  \ottnt{T_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{T_{\ottmv{i}}}  \rightarrow  \ottnt{T}  \ottsym{\}}    \vdash   \ottnt{m_{{\mathrm{1}}}}  \ottsym{;} \, .. \, \ottsym{;}  \ottnt{m_{\ottmv{j}}}  \hspace{5pt}| _{  \ottnt{C}  } \hspace{5pt}  \Gamma }%
+\ottpremise{  \Gamma  \cup  \ottsym{\{}  \ottmv{this}  \ottsym{:}  \ottnt{T_{{\mathrm{0}}}}  \ottsym{,}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{:}  \ottnt{T_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{i}}}  \ottsym{:}  \ottnt{T_{\ottmv{i}}}  \ottsym{,}  \ottmv{id}  \ottsym{:}  \ottnt{T_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{T_{\ottmv{i}}}  \rightarrow  \ottnt{T}  \ottsym{\}}    \vdash   \ottnt{m_{{\mathrm{1}}}}  \ottsym{;} \, .. \, \ottsym{;}  \ottnt{m_{\ottmv{j}}}  \hspace{5pt}| _{  \ottnt{C}  } \hspace{5pt}  \Gamma' }%
 }{
  \Gamma   \vdash   \ottkw{function} \, \ottmv{id}  \ottsym{(}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{i}}}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{;} \, .. \, \ottsym{;}  \ottnt{m_{\ottmv{j}}}  \ottsym{\}}  :  \ottnt{T_{{\mathrm{0}}}}  \ottsym{,}  \ottnt{T_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{T_{\ottmv{i}}}  \rightarrow  \ottnt{T} \hspace{5pt}| _{   \ottnt{C}  \cup   \{  \Gamma'  \ottsym{["return"]}  \preceq  \ottnt{T}  \}    } \hspace{5pt}  \Gamma }{%
 {\ottdrulename{V\_Fun2}}{}%
@@ -859,16 +859,35 @@
 
 \newcommand{\ottdruleRetTypableOne}[1]{\ottdrule[#1]{%
 \ottpremise{ \Gamma   \vdash   \ottnt{e}  :  \ottnt{T} \hspace{5pt}| _{  \ottnt{C}  } \hspace{5pt}  \Gamma' }%
+\ottpremise{ \ottmv{return}  \notin  \ottsym{dom(}  \Gamma  \ottsym{)} }%
 }{
- \Gamma   \vdash   \ottkw{return} \, \ottnt{e}  \hspace{5pt}| _{  \ottnt{C}  } \hspace{5pt}  \Gamma' }{%
+ \Gamma   \vdash   \ottmv{return} \, \ottnt{e}  \hspace{5pt}| _{  \ottnt{C}  } \hspace{5pt}   \Gamma'  \cup  \ottsym{\{}  \ottmv{return}  \ottsym{:}  \ottnt{T}  \ottsym{\}}  }{%
 {\ottdrulename{RetTypable1}}{}%
 }}
 
 
 \newcommand{\ottdruleRetTypableTwo}[1]{\ottdrule[#1]{%
+\ottpremise{ \Gamma   \vdash   \ottnt{e}  :  \ottnt{T} \hspace{5pt}| _{  \ottnt{C}  } \hspace{5pt}  \Gamma' }%
+\ottpremise{ \ottmv{return}  \in  \ottsym{dom(}  \Gamma  \ottsym{)} }%
 }{
- \Gamma   \vdash   \ottkw{return}  \hspace{5pt}| _{  \ottnt{C}  } \hspace{5pt}  \Gamma' }{%
+ \Gamma   \vdash   \ottmv{return} \, \ottnt{e}  \hspace{5pt}| _{   \ottnt{C}  \cup   \{  \ottnt{T}  \preceq  \Gamma  \ottsym{["return"]}  \}    } \hspace{5pt}  \Gamma' }{%
 {\ottdrulename{RetTypable2}}{}%
+}}
+
+
+\newcommand{\ottdruleRetTypableThree}[1]{\ottdrule[#1]{%
+\ottpremise{ \ottmv{return}  \notin  \ottsym{dom(}  \Gamma  \ottsym{)} }%
+}{
+ \Gamma   \vdash   \ottmv{return}  \hspace{5pt}| _{  \ottnt{C}  } \hspace{5pt}   \Gamma  \cup  \ottsym{\{}  \ottmv{return}  \ottsym{:}  \ottkw{undefined}  \ottsym{\}}  }{%
+{\ottdrulename{RetTypable3}}{}%
+}}
+
+
+\newcommand{\ottdruleRetTypableFour}[1]{\ottdrule[#1]{%
+\ottpremise{ \ottmv{return}  \in  \ottsym{dom(}  \Gamma  \ottsym{)} }%
+}{
+ \Gamma   \vdash   \ottmv{return}  \hspace{5pt}| _{   \ottnt{C}  \cup   \{  \ottkw{undefined}  \preceq  \Gamma  \ottsym{["return"]}  \}    } \hspace{5pt}  \Gamma }{%
+{\ottdrulename{RetTypable4}}{}%
 }}
 
 
@@ -929,6 +948,8 @@
 \ottusedrule{\ottdruleExpTypable{}}
 \ottusedrule{\ottdruleRetTypableOne{}}
 \ottusedrule{\ottdruleRetTypableTwo{}}
+\ottusedrule{\ottdruleRetTypableThree{}}
+\ottusedrule{\ottdruleRetTypableFour{}}
 \ottusedrule{\ottdruleSeqTypable{}}
 \ottusedrule{\ottdruleIfTypableOne{}}
 \ottusedrule{\ottdruleIfTypableTwo{}}
@@ -953,7 +974,7 @@
 \ottall
 
 \begin{verbatim}
-Definition rules:        67 good    0 bad
-Definition rule clauses: 139 good    0 bad
+Definition rules:        69 good    0 bad
+Definition rule clauses: 146 good    0 bad
 \end{verbatim}
 \end{document}

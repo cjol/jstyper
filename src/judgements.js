@@ -91,6 +91,44 @@ UglifyJS.AST_Object.prototype.check = function(gamma) {
 };
 
 // TODO: V_Fun1 / V_Fun2
+UglifyJS.AST_Lambda.prototype.check = function(gamma) {
+	
+	var Ts = [];
+	var retType = gamma.getFreshType();
+
+	var funType = new Classes.Type('function', {
+		concrete: true,
+		argTypes: [],
+		returnType: retType
+	});
+
+	// generate a fresh type for each of the arguments (including 'this')
+	// Also create a new Gamma to check the function body
+	var gamma1 = new Classes.TypeEnv(gamma);
+
+	for (var i=0; i<this.argnames+1; i++) {
+		
+		Ts[i] = gamma.getFreshType();
+		var name = (i===0)?'this':this.argnames[i-1];
+		
+		gamma1.push(new Classes.TypeEnvEntry(name, null, Ts[i]));
+		funType.argTypes.push(Ts[i]);
+	}
+
+	// V_Fun2
+	if (this.name !== undefined) {
+		gamma1.push(new Classes.TypeEnvEntry(this.name, this, funType));
+	}
+
+	// type the body using the new gamma (treat it as a block statement)
+	var j = UglifyJS.AST_Block.prototype.check.call(this, gamma1);
+
+	// TODO: potentially don't want this to be null...
+	var C = j.C.concat(new Constraint(j.gamma.get('return'), retType, null));
+
+	// return the original gamma
+	return new Classes.judgement(funType, C, gamma);
+};
 
 // Rule IdType / IdTypeUndef
 UglifyJS.AST_SymbolRef.prototype.check = function(gamma) {
