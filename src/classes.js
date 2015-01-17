@@ -55,7 +55,7 @@ Type.prototype.applySubstitution = function(sub) {
 			this.argTypes = [];
 
 			// It's probably not necessary to copy one-by-one EVERYWHERE...
-			for (var j in options.argTypes) {
+			for (var j in sub.to.argTypes) {
 				this.argTypes[j] = sub.to.argTypes[j];
 			}
 			this.returnType = sub.to.returnType;
@@ -72,7 +72,7 @@ Type.prototype.applySubstitution = function(sub) {
 		for (var l in this.argTypes) {
 			this.argTypes[l].applySubstitution(sub);
 		}
-		this.returnType[l].applySubstitution(sub);
+		this.returnType.applySubstitution(sub);
 	}
 };
 
@@ -99,13 +99,22 @@ Type.prototype.equals = function(type) {
 };
 
 Type.prototype.toString = function() {
-	if (this.type !== "object") return this.type;
-	var types = [];
-	for (var lab in this.memberTypes) {
-		types.push(lab + ":" + this.memberTypes[lab].toString());
+	if (this.type === "object") {
+		var types = [];
+		for (var lab in this.memberTypes) {
+			types.push(lab + ":" + this.memberTypes[lab].toString());
+		}
+		
+		return "{" + types.join(", ") + "}";
+	} else if (this.type === "function") {
+		var args = [];
+		for (var i = 0; i<this.argTypes.length; i++) {
+			args.push(this.argTypes[i].toString());
+		}
+		return args.join(", ") + " -> " + this.returnType.toString();
+	} else {
+		return this.type;
 	}
-	
-	return "{" + types.join(", ") + "}";
 };
 
 
@@ -130,6 +139,15 @@ function Substitution(from, to) {
 		for (var i in to.memberTypes) {
 			this.to.memberTypes[i] = to.memberTypes[i];
 		}
+	} else if (to.type === "function") {
+		this.to.argTypes = [];
+
+		// It's probably not necessary to copy one-by-one EVERYWHERE...
+		for (var j in to.argTypes) {
+			this.to.argTypes[j] = to.argTypes[j];
+		}
+		this.to.returnType = to.returnType;
+
 	}
 }
 // shortcut method

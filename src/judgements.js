@@ -106,10 +106,10 @@ UglifyJS.AST_Lambda.prototype.check = function(gamma) {
 	// Also create a new Gamma to check the function body
 	var gamma1 = new Classes.TypeEnv(gamma);
 
-	for (var i=0; i<this.argnames+1; i++) {
+	for (var i=0; i<this.argnames.length+1; i++) {
 		
 		Ts[i] = gamma.getFreshType();
-		var name = (i===0)?'this':this.argnames[i-1];
+		var name = (i===0)?'this':this.argnames[i-1].name;
 		
 		gamma1.push(new Classes.TypeEnvEntry(name, null, Ts[i]));
 		funType.argTypes.push(Ts[i]);
@@ -139,7 +139,7 @@ UglifyJS.AST_Lambda.prototype.check = function(gamma) {
 };
 
 // Rule IdType / IdTypeUndef
-UglifyJS.AST_SymbolRef.prototype.check = function(gamma) {
+UglifyJS.AST_Symbol.prototype.check = function(gamma) {
 	var T, C = [];
 
 	T = gamma.get(this.name);
