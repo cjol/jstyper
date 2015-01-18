@@ -37,44 +37,35 @@ function solveConstraints(constraints) {
 	var constraint = constraints[0];
 	var remainder = constraints.slice(1);
 
-	var leftType = constraint.leftType;
-	var rightType = constraint.rightType;
-	var label;
+	var leftType = constraint.type1;
+	var rightType = constraint.type2;
 
 	// if this is an 'enforcing' constraint, then we generate extra members
-	if (constraint.enforce === true) {
-		for (label in leftType.memberTypes) {
+	// if (constraint.enforce === true) {
+	// 	for (label in leftType.memberTypes) {
 
-			// if rightType has a field missing, we add it here. Adding these
-			// will make the equals check below return true, and then
-			// constraints will be generated to assert that each of rightType's
-			// members are the same type as leftType's members
-			if (rightType.memberTypes[label] === undefined) {
-				rightType.memberTypes[label] = Classes.TypeEnv.getFreshType();
-			}
-		}
-	}
+	// 		// if rightType has a field missing, we add it here. Adding these
+	// 		// will make the equals check below return true, and then
+	// 		// constraints will be generated to assert that each of rightType's
+	// 		// members are the same type as leftType's members
+	// 		if (rightType.memberTypes[label] === undefined) {
+	// 			rightType.memberTypes[label] = Classes.TypeEnv.getFreshType();
+	// 		}
+	// 	}
+	// }
 
-	// types are equal => constraint satisfied
-	// for objects, 'equal' means rightType has at least the structure of leftType
-	if (leftType.equals(rightType)) {
+	// type structures are equal => constraint satisfied
+	if (constraint.checkStructure()) {
 
-		if (leftType.type !== "object")	
-			return solveConstraints(remainder);
-
-		// generate new constraints asserting that the members of leftType
-		// and of rightType have the same type
-		var newConstraints = [];
-		for (label in leftType.memberTypes) {
-			newConstraints.push(new Classes.Constraint(leftType.memberTypes[label], rightType.memberTypes[label], null));
-		}
-
+		// if this is a complex structure, there may be sub-constraints to solve
+		var newConstraints = constraint.getSubConstraints();
 		return solveConstraints(remainder.concat(newConstraints));
 	}
 
 
 	// constraints involving dynamic types are trivially satisfied
 	// if the leftType (write) type is dynamic, we always allow
+	// TODO: left != write nowadays...
 	if (leftType.isDynamic)
 		return solveConstraints(remainder);
 
@@ -82,7 +73,7 @@ function solveConstraints(constraints) {
 	// TODO: object types don't get type-checks, they should get guarded
 	if (rightType.isDynamic && rightType !== "object") {
 		var solution1 = solveConstraints(remainder);
-		solution1.checks.push({node:constraint.rightNode, type:leftType});
+		solution1.checks.push({node:constraint.checkNode, type:leftType});
 		return solution1;
 	}
 
@@ -96,6 +87,13 @@ function solveConstraints(constraints) {
 
 	} // both are different concrete types
 	else {
+		// Last opportunity for redemption - if this is a LEqConstraint we can add members to the smaller type
+		if (constraint instanceof Classes.LEqConstraint) {
+			var newleqConstraints = constraint.satisfy();
+			if (newleqConstraints.length > 0) {
+				return solveConstraints(remainder.concat(newleqConstraints));
+			}
+		}
 		throw new Error(" Failed Unification: " + leftType.toString() + " != " + rightType.toString());
 	}
 
@@ -134,6 +132,7 @@ module.exports = function(src) {
 
 		// solve the generated constraints, or throw an error if this isn't possible
 		var solution = solveConstraints(chunks[i].C, chunks[i].gamma);
+
 
 		// apply the solution substitutions to the type environment
 		for (var j=0; j<solution.substitutions.length; j++) {

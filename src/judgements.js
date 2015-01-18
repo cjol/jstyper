@@ -71,7 +71,7 @@ UglifyJS.AST_Object.prototype.check = function(gamma) {
 		C = C.concat(judgement.C);
 
 		// generate a new Type for this property, which will be constrained by the value type
-		var propType = gamma.getFreshType();
+		var propType = gamma.getFreshType(undefined, {detail:'prop ' + i + 'type of ', node: this});
 
 		// TODO: Check the direction of this constraint
 		C.push(new Classes.Constraint(propType, judgement.T, this.properties[i].value));
@@ -92,9 +92,10 @@ UglifyJS.AST_Object.prototype.check = function(gamma) {
 
 // TODO: V_Fun1 / V_Fun2
 UglifyJS.AST_Lambda.prototype.check = function(gamma) {
+
 	
 	var Ts = [];
-	var retType = gamma.getFreshType();
+	var retType = gamma.getFreshType(undefined, {detail:'return type of fun ', node: this});
 
 	var funType = new Classes.Type('function', {
 		concrete: true,
@@ -107,9 +108,10 @@ UglifyJS.AST_Lambda.prototype.check = function(gamma) {
 	var gamma1 = new Classes.TypeEnv(gamma);
 
 	for (var i=0; i<this.argnames.length+1; i++) {
-		
-		Ts[i] = gamma.getFreshType();
-		var name = (i===0)?'this':this.argnames[i-1].name;
+		if (i>0) this.argnames[i-1].parent = parent(this);
+
+		Ts[i] = gamma.getFreshType(undefined, {detail:'arg' + i + ' type of fun ', node: this});
+		var name = (i===0)?'this':this.argnames[i-1].name ;
 		
 		gamma1.push(new Classes.TypeEnvEntry(name, null, Ts[i]));
 		funType.argTypes.push(Ts[i]);
@@ -117,7 +119,7 @@ UglifyJS.AST_Lambda.prototype.check = function(gamma) {
 
 	// V_Fun2
 	if (this.name !== undefined && this.name !== null) {
-		gamma1.push(new Classes.TypeEnvEntry(this.name, this, funType));
+		gamma1.push(new Classes.TypeEnvEntry(this.name.name, this, funType));
 	}
 
 	// type the body using the new gamma (treat it as a block statement)
@@ -146,7 +148,7 @@ UglifyJS.AST_Symbol.prototype.check = function(gamma) {
 
 	if (T === null) {
 		// need to select a new type, but create a new env for it
-		T = gamma.getFreshType();
+		T = gamma.getFreshType(undefined, {detail:'symbol type for ' + this.name, node: this});
 		gamma = new Classes.TypeEnv(gamma);
 		gamma.push(new Classes.TypeEnvEntry(this.name, this, T));
 	}
@@ -156,14 +158,17 @@ UglifyJS.AST_Symbol.prototype.check = function(gamma) {
 	return j;
 };
 
-// Tule PropType
+// Rule PropType
 
 UglifyJS.AST_Dot.prototype.check = function(gamma) {
+	this.expression.parent = parent(this);
+	this.property.parent = parent(this);
+
 	// get the type of the containing object
 	var j1 = this.expression.check(gamma);
 	var C = j1.C;
 
-	var T = gamma.getFreshType();
+	var T = gamma.getFreshType(undefined, {detail:'required property type for obj.' + this.property, node: this});
 
 	// add a new constraint stating the containing object much have this as a property
 	var memberType = {};
@@ -172,13 +177,87 @@ UglifyJS.AST_Dot.prototype.check = function(gamma) {
 		concrete: true,
 		members: memberType
 	});
-	C.push(new Classes.Constraint(containerType, j1.T, this.expression));
-	return new Classes.Judgement(T, C, j1.gamma);
+	C.push(new Classes.LEqConstraint(containerType, j1.T, this.expression));
+	var judgement = new Classes.Judgement(T, C, j1.gamma);
+	judgement.nodes.push(this);
+	return judgement;
 };
 
 // TODO: Rule CallType / PropCallType
 
-// Rule AssignType / PropAssignType / NumAssignType
+UglifyJS.AST_Call.prototype.check = function(gamma) {
+	this.expression.parent = parent(this);
+
+	// Type-check function expression
+	var j0 = this.expression.check(gamma);
+	var C = j0.C;
+
+	// prepare new constraints
+	var argTypes = [gamma.getFreshType(undefined, {detail:'inferred \'this\' type of call ', node: this})];
+	if (this.expression instanceof UglifyJS.AST_Dot) {
+		// this is an instance call
+		// PropCallType
+
+		// annoyingly we have to check e and e.l separately (this is probably avoidable)
+		var je = this.expression.expression.check(gamma);
+		// I don't care about je.C or je.gamma - they will come through when we check this.expression 
+
+		// commented out for now because it causes this problem:
+
+		// PROBLEM:
+		/*
+			
+			Every object method has an implicit 'this' parameter, which must
+			form part of the function type else we'll get problems with:
+
+				function doubleHeight() { return this.height * 2; }
+				var x = {height:3, doubleHeight: doubleHeight};
+				var y = {doubleHeight: doubleHeight};
+				var totalHeight = x.doubleHeight() + 
+									y.doubleHeight();
+			
+			So the method type includes the object type, and obviously the
+			object type contains the function type too. Infinite arrows!
+
+			I guess the problem might be that we're creating a function that's
+			polymorphic in 'this', which is a higher-order construct.
+
+		*/
+		// C.push(new Classes.LEqConstraint(argTypes[0], je.T, this.expression));
+	} else {
+		// normal function call (no this)
+		C.push(new Classes.Constraint(argTypes[0], undefinedType, this.expression));
+	}
+	gamma = j0.gamma;
+	
+	// typecheck each parameter
+	for (var i=0; i<this.args.length; i++) {
+		this.args[i].parent = parent(this);
+		
+		var ji = this.args[i].check(gamma);
+		C = C.concat(ji.C);
+
+		var T = gamma.getFreshType(undefined, {detail: 'inferred arg' + i + ' type of call', node: this});
+		argTypes.push(T);
+		
+		C.push(new Classes.LEqConstraint(T, ji.T, this.args[i]));
+
+		gamma = ji.gamma;
+	}
+
+	var funcType = new Classes.Type("function", {
+		concrete: true,
+		argTypes:argTypes,
+		returnType: gamma.getFreshType(undefined, {detail: 'inferred return type of call', node: this})
+	});
+	C.push(new Classes.Constraint(j0.T, funcType, this));
+
+	var judgement = new Classes.Judgement(funcType.returnType, C, gamma);
+	judgement.nodes.push(this);
+	return judgement;
+};
+
+// Rule AssignType / PropAssignType / NumAssignType / PropNumAssignType
 UglifyJS.AST_Assign.prototype.check = function(gamma) {
 	this.right.parent = parent(this);
 	this.left.parent = parent(this);
@@ -190,33 +269,29 @@ UglifyJS.AST_Assign.prototype.check = function(gamma) {
 	switch(this.operator) {
 		case ("="):
 			// TODO: This remains unproven and potentially dubious
-			if (! this.left instanceof UglifyJS.AST_Dot) {
+			if (! (this.left instanceof UglifyJS.AST_Dot)) {
 			
-				C.push(new Classes.Constraint(j2.T, j1.T, this.right));
+				C.push(new Classes.LEqConstraint(j2.T, j1.T, this.right));
 				returnType = j1.T;
 				break;
 			} else {
+				// PropAssignType
 
-				// this is a property assignment, so all we require is that the property expression be an object
 				j2 = this.left.expression.check(j1.gamma);
-				C = j1.C.concat(j2.C);
 
+				var T3 = gamma.getFreshType();
 				var memberType = {};
-
-				memberType[this.left.property] = j1.T;
+				memberType[this.left.property] = T3;
 
 				var T = new Classes.Type('object',{
 					concrete: true,
 					members: memberType
 				});
 
-				var constraint = new Classes.Constraint(T, j2.T, this.left.expression);
-				constraint.enforce = true;
+				C = j1.C.concat(j2.C);
+				var constraint = new Classes.LEqConstraint(T, j2.T, this.left.expression);
 				C.push(constraint);
-
-				j = new Classes.Judgement(returnType, C, j2.gamma);
-				j.nodes.push(this);
-				return j;
+				C.push(new Classes.LEqConstraint(T3, j1.T, this.left.expression));
 			}
 		break;
 		case ("+="):
@@ -226,10 +301,29 @@ UglifyJS.AST_Assign.prototype.check = function(gamma) {
 		case ("%="):
 			// these operators have the added constraint that both left and right must be numbers
 			// since we're about to say the two types are equal, can just say left must be number
-			// TODO: Check order of this constraint
-			C.push(new Classes.Constraint(numType, j1.T, this.left));
-			C.push(new Classes.Constraint(j2.T, j1.T, this.right));
-			returnType = j1.T;
+
+			if (! (this.left instanceof UglifyJS.AST_Dot)) {
+				C.push(new Classes.Constraint(numType, j1.T, this.right));
+				C.push(new Classes.Constraint(numType, j2.T, this.left));
+				returnType = j1.T;
+			} else {
+				// PropNumAssignType
+
+				j2 = this.left.expression.check(j1.gamma);
+
+				var memberTypeNum = {};
+				memberTypeNum[this.left.property] = numType;
+
+				var numT = new Classes.Type('object',{
+					concrete: true,
+					members: memberTypeNum
+				});
+
+				C = j1.C.concat(j2.C);
+				var constraintNum = new Classes.LEqConstraint(numT, j2.T, this.left.expression);
+				C.push(constraintNum);
+				C.push(new Classes.Constraint(numType, j1.T, this.left));
+			}
 		break;
 		default:
 			throw new Error("Unhandled assignment operator " + this.operator);
@@ -429,13 +523,13 @@ UglifyJS.AST_VarDef.prototype.check = function(gamma) {
 	
 	var C = [];
 	// need to select a new type (we are redefining the type from here on)
-	var T = gamma.getFreshType();
+	var T = gamma.getFreshType(undefined, {detail:'var type of ' + this.name.name});
 	
 	// DefTypable
 	if (this.value) {
 		this.value.parent = parent(this);
 		var judgement = this.value.check(gamma);
-		C = judgement.C.concat([new Classes.Constraint(T, judgement.T, this.value)]);
+		C = judgement.C.concat([new Classes.LEqConstraint(T, judgement.T, this.value)]);
 	}
 
 	gamma = new Classes.TypeEnv(gamma);

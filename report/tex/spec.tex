@@ -183,6 +183,7 @@
 \ottprodline{|}{ \bigcup \limits_{i= \ottnt{n_{{\mathrm{1}}}} }^ \ottnt{n_{{\mathrm{2}}}}   \ottnt{C} }{}{}{}{\ottcom{BigUnion}}\ottprodnewline
 \ottprodline{|}{ \{  \ottnt{T_{{\mathrm{1}}}}  \preceq  \ottnt{T_{{\mathrm{2}}}}  \} }{}{}{}{\ottcom{ConstLeq}}\ottprodnewline
 \ottprodline{|}{ \{  \ottnt{T_{{\mathrm{1}}}}  \succeq  \ottnt{T_{{\mathrm{2}}}}  \} }{}{}{}{\ottcom{ConstGeq}}\ottprodnewline
+\ottprodline{|}{ \{  \ottnt{T_{{\mathrm{1}}}}  =  \ottnt{T_{{\mathrm{2}}}}  \} }{}{}{}{\ottcom{ConstEq}}\ottprodnewline
 \ottprodline{|}{ \ottnt{C} }{}{}{}{\ottcom{BracketedConstraint}}\ottprodnewline
 \ottprodline{|}{ \underline{ \ottnt{C} } }{}{}{}{\ottcom{EnforcedConstraint}}}
 
@@ -662,7 +663,7 @@
 
 \newcommand{\ottdruleVXXObj}[1]{\ottdrule[#1]{%
 \ottpremise{  \Gamma   \vdash   \ottnt{e_{{\mathrm{1}}}}  :  \ottnt{T_{{\mathrm{1}}}} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{1}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{1}}}   \hdots   \Gamma_{{\ottmv{k}-1}}   \vdash   \ottnt{e_{\ottmv{k}}}  :  \ottnt{T_{\ottmv{k}}} \hspace{5pt}| _{  \ottnt{C_{\ottmv{k}}}  } \hspace{5pt}  \Gamma_{\ottmv{k}}  }%
-\ottpremise{\ottnt{C}  \ottsym{=}     \bigcup \limits_{i= \ottsym{1} }^ \ottmv{k}   \ottnt{C_{\ottmv{i}}}    \cup    \bigcup \limits_{i= \ottsym{1} }^ \ottmv{k}    \{  \ottnt{T_{\ottmv{i}}}  \preceq  \ottnt{T'_{\ottmv{i}}}  \}    }%
+\ottpremise{\ottnt{C}  \ottsym{=}     \bigcup \limits_{i= \ottsym{1} }^ \ottmv{k}   \ottnt{C_{\ottmv{i}}}    \cup    \bigcup \limits_{i= \ottsym{1} }^ \ottmv{k}    \{  \ottnt{T_{\ottmv{i}}}  =  \ottnt{T'_{\ottmv{i}}}  \}    }%
 \ottpremise{\ottnt{T'_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{T'_{\ottmv{k}}} \, \ottkw{are} \, \ottkw{fresh}}%
 }{
  \Gamma   \vdash   \ottsym{\{}  \ottmv{l_{{\mathrm{1}}}}  \ottsym{:}  \ottnt{e_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{l_{\ottmv{k}}}  \ottsym{:}  \ottnt{e_{\ottmv{k}}}  \ottsym{\}}  :  \ottsym{\{}  \ottmv{l_{{\mathrm{1}}}}  \ottsym{:}  \ottnt{T'_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{l_{\ottmv{k}}}  \ottsym{:}  \ottnt{T'_{\ottmv{k}}}  \ottsym{\}} \hspace{5pt}| _{  \ottnt{C}  } \hspace{5pt}  \Gamma_{\ottmv{k}} }{%
@@ -671,10 +672,10 @@
 
 
 \newcommand{\ottdruleVXXFunOne}[1]{\ottdrule[#1]{%
-\ottpremise{\ottnt{T_{{\mathrm{0}}}}  \ottsym{,}  \ottnt{T_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{T_{\ottmv{i}}} \, \ottkw{are} \, \ottkw{fresh}}%
+\ottpremise{\ottnt{T}  \ottsym{,}  \ottnt{T_{{\mathrm{0}}}}  \ottsym{,}  \ottnt{T_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{T_{\ottmv{i}}} \, \ottkw{are} \, \ottkw{fresh}}%
 \ottpremise{  \Gamma  \cup  \ottsym{\{}  \ottmv{this}  \ottsym{:}  \ottnt{T_{{\mathrm{0}}}}  \ottsym{,}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{:}  \ottnt{T_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{i}}}  \ottsym{:}  \ottnt{T_{\ottmv{i}}}  \ottsym{\}}    \vdash   \ottnt{m_{{\mathrm{1}}}}  \ottsym{;} \, .. \, \ottsym{;}  \ottnt{m_{\ottmv{j}}}  \hspace{5pt}| _{  \ottnt{C}  } \hspace{5pt}  \Gamma' }%
 }{
- \Gamma   \vdash   \ottkw{function} \, \ottsym{(}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{i}}}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{;} \, .. \, \ottsym{;}  \ottnt{m_{\ottmv{j}}}  \ottsym{\}}  :  \ottnt{T_{{\mathrm{0}}}}  \ottsym{,}  \ottnt{T_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{T_{\ottmv{i}}}  \rightarrow  \ottnt{T} \hspace{5pt}| _{   \ottnt{C}  \cup   \{  \Gamma'  \ottsym{["return"]}  \preceq  \ottnt{T}  \}    } \hspace{5pt}  \Gamma }{%
+ \Gamma   \vdash   \ottkw{function} \, \ottsym{(}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{i}}}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{;} \, .. \, \ottsym{;}  \ottnt{m_{\ottmv{j}}}  \ottsym{\}}  :  \ottnt{T_{{\mathrm{0}}}}  \ottsym{,}  \ottnt{T_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{T_{\ottmv{i}}}  \rightarrow  \ottnt{T} \hspace{5pt}| _{   \ottnt{C}  \cup   \{  \Gamma'  \ottsym{["return"]}  =  \ottnt{T}  \}    } \hspace{5pt}  \Gamma }{%
 {\ottdrulename{V\_Fun1}}{}%
 }}
 
@@ -683,7 +684,7 @@
 \ottpremise{\ottnt{T_{{\mathrm{0}}}}  \ottsym{,}  \ottnt{T_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{T_{\ottmv{i}}} \, \ottkw{are} \, \ottkw{fresh}}%
 \ottpremise{  \Gamma  \cup  \ottsym{\{}  \ottmv{this}  \ottsym{:}  \ottnt{T_{{\mathrm{0}}}}  \ottsym{,}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{:}  \ottnt{T_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{i}}}  \ottsym{:}  \ottnt{T_{\ottmv{i}}}  \ottsym{,}  \ottmv{id}  \ottsym{:}  \ottnt{T_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{T_{\ottmv{i}}}  \rightarrow  \ottnt{T}  \ottsym{\}}    \vdash   \ottnt{m_{{\mathrm{1}}}}  \ottsym{;} \, .. \, \ottsym{;}  \ottnt{m_{\ottmv{j}}}  \hspace{5pt}| _{  \ottnt{C}  } \hspace{5pt}  \Gamma' }%
 }{
- \Gamma   \vdash   \ottkw{function} \, \ottmv{id}  \ottsym{(}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{i}}}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{;} \, .. \, \ottsym{;}  \ottnt{m_{\ottmv{j}}}  \ottsym{\}}  :  \ottnt{T_{{\mathrm{0}}}}  \ottsym{,}  \ottnt{T_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{T_{\ottmv{i}}}  \rightarrow  \ottnt{T} \hspace{5pt}| _{   \ottnt{C}  \cup   \{  \Gamma'  \ottsym{["return"]}  \preceq  \ottnt{T}  \}    } \hspace{5pt}  \Gamma }{%
+ \Gamma   \vdash   \ottkw{function} \, \ottmv{id}  \ottsym{(}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{i}}}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{;} \, .. \, \ottsym{;}  \ottnt{m_{\ottmv{j}}}  \ottsym{\}}  :  \ottnt{T_{{\mathrm{0}}}}  \ottsym{,}  \ottnt{T_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{T_{\ottmv{i}}}  \rightarrow  \ottnt{T} \hspace{5pt}| _{   \ottnt{C}  \cup   \{  \Gamma'  \ottsym{["return"]}  =  \ottnt{T}  \}    } \hspace{5pt}  \Gamma }{%
 {\ottdrulename{V\_Fun2}}{}%
 }}
 
@@ -715,22 +716,24 @@
 
 
 \newcommand{\ottdruleCallType}[1]{\ottdrule[#1]{%
-\ottpremise{ \Gamma   \vdash   \ottnt{e}  :  \ottsym{\{}  \,  \ottsym{\}}  \ottsym{,}  \ottnt{T_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{T_{\ottmv{i}}}  \rightarrow  \ottnt{T} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{0}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{0}}} }%
+\ottpremise{ \Gamma   \vdash   \ottnt{e}  :  \ottnt{T} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{0}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{0}}} }%
 \ottpremise{  \Gamma_{{\mathrm{0}}}   \vdash   \ottnt{e_{{\mathrm{1}}}}  :  \ottnt{T'_{{\mathrm{1}}}} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{1}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{1}}}   \hdots   \Gamma_{{\ottmv{k}-1}}   \vdash   \ottnt{e_{\ottmv{i}}}  :  \ottnt{T'_{\ottmv{i}}} \hspace{5pt}| _{  \ottnt{C_{\ottmv{i}}}  } \hspace{5pt}  \Gamma_{\ottmv{i}}  }%
-\ottpremise{\ottnt{C'}  \ottsym{=}     \bigcup \limits_{i= \ottsym{0} }^ \ottmv{k}   \ottnt{C_{\ottmv{i}}}    \cup    \bigcup \limits_{i= \ottsym{1} }^ \ottmv{k}    \{  \ottnt{T_{\ottmv{i}}}  \preceq  \ottnt{T'_{\ottmv{i}}}  \}    }%
+\ottpremise{\ottnt{C'}  \ottsym{=}     \bigcup \limits_{i= \ottsym{0} }^ \ottmv{k}   \ottnt{C_{\ottmv{i}}}    \cup     \{  \ottnt{T}  =  \ottnt{T_{{\mathrm{0}}}}  \ottsym{,}  \ottnt{T_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{T_{\ottmv{i}}}  \rightarrow  \ottnt{T_{\ottmv{k}}}  \}   \cup      \bigcup \limits_{i= \ottsym{1} }^ \ottmv{k}    \{  \ottnt{T_{\ottmv{i}}}  \preceq  \ottnt{T'_{\ottmv{i}}}  \}     \cup   \{  \ottnt{T_{{\mathrm{0}}}}  =  \ottkw{undefined}  \}      }%
+\ottpremise{\ottnt{T_{{\mathrm{0}}}}  \ottsym{,}  \ottnt{T_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{T_{\ottmv{i}}}  \ottsym{,}  \ottnt{T_{\ottmv{k}}} \, \ottkw{are} \, \ottkw{fresh}}%
 }{
- \Gamma   \vdash   \ottnt{e}  \ottsym{(}  \ottnt{e_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{e_{\ottmv{i}}}  \ottsym{)}  :  \ottnt{T} \hspace{5pt}| _{  \ottnt{C'}  } \hspace{5pt}  \Gamma_{\ottmv{i}} }{%
+ \Gamma   \vdash   \ottnt{e}  \ottsym{(}  \ottnt{e_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{e_{\ottmv{i}}}  \ottsym{)}  :  \ottnt{T_{\ottmv{k}}} \hspace{5pt}| _{  \ottnt{C'}  } \hspace{5pt}  \Gamma_{\ottmv{i}} }{%
 {\ottdrulename{CallType}}{}%
 }}
 
 
 \newcommand{\ottdrulePropCallType}[1]{\ottdrule[#1]{%
-\ottpremise{ \Gamma   \vdash   \ottnt{e}  :  \ottnt{T'_{{\mathrm{0}}}} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{0}}}}  } \hspace{5pt}  \Gamma' }%
-\ottpremise{ \Gamma'   \vdash   \ottnt{e}  \ottsym{.}  \ottmv{l}  :  \ottnt{T_{{\mathrm{0}}}}  \ottsym{,}  \ottnt{T_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{T_{\ottmv{i}}}  \rightarrow  \ottnt{T} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{0}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{0}}} }%
+\ottpremise{ \Gamma   \vdash   \ottnt{e}  \ottsym{.}  \ottmv{l}  :  \ottnt{T} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{0}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{0}}} }%
+\ottpremise{ \Gamma   \vdash   \ottnt{e}  :  \ottnt{T'_{{\mathrm{0}}}} \hspace{5pt}| _{  \ottnt{C'}  } \hspace{5pt}  \Gamma' }%
 \ottpremise{  \Gamma_{{\mathrm{0}}}   \vdash   \ottnt{e_{{\mathrm{1}}}}  :  \ottnt{T'_{{\mathrm{1}}}} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{1}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{1}}}   \hdots   \Gamma_{{\ottmv{k}-1}}   \vdash   \ottnt{e_{\ottmv{i}}}  :  \ottnt{T'_{\ottmv{i}}} \hspace{5pt}| _{  \ottnt{C_{\ottmv{i}}}  } \hspace{5pt}  \Gamma_{\ottmv{i}}  }%
-\ottpremise{\ottnt{C'}  \ottsym{=}       \bigcup \limits_{i= \ottsym{0} }^ \ottmv{k}   \ottnt{C_{\ottmv{i}}}    \cup    \bigcup \limits_{i= \ottsym{1} }^ \ottmv{k}    \{  \ottnt{T_{\ottmv{i}}}  \preceq  \ottnt{T'_{\ottmv{i}}}  \}       \cup   \{  \ottnt{T'_{{\mathrm{0}}}}  \preceq  \ottnt{T_{{\mathrm{0}}}}  \}  }%
+\ottpremise{\ottnt{C'}  \ottsym{=}     \bigcup \limits_{i= \ottsym{0} }^ \ottmv{k}   \ottnt{C_{\ottmv{i}}}    \cup     \{  \ottnt{T}  =  \ottnt{T_{{\mathrm{0}}}}  \ottsym{,}  \ottnt{T_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{T_{\ottmv{i}}}  \rightarrow  \ottnt{T_{\ottmv{k}}}  \}   \cup      \bigcup \limits_{i= \ottsym{1} }^ \ottmv{k}    \{  \ottnt{T_{\ottmv{i}}}  \preceq  \ottnt{T'_{\ottmv{i}}}  \}     \cup   \{  \ottnt{T_{{\mathrm{0}}}}  \preceq  \ottnt{T'_{{\mathrm{0}}}}  \}      }%
+\ottpremise{\ottnt{T_{{\mathrm{0}}}}  \ottsym{,}  \ottnt{T_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{T_{\ottmv{i}}}  \ottsym{,}  \ottnt{T_{\ottmv{k}}} \, \ottkw{are} \, \ottkw{fresh}}%
 }{
- \Gamma   \vdash   \ottnt{e}  \ottsym{.}  \ottmv{l}  \ottsym{(}  \ottnt{e_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{e_{\ottmv{i}}}  \ottsym{)}  :  \ottnt{T} \hspace{5pt}| _{  \ottnt{C'}  } \hspace{5pt}  \Gamma_{\ottmv{i}} }{%
+ \Gamma   \vdash   \ottnt{e}  \ottsym{.}  \ottmv{l}  \ottsym{(}  \ottnt{e_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{e_{\ottmv{i}}}  \ottsym{)}  :  \ottnt{T_{\ottmv{k}}} \hspace{5pt}| _{  \ottnt{C'}  } \hspace{5pt}  \Gamma_{\ottmv{i}} }{%
 {\ottdrulename{PropCallType}}{}%
 }}
 
@@ -739,7 +742,7 @@
 \ottpremise{ \Gamma   \vdash   \ottnt{e}  :  \ottnt{T_{{\mathrm{1}}}} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{1}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{1}}} }%
 \ottpremise{ \Gamma_{{\mathrm{1}}}   \vdash   \ottmv{id}  :  \ottnt{T_{{\mathrm{2}}}} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{2}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }%
 }{
- \Gamma   \vdash   \ottmv{id} \, \ottsym{=} \, \ottnt{e}  :  \ottnt{T_{{\mathrm{1}}}} \hspace{5pt}| _{     \ottnt{C_{{\mathrm{1}}}}  \cup  \ottnt{C_{{\mathrm{2}}}}    \cup   \{  \ottnt{T_{{\mathrm{2}}}}  \preceq  \ottnt{T_{{\mathrm{1}}}}  \}    } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }{%
+ \Gamma   \vdash   \ottmv{id} \, \ottsym{=} \, \ottnt{e}  :  \ottnt{T_{{\mathrm{1}}}} \hspace{5pt}| _{     \ottnt{C_{{\mathrm{1}}}}  \cup  \ottnt{C_{{\mathrm{2}}}}    \cup   \{  \ottnt{T_{{\mathrm{1}}}}  \succeq  \ottnt{T_{{\mathrm{2}}}}  \}    } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }{%
 {\ottdrulename{AssignType}}{}%
 }}
 
@@ -747,8 +750,9 @@
 \newcommand{\ottdrulePropAssignType}[1]{\ottdrule[#1]{%
 \ottpremise{ \Gamma   \vdash   \ottnt{e'}  :  \ottnt{T_{{\mathrm{1}}}} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{1}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{1}}} }%
 \ottpremise{ \Gamma_{{\mathrm{1}}}   \vdash   \ottnt{e}  :  \ottnt{T_{{\mathrm{2}}}} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{2}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }%
+\ottpremise{\ottnt{T_{{\mathrm{3}}}} \, \ottkw{is} \, \ottkw{fresh}}%
 }{
- \Gamma   \vdash   \ottnt{e}  \ottsym{.}  \ottmv{l} \, \ottsym{=} \, \ottnt{e'}  :  \ottnt{T_{{\mathrm{1}}}} \hspace{5pt}| _{     \ottnt{C_{{\mathrm{1}}}}  \cup  \ottnt{C_{{\mathrm{2}}}}    \cup   \underline{  \{  \ottsym{\{}  \ottmv{l}  \ottsym{:}  \ottnt{T_{{\mathrm{1}}}}  \ottsym{\}}  \preceq  \ottnt{T_{{\mathrm{2}}}}  \}  }    } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }{%
+ \Gamma   \vdash   \ottnt{e}  \ottsym{.}  \ottmv{l} \, \ottsym{=} \, \ottnt{e'}  :  \ottnt{T_{{\mathrm{1}}}} \hspace{5pt}| _{     \ottnt{C_{{\mathrm{1}}}}  \cup  \ottnt{C_{{\mathrm{2}}}}    \cup     \underline{  \{  \ottsym{\{}  \ottmv{l}  \ottsym{:}  \ottnt{T_{{\mathrm{3}}}}  \ottsym{\}}  \preceq  \ottnt{T_{{\mathrm{2}}}}  \}  }   \cup   \{  \ottnt{T_{{\mathrm{1}}}}  \succeq  \ottnt{T_{{\mathrm{3}}}}  \}      } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }{%
 {\ottdrulename{PropAssignType}}{}%
 }}
 
@@ -757,8 +761,17 @@
 \ottpremise{ \Gamma   \vdash   \ottnt{e}  :  \ottnt{T_{{\mathrm{1}}}} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{1}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{1}}} }%
 \ottpremise{ \Gamma_{{\mathrm{1}}}   \vdash   \ottmv{id}  :  \ottnt{T_{{\mathrm{2}}}} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{2}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }%
 }{
- \Gamma   \vdash   \ottmv{id} \, \ottnt{numOp}  \ottsym{=} \, \ottnt{e}  :  \ottnt{T_{{\mathrm{1}}}} \hspace{5pt}| _{     \ottnt{C_{{\mathrm{1}}}}  \cup  \ottnt{C_{{\mathrm{2}}}}    \cup     \{  \ottnt{T_{{\mathrm{2}}}}  \preceq  \ottnt{T_{{\mathrm{1}}}}  \}   \cup   \{  \ottnt{T_{{\mathrm{1}}}}  \preceq  \ottkw{number}  \}      } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }{%
+ \Gamma   \vdash   \ottmv{id} \, \ottnt{numOp}  \ottsym{=} \, \ottnt{e}  :  \ottnt{T_{{\mathrm{1}}}} \hspace{5pt}| _{     \ottnt{C_{{\mathrm{1}}}}  \cup  \ottnt{C_{{\mathrm{2}}}}    \cup     \{  \ottnt{T_{{\mathrm{2}}}}  =  \ottkw{number}  \}   \cup   \{  \ottnt{T_{{\mathrm{1}}}}  =  \ottkw{number}  \}      } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }{%
 {\ottdrulename{NumAssignType}}{}%
+}}
+
+
+\newcommand{\ottdrulePropNumAssignType}[1]{\ottdrule[#1]{%
+\ottpremise{ \Gamma   \vdash   \ottnt{e'}  :  \ottnt{T_{{\mathrm{1}}}} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{1}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{1}}} }%
+\ottpremise{ \Gamma_{{\mathrm{1}}}   \vdash   \ottnt{e}  :  \ottnt{T_{{\mathrm{2}}}} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{2}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }%
+}{
+ \Gamma   \vdash   \ottnt{e}  \ottsym{.}  \ottmv{l} \, \ottnt{numOp}  \ottsym{=} \, \ottnt{e'}  :  \ottnt{T_{{\mathrm{1}}}} \hspace{5pt}| _{     \ottnt{C_{{\mathrm{1}}}}  \cup  \ottnt{C_{{\mathrm{2}}}}    \cup     \{  \ottsym{\{}  \ottmv{l}  \ottsym{:}  \ottkw{number}  \ottsym{\}}  \preceq  \ottnt{T_{{\mathrm{2}}}}  \}   \cup   \{  \ottnt{T_{{\mathrm{1}}}}  =  \ottkw{number}  \}      } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }{%
+{\ottdrulename{PropNumAssignType}}{}%
 }}
 
 
@@ -766,7 +779,7 @@
 \ottpremise{ \Gamma   \vdash   \ottnt{e_{{\mathrm{1}}}}  :  \ottnt{T_{{\mathrm{1}}}} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{1}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{1}}} }%
 \ottpremise{ \Gamma_{{\mathrm{1}}}   \vdash   \ottnt{e_{{\mathrm{2}}}}  :  \ottnt{T_{{\mathrm{2}}}} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{2}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }%
 }{
- \Gamma   \vdash   \ottnt{e_{{\mathrm{1}}}} \, \ottnt{numOp} \, \ottnt{e_{{\mathrm{2}}}}  :  \ottkw{number} \hspace{5pt}| _{     \ottnt{C_{{\mathrm{1}}}}  \cup  \ottnt{C_{{\mathrm{2}}}}    \cup     \{  \ottnt{T_{{\mathrm{1}}}}  \preceq  \ottkw{number}  \}   \cup   \{  \ottnt{T_{{\mathrm{2}}}}  \preceq  \ottkw{number}  \}      } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }{%
+ \Gamma   \vdash   \ottnt{e_{{\mathrm{1}}}} \, \ottnt{numOp} \, \ottnt{e_{{\mathrm{2}}}}  :  \ottkw{number} \hspace{5pt}| _{     \ottnt{C_{{\mathrm{1}}}}  \cup  \ottnt{C_{{\mathrm{2}}}}    \cup     \{  \ottnt{T_{{\mathrm{1}}}}  =  \ottkw{number}  \}   \cup   \{  \ottnt{T_{{\mathrm{2}}}}  =  \ottkw{number}  \}      } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }{%
 {\ottdrulename{NumOpType}}{}%
 }}
 
@@ -775,7 +788,7 @@
 \ottpremise{ \Gamma   \vdash   \ottnt{e_{{\mathrm{1}}}}  :  \ottnt{T_{{\mathrm{1}}}} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{1}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{1}}} }%
 \ottpremise{ \Gamma_{{\mathrm{1}}}   \vdash   \ottnt{e_{{\mathrm{2}}}}  :  \ottnt{T_{{\mathrm{2}}}} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{2}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }%
 }{
- \Gamma   \vdash   \ottnt{e_{{\mathrm{1}}}} \, \ottnt{boolOp} \, \ottnt{e_{{\mathrm{2}}}}  :  \ottkw{boolean} \hspace{5pt}| _{     \ottnt{C_{{\mathrm{1}}}}  \cup  \ottnt{C_{{\mathrm{2}}}}    \cup     \{  \ottnt{T_{{\mathrm{1}}}}  \preceq  \ottkw{boolean}  \}   \cup   \{  \ottnt{T_{{\mathrm{2}}}}  \preceq  \ottkw{boolean}  \}      } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }{%
+ \Gamma   \vdash   \ottnt{e_{{\mathrm{1}}}} \, \ottnt{boolOp} \, \ottnt{e_{{\mathrm{2}}}}  :  \ottkw{boolean} \hspace{5pt}| _{     \ottnt{C_{{\mathrm{1}}}}  \cup  \ottnt{C_{{\mathrm{2}}}}    \cup     \{  \ottnt{T_{{\mathrm{1}}}}  =  \ottkw{boolean}  \}   \cup   \{  \ottnt{T_{{\mathrm{2}}}}  =  \ottkw{boolean}  \}      } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }{%
 {\ottdrulename{BoolOpType}}{}%
 }}
 
@@ -784,7 +797,7 @@
 \ottpremise{ \Gamma   \vdash   \ottnt{e_{{\mathrm{1}}}}  :  \ottnt{T_{{\mathrm{1}}}} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{1}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{1}}} }%
 \ottpremise{ \Gamma_{{\mathrm{1}}}   \vdash   \ottnt{e_{{\mathrm{2}}}}  :  \ottnt{T_{{\mathrm{2}}}} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{2}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }%
 }{
- \Gamma   \vdash   \ottnt{e_{{\mathrm{1}}}} \, \ottnt{cmpOp} \, \ottnt{e_{{\mathrm{2}}}}  :  \ottkw{boolean} \hspace{5pt}| _{     \ottnt{C_{{\mathrm{1}}}}  \cup  \ottnt{C_{{\mathrm{2}}}}    \cup   \{  \ottnt{T_{{\mathrm{1}}}}  \preceq  \ottnt{T_{{\mathrm{2}}}}  \}    } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }{%
+ \Gamma   \vdash   \ottnt{e_{{\mathrm{1}}}} \, \ottnt{cmpOp} \, \ottnt{e_{{\mathrm{2}}}}  :  \ottkw{boolean} \hspace{5pt}| _{     \ottnt{C_{{\mathrm{1}}}}  \cup  \ottnt{C_{{\mathrm{2}}}}    \cup   \{  \ottnt{T_{{\mathrm{1}}}}  =  \ottnt{T_{{\mathrm{2}}}}  \}    } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }{%
 {\ottdrulename{CmpOpType}}{}%
 }}
 
@@ -793,7 +806,7 @@
 \ottpremise{ \Gamma   \vdash   \ottnt{e_{{\mathrm{1}}}}  :  \ottnt{T_{{\mathrm{1}}}} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{1}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{1}}} }%
 \ottpremise{ \Gamma_{{\mathrm{1}}}   \vdash   \ottnt{e_{{\mathrm{2}}}}  :  \ottnt{T_{{\mathrm{2}}}} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{2}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }%
 }{
- \Gamma   \vdash   \ottnt{e_{{\mathrm{1}}}} \, \ottnt{numcmpOp} \, \ottnt{e_{{\mathrm{2}}}}  :  \ottkw{boolean} \hspace{5pt}| _{     \ottnt{C_{{\mathrm{1}}}}  \cup  \ottnt{C_{{\mathrm{2}}}}    \cup     \{  \ottnt{T_{{\mathrm{1}}}}  \preceq  \ottnt{T_{{\mathrm{2}}}}  \}   \cup   \{  \ottnt{T_{{\mathrm{1}}}}  \preceq  \ottkw{number}  \}      } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }{%
+ \Gamma   \vdash   \ottnt{e_{{\mathrm{1}}}} \, \ottnt{numcmpOp} \, \ottnt{e_{{\mathrm{2}}}}  :  \ottkw{boolean} \hspace{5pt}| _{     \ottnt{C_{{\mathrm{1}}}}  \cup  \ottnt{C_{{\mathrm{2}}}}    \cup     \{  \ottnt{T_{{\mathrm{2}}}}  =  \ottkw{number}  \}   \cup   \{  \ottnt{T_{{\mathrm{1}}}}  =  \ottkw{number}  \}      } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }{%
 {\ottdrulename{NumCmpOpType}}{}%
 }}
 
@@ -801,7 +814,7 @@
 \newcommand{\ottdruleNegType}[1]{\ottdrule[#1]{%
 \ottpremise{ \Gamma   \vdash   \ottnt{e}  :  \ottnt{T_{{\mathrm{1}}}} \hspace{5pt}| _{  \ottnt{C}  } \hspace{5pt}  \Gamma' }%
 }{
- \Gamma   \vdash    !\!  \, \ottnt{e}  :  \ottkw{boolean} \hspace{5pt}| _{   \ottnt{C}  \cup   \{  \ottnt{T_{{\mathrm{1}}}}  \preceq  \ottkw{boolean}  \}    } \hspace{5pt}  \Gamma' }{%
+ \Gamma   \vdash    !\!  \, \ottnt{e}  :  \ottkw{boolean} \hspace{5pt}| _{   \ottnt{C}  \cup   \{  \ottnt{T_{{\mathrm{1}}}}  =  \ottkw{boolean}  \}    } \hspace{5pt}  \Gamma' }{%
 {\ottdrulename{NegType}}{}%
 }}
 
@@ -809,7 +822,7 @@
 \newcommand{\ottdrulePreNumType}[1]{\ottdrule[#1]{%
 \ottpremise{ \Gamma   \vdash   \ottnt{e}  :  \ottnt{T_{{\mathrm{1}}}} \hspace{5pt}| _{  \ottnt{C}  } \hspace{5pt}  \Gamma' }%
 }{
- \Gamma   \vdash   \ottnt{preNum} \, \ottnt{e}  :  \ottkw{number} \hspace{5pt}| _{   \ottnt{C}  \cup   \{  \ottnt{T_{{\mathrm{1}}}}  \preceq  \ottkw{number}  \}    } \hspace{5pt}  \Gamma' }{%
+ \Gamma   \vdash   \ottnt{preNum} \, \ottnt{e}  :  \ottkw{number} \hspace{5pt}| _{   \ottnt{C}  \cup   \{  \ottnt{T_{{\mathrm{1}}}}  =  \ottkw{number}  \}    } \hspace{5pt}  \Gamma' }{%
 {\ottdrulename{PreNumType}}{}%
 }}
 
@@ -817,7 +830,7 @@
 \newcommand{\ottdrulePostOpType}[1]{\ottdrule[#1]{%
 \ottpremise{ \Gamma   \vdash   \ottnt{e}  :  \ottnt{T_{{\mathrm{1}}}} \hspace{5pt}| _{  \ottnt{C}  } \hspace{5pt}  \Gamma' }%
 }{
- \Gamma   \vdash   \ottnt{e} \, \ottnt{postOp}  :  \ottkw{number} \hspace{5pt}| _{   \ottnt{C}  \cup   \{  \ottnt{T_{{\mathrm{1}}}}  \preceq  \ottkw{number}  \}    } \hspace{5pt}  \Gamma' }{%
+ \Gamma   \vdash   \ottnt{e} \, \ottnt{postOp}  :  \ottkw{number} \hspace{5pt}| _{   \ottnt{C}  \cup   \{  \ottnt{T_{{\mathrm{1}}}}  =  \ottkw{number}  \}    } \hspace{5pt}  \Gamma' }{%
 {\ottdrulename{PostOpType}}{}%
 }}
 
@@ -839,6 +852,7 @@
 \ottusedrule{\ottdruleAssignType{}}
 \ottusedrule{\ottdrulePropAssignType{}}
 \ottusedrule{\ottdruleNumAssignType{}}
+\ottusedrule{\ottdrulePropNumAssignType{}}
 \ottusedrule{\ottdruleNumOpType{}}
 \ottusedrule{\ottdruleBoolOpType{}}
 \ottusedrule{\ottdruleCmpOpType{}}
@@ -870,7 +884,7 @@
 \ottpremise{ \Gamma   \vdash   \ottnt{e}  :  \ottnt{T} \hspace{5pt}| _{  \ottnt{C}  } \hspace{5pt}  \Gamma' }%
 \ottpremise{ \ottmv{return}  \in  \ottsym{dom(}  \Gamma  \ottsym{)} }%
 }{
- \Gamma   \vdash   \ottmv{return} \, \ottnt{e}  \hspace{5pt}| _{   \ottnt{C}  \cup   \{  \ottnt{T}  \preceq  \Gamma  \ottsym{["return"]}  \}    } \hspace{5pt}  \Gamma' }{%
+ \Gamma   \vdash   \ottmv{return} \, \ottnt{e}  \hspace{5pt}| _{   \ottnt{C}  \cup   \{  \ottnt{T}  =  \Gamma  \ottsym{["return"]}  \}    } \hspace{5pt}  \Gamma' }{%
 {\ottdrulename{RetTypable2}}{}%
 }}
 
@@ -886,16 +900,15 @@
 \newcommand{\ottdruleRetTypableFour}[1]{\ottdrule[#1]{%
 \ottpremise{ \ottmv{return}  \in  \ottsym{dom(}  \Gamma  \ottsym{)} }%
 }{
- \Gamma   \vdash   \ottmv{return}  \hspace{5pt}| _{   \{  \ottkw{undefined}  \preceq  \Gamma  \ottsym{["return"]}  \}   } \hspace{5pt}  \Gamma }{%
+ \Gamma   \vdash   \ottmv{return}  \hspace{5pt}| _{   \{  \ottkw{undefined}  =  \Gamma  \ottsym{["return"]}  \}   } \hspace{5pt}  \Gamma }{%
 {\ottdrulename{RetTypable4}}{}%
 }}
 
 
 \newcommand{\ottdruleSeqTypable}[1]{\ottdrule[#1]{%
 \ottpremise{  \Gamma   \vdash   \ottnt{m_{{\mathrm{1}}}}  \hspace{5pt}| _{  \ottnt{C_{{\mathrm{1}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{1}}}   \hdots   \Gamma_{{\ottmv{i}-1}}   \vdash   \ottnt{m_{\ottmv{i}}}  \hspace{5pt}| _{  \ottnt{C_{\ottmv{i}}}  } \hspace{5pt}  \Gamma_{\ottmv{i}}  }%
-\ottpremise{\ottnt{C}  \ottsym{=}   \bigcup \limits_{i= \ottsym{0} }^ \ottmv{k}   \ottnt{C_{\ottmv{i}}} }%
 }{
- \Gamma   \vdash   \ottnt{m_{{\mathrm{1}}}}  \ottsym{;} \, ... \, \ottsym{;}  \ottnt{m_{\ottmv{i}}}  \hspace{5pt}| _{  \ottnt{C}  } \hspace{5pt}  \Gamma_{\ottmv{i}} }{%
+ \Gamma   \vdash   \ottnt{m_{{\mathrm{1}}}}  \ottsym{;} \, ... \, \ottsym{;}  \ottnt{m_{\ottmv{i}}}  \hspace{5pt}| _{   \bigcup \limits_{i= \ottsym{0} }^ \ottmv{k}   \ottnt{C_{\ottmv{i}}}   } \hspace{5pt}  \Gamma_{\ottmv{i}} }{%
 {\ottdrulename{SeqTypable}}{}%
 }}
 
@@ -905,7 +918,7 @@
 \ottpremise{ \Gamma_{{\mathrm{1}}}   \vdash   \ottnt{m_{{\mathrm{1}}}}  \hspace{5pt}| _{  \ottnt{C_{{\mathrm{2}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }%
 \ottpremise{ \Gamma_{{\mathrm{1}}}   \vdash   \ottnt{m_{{\mathrm{2}}}}  \hspace{5pt}| _{  \ottnt{C_{{\mathrm{3}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{3}}} }%
 }{
- \Gamma   \vdash   \ottkw{if} \, \ottsym{(}  \ottnt{e}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{\}} \, \ottkw{else} \, \ottsym{\{}  \ottnt{m_{{\mathrm{2}}}}  \ottsym{\}}  \hspace{5pt}| _{     \ottnt{C_{{\mathrm{1}}}}  \cup    \ottnt{C_{{\mathrm{2}}}}  \cup  \ottnt{C_{{\mathrm{3}}}}      \cup   \{  \ottnt{T_{{\mathrm{1}}}}  \preceq  \ottkw{boolean}  \}    } \hspace{5pt}  \Gamma_{{\mathrm{1}}} }{%
+ \Gamma   \vdash   \ottkw{if} \, \ottsym{(}  \ottnt{e}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{\}} \, \ottkw{else} \, \ottsym{\{}  \ottnt{m_{{\mathrm{2}}}}  \ottsym{\}}  \hspace{5pt}| _{     \ottnt{C_{{\mathrm{1}}}}  \cup    \ottnt{C_{{\mathrm{2}}}}  \cup  \ottnt{C_{{\mathrm{3}}}}      \cup   \{  \ottnt{T_{{\mathrm{1}}}}  =  \ottkw{boolean}  \}    } \hspace{5pt}  \Gamma_{{\mathrm{1}}} }{%
 {\ottdrulename{IfTypable1}}{}%
 }}
 
@@ -914,7 +927,7 @@
 \ottpremise{ \Gamma   \vdash   \ottnt{e}  :  \ottnt{T_{{\mathrm{1}}}} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{1}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{1}}} }%
 \ottpremise{ \Gamma_{{\mathrm{1}}}   \vdash   \ottnt{m_{{\mathrm{1}}}}  \hspace{5pt}| _{  \ottnt{C_{{\mathrm{2}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }%
 }{
- \Gamma   \vdash   \ottkw{if} \, \ottsym{(}  \ottnt{e}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{\}}  \hspace{5pt}| _{     \ottnt{C_{{\mathrm{1}}}}  \cup  \ottnt{C_{{\mathrm{2}}}}    \cup   \{  \ottnt{T_{{\mathrm{1}}}}  \preceq  \ottkw{boolean}  \}    } \hspace{5pt}  \Gamma_{{\mathrm{1}}} }{%
+ \Gamma   \vdash   \ottkw{if} \, \ottsym{(}  \ottnt{e}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{\}}  \hspace{5pt}| _{     \ottnt{C_{{\mathrm{1}}}}  \cup  \ottnt{C_{{\mathrm{2}}}}    \cup   \{  \ottnt{T_{{\mathrm{1}}}}  =  \ottkw{boolean}  \}    } \hspace{5pt}  \Gamma_{{\mathrm{1}}} }{%
 {\ottdrulename{IfTypable2}}{}%
 }}
 
@@ -938,9 +951,8 @@
 
 \newcommand{\ottdruleMultiDecTypable}[1]{\ottdrule[#1]{%
 \ottpremise{  \Gamma   \vdash   \ottkw{var} \, \ottnt{vd_{{\mathrm{1}}}}  \hspace{5pt}| _{  \ottnt{C_{{\mathrm{1}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{1}}}   \hdots   \Gamma_{{\ottmv{k}-1}}   \vdash   \ottkw{var} \, \ottnt{vd_{\ottmv{k}}}  \hspace{5pt}| _{  \ottnt{C_{\ottmv{k}}}  } \hspace{5pt}  \Gamma_{\ottmv{k}}  }%
-\ottpremise{\ottnt{C}  \ottsym{=}    \bigcup \limits_{i= \ottmv{i} }^ \ottmv{k}   \ottnt{C_{\ottmv{k}}}  }%
 }{
- \Gamma   \vdash   \ottkw{var} \, \ottnt{vd_{{\mathrm{1}}}}  \ottsym{,} \, ... \, \ottsym{,}  \ottnt{vd_{\ottmv{k}}}  \hspace{5pt}| _{  \ottnt{C}  } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }{%
+ \Gamma   \vdash   \ottkw{var} \, \ottnt{vd_{{\mathrm{1}}}}  \ottsym{,} \, ... \, \ottsym{,}  \ottnt{vd_{\ottmv{k}}}  \hspace{5pt}| _{    \bigcup \limits_{i= \ottmv{i} }^ \ottmv{k}   \ottnt{C_{\ottmv{k}}}    } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }{%
 {\ottdrulename{MultiDecTypable}}{}%
 }}
 
@@ -974,7 +986,7 @@
 \ottall
 
 \begin{verbatim}
-Definition rules:        69 good    0 bad
-Definition rule clauses: 146 good    0 bad
+Definition rules:        70 good    0 bad
+Definition rule clauses: 150 good    0 bad
 \end{verbatim}
 \end{document}

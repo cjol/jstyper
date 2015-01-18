@@ -37,7 +37,7 @@ function handleCompile(src, req, res) {
             result.src
         );
     } catch (e) {
-        res.status(400).send(e.message);
+        res.status(400).send(e.stack);
     }
 }
 
@@ -92,7 +92,7 @@ app.get('/:test', function(req, res) {
     try {
         result = jstyper(src);
     } catch (e) {
-        result = e.message;
+        result = {src:e.stack};
     }
 
     // render the view

@@ -8,12 +8,13 @@ module.exports = {
 	Type: Type,
 	Substitution: Substitution,
 	Constraint: Constraint,
+	LEqConstraint: LEqConstraint,
 	TypeEnvEntry: TypeEnvEntry,
 	TypeEnv: TypeEnv,
 	Judgement: Judgement,
 };
 
-function Type(type, options) {
+function Type(type, options, node) {
 	options = options || {};
 
 	this.type = type;
@@ -35,10 +36,11 @@ function Type(type, options) {
 		}
 		this.returnType = options.returnType;
 	}
+
+	if (node !== undefined) this.node = node;
 }
 
 Type.prototype.applySubstitution = function(sub) {
-	// NB I don't think this will ever be called for a dynamic type
 
 	if (sub.from.type === this.type) {
 		this.type = sub.to.type;
@@ -80,7 +82,7 @@ Type.prototype.applySubstitution = function(sub) {
 Type.prototype.equals = function(type) {
 	if (this.type !== type.type) return false;
 	
-	if (this.type !== "object") {
+	if (this.type === "object") {
 
 		// return true;
 
@@ -111,7 +113,7 @@ Type.prototype.toString = function() {
 		for (var i = 0; i<this.argTypes.length; i++) {
 			args.push(this.argTypes[i].toString());
 		}
-		return args.join(", ") + " -> " + this.returnType.toString();
+		return "fn(" + args.join(", ") + " -> " + this.returnType.toString() + ")";
 	} else {
 		return this.type;
 	}
@@ -159,20 +161,132 @@ Substitution.prototype.apply = function(element) {
 
 
 
-function Constraint(leftType, rightType, rightNode, desc) {
-	this.leftType = leftType;
-	this.rightType = rightType;
+function Constraint(leftType, rightType, rightNode) {
+	this.type1 = leftType;
+	this.type2 = rightType;
 	
-	this.rightNode = rightNode;
-
-	this.description = (desc || "") +  leftType.toString() + " must be " + rightType.toString();
+	this.checkNode = rightNode;
+	this.regenDesc();
 }
+Constraint.prototype.checkStructure = function() {
+
+	if (this.type2.type !== this.type1.type) return false;
+	
+	// NB Since all types are created fresh, we only get this far if both types are concrete
+
+	if (this.type1.type === "object") {
+
+		// check inclusion in both directions
+		// NB: Not recursive (ok because we recurse in caller)
+		for (var i in this.type1.memberTypes) {
+			if (this.type2.memberTypes[i] === undefined) return false;
+		}
+		for (var j in this.type2.memberTypes) {
+			if (this.type1.memberTypes[i] === undefined) return false;
+		}
+		return true;
+	} else if (this.type1.type === "function") {
+
+		// check arity
+		return this.type1.argTypes.length === this.type2.argTypes.length;
+	} else {
+		// these are primitive types so they're fine
+		return true;
+	}
+};
+Constraint.prototype.getSubConstraints = function() {
+	
+	// NB: We know that type1 and type2 have identical structure
+
+	var newConstraints = [];
+	if (this.type1.type === "object")	{
+
+		for (var label in this.type1.memberTypes) {
+			newConstraints.push(new Constraint(this.type1.memberTypes[label], this.type2.memberTypes[label], null));
+		}
+
+		return newConstraints;	
+	} else if (this.type1.type === "function") {
+
+		// generate new constraints asserting that the arguments and
+		// return type of type1 and of type2 have the same type
+		// TODO: Contravariance and covariance?..
+		for (var i=0; i<this.type1.argTypes.length; i++) {
+			newConstraints.push(new Constraint(this.type1.argTypes[i], this.type2.argTypes[i], null));
+		}
+		newConstraints.push(new Constraint(this.type1.returnType, this.type2.returnType, null));
+		return newConstraints;	
+		
+	} else {
+		return newConstraints;	
+	}
+};
+Constraint.prototype.regenDesc = function() {
+	this.description = this.type1.toString() + " must be " + this.type2.toString();
+};
 Constraint.prototype.applySubstitution = function(sub) {
-	this.leftType.applySubstitution(sub);
-	this.rightType.applySubstitution(sub);
+	this.type1.applySubstitution(sub);
+	this.type2.applySubstitution(sub);
+	this.regenDesc();
+};
+function LEqConstraint(smallType, bigType, checkNode) {
+	Constraint.call(this, smallType, bigType, checkNode);
+}
+var tmp = function() {};
+tmp.prototype = Constraint.prototype;
+LEqConstraint.prototype = new tmp();
+LEqConstraint.prototype.constructor = LEqConstraint;
+LEqConstraint.prototype.checkStructure = function() {
+	// NB This only differs from Constraint for objects
+	if (this.type1.type !== this.type2.type) return false;
+	if (this.type1.type === "object") {
+		// only check that everything in smallType (type1) is included in bigType (type2)
+		// NB Still not recursive 
+		for (var i in this.type1.memberTypes) {
+			if (this.type2.memberTypes[i] === undefined) return false;
+		}
+	} else if (this.type1.type === "function") {
+
+		// check arity
+		return this.type1.argTypes.length === this.type2.argTypes.length;
+	}
+	return true;
+};
+LEqConstraint.prototype.satisfy = function() {
+	if (this.type1.type !== "object") return [];
+
+	var C = [];
+	// we can add smallType's properties to bigType to satisfy the constraint
+	for (var l in this.type1.memberTypes) {
+		if (this.type2.memberTypes[l] === undefined) {
+
+			// TODO: Can I avoid generating fresh types during solution?
+			var T = TypeEnv.getFreshType();
+			this.type2.memberTypes[l] = T;
+			C.push(new LEqConstraint(this.type1.memberTypes[l], T));
+		}
+	}
+	return C;
+};
+LEqConstraint.prototype.regenDesc = function() {
+	this.desc = this.type2.toString() + " must have more structure than " + this.type1.toString();
 };
 
+// LEqConstraint.prototype.getSubConstraints = function() {
+	
+// 	// NB: We know that type1 is included in type2
 
+// 	var newConstraints = [];
+// 	if (this.type1.type === "object")	{
+
+// 		for (var label in this.type1.memberTypes) {
+// 			newConstraints.push(new LEqConstraint(this.type1.memberTypes[label], this.type2.memberTypes[label], null));
+// 		}
+
+// 		return newConstraints;	
+// 	}
+// 	return newConstraints;	
+// };
 
 
 
@@ -208,8 +322,8 @@ TypeEnv.prototype.get = function(varName) {
 	}
 	return null;
 };
-TypeEnv.getFreshType = function(opts) {
-	return new Type("T" + (TypeEnv.nextType++), opts);
+TypeEnv.getFreshType = function(opts, node) {
+	return new Type("T" + (TypeEnv.nextType++), opts, node);
 };
 TypeEnv.prototype.getFreshType = TypeEnv.getFreshType;
 TypeEnv.prototype.applySubstitution = function(sub) {

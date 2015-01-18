@@ -153,10 +153,10 @@ C :: 'C_' ::= 					                {{ com Constraint }}
 																	{{ tex \{ [[T1]] \preceq [[T2]] \} }}
 	| { T1 > T2 } ::  :: ConstGeq				 						{{ com ConstGeq }}
 																	{{ tex \{ [[T1]] \succeq [[T2]] \} }}
+	| { T1 = T2 } ::  :: ConstEq				 						{{ com ConstEq }}
+																	{{ tex \{ [[T1]] = [[T2]] \} }}
 	| ( C )		 ::  :: BracketedConstraint  					{{ com BracketedConstraint }}
 																	{{ tex [[C]] }}
-	| ` C `		 ::  :: EnforcedConstraint  					{{ com EnforcedConstraint }}
-																	{{ tex \underline{[[C]]} }}
 
 terminals :: 'terminals_' ::=
 	| ->        ::  :: rightarrow 									{{ tex \rightarrow }}
@@ -385,22 +385,22 @@ Jop :: '' ::=
 		G |- eps : undefined |\{} G
 	
 		G |- e1 : T1 | C1 G1 --- Gk-1 |- ek : Tk | Ck Gk 
-		C = (U i=1-k Ci) u (U i=1-k {Ti < Ti'})
+		C = (U i=1-k Ci) u (U i=1-k {Ti = Ti'})
 		T1', .., Tk' are fresh
 		---------------------------------------------------------   :: V_Obj
 		G |- {l1: e1, .., lk: ek} : {l1: T1', .., lk: Tk'} |C Gk
 
-		% TODO: Case when G'["return"] doesn't exist
+		% TODO: Case(s) when G'["return"] doesn't exist
 
-		T0, T1, .., Ti are fresh
+		T, T0, T1, .., Ti are fresh
 		G u {this: T0, x1:T1, .., xi:Ti} |- m1; ..; mj |C G'
 		----------------------------------------------------------------------- :: V_Fun1
-		G |- function (x1, .., xi) { m1; ..; mj } : T0, T1, .., Ti -> T |C u {G'["return"] < T} G
+		G |- function (x1, .., xi) { m1; ..; mj } : T0, T1, .., Ti -> T |C u {G'["return"] = T} G
 
 		T0, T1, .., Ti are fresh
 		G u {this: T0, x1:T1, .., xi:Ti, id:T1, .., Ti -> T} |- m1; ..; mj |C G'
 		----------------------------------------------------------------------- :: V_Fun2
-		G |- function id(x1, .., xi) { m1; ..; mj } : T0, T1, .., Ti -> T |C u {G'["return"] < T} G
+		G |- function id(x1, .., xi) { m1; ..; mj } : T0, T1, .., Ti -> T |C u {G'["return"] = T} G
 
 
 		% Variable retrieval
@@ -424,19 +424,25 @@ Jop :: '' ::=
 		% Function Calls
 
 		% I'm saying this is {} if unspecified (in practice this is global object e.g. window)
+		% TODO: Check direction of T0 constraint (seriously this time!)
+		% Potential fix - constrain T0 to = undefined, such that:
+		%	If the function doesn't use this, it will be so far unconstrained and unify easily
+		% 	If the function does use this, this constraint will fail to unify
 
-		G |- e : {}, T1, .., Ti -> T |C0 G0
+		G |- e : T |C0 G0
 		G0 |- e1 : T1' |C1 G1 --- Gk-1 |- ei : Ti' |Ci Gi
-		C' = (U i=0-k Ci) u (U i=1-k {Ti < Ti'})
+		C' = (U i=0-k Ci) u ( {T=T0, T1, .., Ti -> Tk} u ( (U i=1-k {Ti < Ti'}) u {T0 = undefined} ))
+		T0,T1,..,Ti,Tk are fresh
 		-------------------------------------------------- 			:: CallType
-		G |- e(e1,..,ei) : T |C' Gi
+		G |- e(e1,..,ei) : Tk |C' Gi
 
-		G |- e : T0' |C0 G'
-		G' |- e.l : T0, T1, .., Ti -> T |C0 G0
+		G |- e.l : T |C0 G0
+		G |- e : T0' |C' G'
 		G0 |- e1 : T1' |C1 G1 --- Gk-1 |- ei : Ti' |Ci Gi
-		C' = ((U i=0-k Ci) u (U i=1-k {Ti < Ti'})) u {T0' < T0}
+		C' = (U i=0-k Ci) u ( {T=T0, T1, .., Ti -> Tk} u ( (U i=1-k {Ti < Ti'}) u {T0 < T0'} ))
+		T0,T1,..,Ti,Tk are fresh
 		-------------------------------------------------- 			:: PropCallType
-		G |- e.l(e1,..,ei) : T |C' Gi
+		G |- e.l(e1,..,ei) : Tk |C' Gi
 
 
 
@@ -445,17 +451,24 @@ Jop :: '' ::=
 		G |- e : T1 |C1 G1
 		G1 |- id : T2 |C2 G2
 		------------------------------------------------------	 	:: AssignType 
-		G |- id = e : T1 |(C1 u C2) u { T2 < T1 } G2
+		G |- id = e : T1 |(C1 u C2) u { T1 > T2 } G2
 
 		G |- e' : T1 |C1 G1
 		G1 |- e : T2 |C2 G2
+		T3 is fresh
 		------------------------------------------------------	 	:: PropAssignType
-		G |- e.l = e' : T1 |(C1 u C2) u `{ {l:T1} < T2 }` G2
+		G |- e.l = e' : T1 |(C1 u C2) u ({ {l:T3} < T2 } u {T1 > T3}) G2
 
 		G |- e : T1 |C1 G1
 		G1 |- id : T2 |C2 G2
 		------------------------------------------------------	 	:: NumAssignType
-		G |- id numOp= e : T1 |(C1 u C2) u ({ T2 < T1 } u {T1 < number}) G2
+		G |- id numOp= e : T1 |(C1 u C2) u ({ T2 = number } u {T1 = number}) G2
+
+		G |- e' : T1 |C1 G1
+		G1 |- e : T2 |C2 G2
+		------------------------------------------------------	 	:: PropNumAssignType
+		G |- e.l numOp= e' : T1 |(C1 u C2) u ({ {l:number} < T2 } u {T1 = number}) G2
+
 
 
 
@@ -464,7 +477,7 @@ Jop :: '' ::=
 		G |- e1 : T1 |C1 G1
 		G1 |- e2 : T2 |C2 G2
 		------------------------------------------------------------  :: NumOpType
-		G |- e1 numOp e2 : number |(C1 u C2) u ({T1 < number} u {T2 < number}) G2
+		G |- e1 numOp e2 : number |(C1 u C2) u ({T1 = number} u {T2 = number}) G2
 
 
 
@@ -474,7 +487,7 @@ Jop :: '' ::=
 		G |- e1 : T1 |C1 G1
 		G1 |- e2 : T2 |C2 G2
 		------------------------------------------------------------  :: BoolOpType
-		G |- e1 boolOp e2 : boolean | (C1 u C2) u ({T1 < boolean} u {T2 < boolean}) G2
+		G |- e1 boolOp e2 : boolean | (C1 u C2) u ({T1 = boolean} u {T2 = boolean}) G2
 
 
 
@@ -483,27 +496,27 @@ Jop :: '' ::=
 		G |- e1 : T1 |C1 G1
 		G1 |- e2 : T2 |C2 G2
 		-------------------------------------------------------		  :: CmpOpType
-		G |- e1 cmpOp e2 : boolean |(C1 u C2) u {T1 < T2} G2
+		G |- e1 cmpOp e2 : boolean |(C1 u C2) u {T1 = T2} G2
 
 		G |- e1 : T1 |C1 G1
 		G1 |- e2 : T2 |C2 G2
 		-------------------------------------------------------		  :: NumCmpOpType
-		G |- e1 numcmpOp e2 : boolean |(C1 u C2) u ({T1 < T2} u {T1 < number}) G2
+		G |- e1 numcmpOp e2 : boolean |(C1 u C2) u ({T2 = number} u {T1 = number}) G2
 
 
 		% Unary Operation
 
 		G |- e : T1 |C G'
 		------------------------------------------- 	:: NegType
-		G |- !e : boolean |C u {T1 < boolean} G'
+		G |- !e : boolean |C u {T1 = boolean} G'
 
 		G |- e : T1 |C G'
 		------------------------------------------- 	:: PreNumType
-		G |- preNum e : number |C u {T1 < number} G'
+		G |- preNum e : number |C u {T1 = number} G'
 
 		G |- e : T1 |C G'
 		------------------------------------------- 	:: PostOpType
-		G |- e postOp : number |C u {T1 < number} G'
+		G |- e postOp : number |C u {T1 = number} G'
 
 
 	defn
@@ -521,11 +534,10 @@ Jop :: '' ::=
 		-------------------                                		    :: RetTypable1
 		G |- return e |C G' u {return: T}
 
-		% Check constraint direction...
 		G |- e : T |C G'
 		return in dom(G)
 		-------------------                                		    :: RetTypable2
-		G |- return e |C u {T < G["return"]} G' 
+		G |- return e |C u {T = G["return"]} G' 
 
 		return !in dom(G)
 		-------------------                                		    :: RetTypable3
@@ -533,23 +545,22 @@ Jop :: '' ::=
 
 		return in dom(G)
 		-------------------                                		    :: RetTypable4
-		G |- return |{undefined < G["return"]} G
+		G |- return |{undefined = G["return"]} G
 
 		G |- m1 |C1 G1 --- Gi-1 |- mi |Ci Gi
-		C = U i=0-k Ci
 		---------------------------------                		    :: SeqTypable
-		G |- m1; ...; mi |C Gi
+		G |- m1; ...; mi |U i=0-k Ci Gi
 
 		G |- e : T1 |C1 G1
 		G1 |- m1 |C2 G2
 		G1 |- m2 |C3 G3
 		---------------------------------                		    :: IfTypable1
-		G |- if (e) {m1} else {m2} |(C1 u (C2 u C3)) u {T1 < boolean} G1
+		G |- if (e) {m1} else {m2} |(C1 u (C2 u C3)) u {T1 = boolean} G1
 
 		G |- e : T1 |C1 G1
 		G1 |- m1 |C2 G2
 		---------------------------------                		    :: IfTypable2
-		G |- if (e) {m1} |(C1 u C2) u {T1 < boolean} G1
+		G |- if (e) {m1} |(C1 u C2) u {T1 = boolean} G1
 
 		T is fresh
 		---------------------------------                		    :: DecTypable
@@ -561,6 +572,5 @@ Jop :: '' ::=
 		G |- var id = e |C u {T' < T} G' u {id : T'}
 
 		G |- var vd1 |C1 G1 --- Gk-1 |- var vdk |Ck Gk
-		C = (U i=i-k Ck)
 		---------------------------------------            		    :: MultiDecTypable
-		G |- var vd1,...,vdk |C G2
+		G |- var vd1,...,vdk |(U i=i-k Ck) G2

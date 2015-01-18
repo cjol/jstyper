@@ -1,0 +1,345 @@
+\documentclass{article}
+\usepackage{parcolumns}
+\usepackage{minted}
+\usepackage[a4paper]{geometry}
+\usemintedstyle{emacs}
+\begin{document}
+\newminted{js}{linenos,mathescape=true}
+\newcommand{\question}[1]{\colchunk{\begin{description}\item[Q:]{#1}%
+    \end{description}}}
+\newcommand{\answer}[1]{\colchunk{\begin{description}\item[A:]{#1}%
+    \end{description}}\colplacechunks}
+
+\section{Problems encountered}
+
+\subsection*{Problem 1}
+	
+	Every object method has an implicit 'this' parameter, which must form part
+	of the function type. Unfortunately, we then get problems where a call to
+	\texttt{x.f()} would generate the following constraints:
+
+	$$ T_x = \{f:T_f\}$$
+	$$ T_f = fn (T_x \rightarrow T_1)$$
+
+	So the method type includes the object type, and the object type contains
+	the function type too. Infinite arrows!
+
+\subsection*{Problem 2}
+
+	\begin{jscode*}{gobble=2}
+		var x = {
+			f: function(o) {
+				return o.a;
+			}
+		};
+		x.f({a:3, b:2})
+	\end{jscode*}
+
+	Lines 1-5 of the fragment above would at some stage generate a constraint
+	similar to \#1, while looking at line 6 will generate a constraint looking
+	like the \#2 (where $T_1$ are non-concrete types)
+	$$T_x \preceq \{f:fn(\{a:T1\} \rightarrow T_1 ) \} $$
+	$$T_x \succeq{} \{f:fn(\{a:number,b:number\} \rightarrow T_2 ) \} $$
+
+	Combining these gives
+	$$\{f:fn(\{a:T1\} \rightarrow T_1)\} \succeq \{f:fn(\{a:number,b:number\} \rightarrow T_2 ) \} $$
+
+	In order for this constraint to be unifiable, we must next check the sub-constraint
+	on $f$
+	$$fn(\{a:T_1\} \rightarrow T_2) = fn(\{a:number,b:number\} \rightarrow
+	T_2)$$
+
+	I believe this will fail to unify, which (incorrectly) deems the fragment untypable (Test 16 suffers from this).
+
+\newgeometry{left=1cm,right=1cm}
+\section{Tests}
+\begin{parcolumns}[nofirstindent]{2}
+
+ 	\noindent
+	\textbf{\large{Test 12a}}\\
+	Note access of an undefined property y.two, and writing to undefined property y.result.
+
+	\colchunk{
+		\begin{jscode*}{gobble=3,linenos=false}
+			var y = {
+				one:1
+			};
+			y.result = y.one + y.two;
+			y.result = 3;
+		\end{jscode*}		
+	}
+	\colchunk{
+		\texttt{\\
+			y : \{one:number, two:number, result:number\}
+		}
+	}
+	\colplacechunks
+
+ 	\vspace{3em}
+	\noindent
+	\textbf{\large{Test 12b}} \\
+	Note access of an undefined property y.two, and writing to undefined property y.result, which correctly fails to unify. 
+
+	\colchunk{
+		\begin{jscode*}{gobble=3,linenos=false}
+			var y = {
+				one:1
+			};
+			y.result = y.one + y.two;
+			y.result = false;
+		\end{jscode*}
+	}
+	\colchunk{
+		\texttt{\\
+			Failed Unification: boolean != number
+		}
+	}
+	\colplacechunks
+
+ 	\vspace{3em}
+	\noindent
+	\textbf{\large{Test 13}}\\
+	Simple function inference
+
+	\colchunk{
+		\begin{jscode*}{gobble=3,linenos=false}
+			var f = function(x) {
+				return x + 1;
+			};
+		\end{jscode*}
+	}
+	\colchunk{
+		\texttt{\\
+			f : fn(T3, number -> number)
+		}
+	}
+	\colplacechunks
+
+ 	\vspace{3em}
+	\noindent
+	\textbf{\large{Test 14}}\\
+	Inline function expressions with a call of incorrect parameter type
+
+	\colchunk{
+		\begin{jscode*}{gobble=3,linenos=false}
+			(function(x) {
+				return x + 1;
+			})(true);
+		\end{jscode*}
+	}
+	\colchunk{
+		\texttt{\\
+			Failed Unification: number != boolean
+		}
+	}
+	\colplacechunks
+
+ 	\vspace{3em}
+	\noindent
+	\textbf{\large{Test 15}}\\
+	Defining a new method foo and calling it with correct parameter type
+
+	\colchunk{
+		\begin{jscode*}{gobble=3,linenos=false}
+			var x = {};
+			x.foo = function(x) {
+				return x || true;
+			};
+			x.foo(false);
+		\end{jscode*}
+	}
+	\colchunk{
+		\begin{verbatim}
+			x : {foo:fn(T3, boolean -> boolean)}
+		\end{verbatim}
+	}
+	\colplacechunks
+
+ 	\vspace{3em}
+	\noindent
+	\textbf{\large{Test 16a}}\\
+	Calling a method with extra structure (fails according to Problem 2 above)
+
+	\colchunk{
+		\begin{jscode*}{gobble=3,linenos=false}
+			var x = {
+				getHeight: function(x) {
+					return x.height;
+				}
+			};
+			var one = {height:3, width:2};
+			var two = {height:2, width:3};
+			var three = x.getHeight(one) + x.getHeight(two);
+		\end{jscode*}
+	}
+	\colchunk{
+		\begin{verbatim}
+			Failed Unification: 
+			{height:number, width:number} != {height:T2}
+		\end{verbatim}
+	}
+	\colplacechunks
+
+ 	\vspace{3em}
+	\noindent
+	\textbf{\large{Test 16b}}\\
+	Calling a function with extra structure
+
+	\colchunk{
+		\begin{jscode*}{gobble=3,linenos=false}	
+			var getHeight = function(x) {
+				return x.height;
+			}
+			var one = {height:3, width:2};
+			var two = {height:2, width:3};
+			var three = getHeight(one) + getHeight(two);
+		\end{jscode*}
+	}
+	\colchunk{
+		\begin{verbatim}
+			getHeight : fn(undefined, {height:number} -> number)
+			one       : {height:number, width:number}
+			two       : {height:number, width:number}
+			three     : number
+		\end{verbatim}
+	}
+	\colplacechunks
+
+ 	\vspace{3em}
+	\noindent
+	\textbf{\large{Test 17a}}\\
+	Unifying multiple constraints on parameter type
+
+	\colchunk{
+		\begin{jscode*}{gobble=3,linenos=false}
+			var area = function(rectangle) {
+				return rectangle.height * rectangle.width;
+			};
+		\end{jscode*}
+	}
+	\colchunk{
+		\begin{verbatim}
+			area : fn(T3, {height:number, width:number} 
+			            -> number)
+		\end{verbatim}
+	}
+	\colplacechunks
+
+ 	\vspace{3em}
+	\noindent
+	\textbf{\large{Test 17b}}\\
+	Calling a method with insufficient structure (passing a circle to the rectangle method)
+
+	\colchunk{
+		\begin{jscode*}{gobble=3,linenos=false}
+			var areaCalculators = {};
+			areaCalculators.rectangle = function(rectangle) {
+				return rectangle.height * rectangle.width;
+			};
+			areaCalculators.circle = function(circle) {
+				return circle.radius * circle.radius;
+			};
+
+			var circle = {radius:3};
+			var rectangle = {height:2, width:3};
+			areaCalculators.circle(circle);
+			areaCalculators.rectangle(circle);
+		\end{jscode*}
+	}
+	\colchunk{
+		\begin{verbatim}
+			Failed Unification:
+			{radius:number} != {height:number, width:number}
+		\end{verbatim}
+	}
+	\colplacechunks
+
+	\clearpage
+ 	\vspace{3em}
+	\noindent
+	\textbf{\large{Test 18}}\\
+	Methods using \texttt{this}. Fails because typing \texttt{this} is currently disabled to avoid Problem 1 above (\texttt{T22} and \texttt{T25} should be concrete types, which would make circleArea the wrong type for rectangle.area)
+
+	\colchunk{
+		\begin{jscode*}{gobble=3,linenos=false}
+			var areaCalculators = {};
+			function rectangleArea(rectangle) {
+				return this.height * this.width;
+			}
+			function circleArea() {
+				return this.radius * this.radius;
+			}
+
+			var circle = {radius:3, area: circleArea};
+
+			var rectangle = {height:2, width:3, area:circleArea};
+
+			var totalArea = circle.area() + rectangle.area();
+		\end{jscode*}
+	}
+	\colchunk{
+		\begin{verbatim}
+			areaCalculators : {}
+			circle          : {radius:number, 
+			                     area:fn(T22 -> number)}
+			rectangle       : {height:number, width:number, 
+			                     area:fn(T25 -> number)}
+			totalArea       : number
+		\end{verbatim}
+	}
+	\colplacechunks
+
+ 	\vspace{3em}
+	\noindent
+	\textbf{\large{Test 19}} \\
+	Function recursion
+
+	\colchunk{
+		\begin{jscode*}{gobble=3,linenos=false}
+			var fac = function f(x) {
+				return x * f(x-1);
+			}
+			var num = fac(5);
+		\end{jscode*}
+	}
+	\colchunk{
+		\begin{verbatim}
+			fac : fn(undefined, number -> number)
+			num : number
+		\end{verbatim}
+	}
+	\colplacechunks
+
+ 	\vspace{3em}
+	\noindent
+	\textbf{\large{Test 20}}\\
+	Higher order functions
+
+	\colchunk{
+		\begin{jscode*}{gobble=3,linenos=false}
+			var f = function fac(x) {
+				if (x > 0) return x * fac(x-1);
+				return 1;
+			}
+
+			var a = function apply(foo, x) {
+				return foo(x);	
+			}
+
+			a(f, 6);
+		\end{jscode*}
+	}
+	\colchunk{
+		\begin{verbatim}
+			f : fn(undefined, number -> number)
+			a : fn(undefined, 
+			        fn(undefined, number -> number),
+			        number -> number)
+		\end{verbatim}
+	}
+	\colplacechunks
+
+\end{parcolumns}
+\restoregeometry
+
+\end{document}
