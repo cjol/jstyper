@@ -1,0 +1,123 @@
+% Draft #1
+
+\documentclass{article}
+\usepackage[T1]{fontenc}
+\usepackage[super]{nth}
+\usepackage[all]{nowidow}
+\usepackage{amssymb}
+\begin{document}
+
+	\vfil 
+	\centerline{\large Computer Science Project Progress Report}
+	\vspace{0.4in}
+	\centerline{\Large Building a Gradual Type System for JavaScript }
+	\vspace{0.4in}
+	\centerline{\large Christopher J.O. Little, Emmanuel College}
+
+	\section*{Introduction}
+
+	At this point in my project, I am confident that I am sufficiently on
+	schedule, and confident that the project will be successfully completed on
+	time. The table below summarises my completed goals in relation to the
+	features of JavaScript outlined in my proposal. Most of the remaining
+	features should be complete very soon (loops, for example, should present
+	no particular complexity from a typing perspective), and so I anticipate
+	having time to complete some of the extension tasks outlined in my
+	proposal. The table columns have the following meaning:
+
+	\begin{description}
+		\item[\textit{spec}] --- Definition of Formal Type Specification \hfill \\
+
+			The feature has been included in the formal specification of the
+			type system constructed so far.
+		
+		\item[\textit{inf}] --- Implementation of Type Inference System \hfill \\
+
+			The feature has been included in the implementation of the type
+			inferencing system. For expressions, this means that the type of
+			the expression is correctly inferred, and for other statements,
+			this means that all expressions within that statement are
+			correctly typed.
+		
+		\item[\textit{comp}] --- Implementation of Gradual Typing Compiler \hfill \\
+			
+			For expressions, this feature is correctly guarded after passing
+			through the source-to-source compiler. In particular for
+			expressions of primitive type, this means that a type-check is
+			inserted before the expression is used, and for higher order
+			expression types (object or function), this means that guard and
+			mimic wrappers are correctly created around the expression. For
+			statements, all expressions contained in the statement are
+			correctly guarded.
+		
+		\item[\textit{proof}] \hfill \\
+		
+			The relevant cases in the proof of type soundness have been written
+			up.
+
+	\end{description}
+
+	\section{Goals Achieved}
+
+	\begin{table}[ht]
+		\begin{tabular}{lcccc}
+		                                  & \textit{spec} & \textit{inf} & \textit{comp} &  \textit{proof} \\ 
+		\hline
+		Primitive constants               & \checkmark{}  & \checkmark{} & \checkmark{}  &  \checkmark{}   \\
+		seq (\texttt{\ldots; \ldots})     & \checkmark{}  & \checkmark{} & \checkmark{}  &  \checkmark{}   \\
+		block (\texttt{\{\ldots\}})     & \checkmark{}  & \checkmark{} & \checkmark{}  &  \checkmark{}   \\
+		\texttt{if \ldots~else}           & \checkmark{}  & \checkmark{} & \checkmark{}  &  \checkmark{}   \\
+		Arithmetic Operators 
+			(\texttt{+},\texttt{-},
+			\texttt{*},\texttt{/})        & \checkmark{}  & \checkmark{} & \checkmark{}  &  \checkmark{}   \\
+		Logical Operators 
+			(\texttt{!}, \texttt{\&{}\&},
+				 \texttt{||})             & \checkmark{}  & \checkmark{} & \checkmark{}  &  \checkmark{}   \\
+		Shorthand Assignments 
+			(\texttt{+=})                 & \checkmark{}  & \checkmark{} & \checkmark{}  &  \checkmark{}   \\
+		Assignment (\texttt{=})           & \checkmark{}  & \checkmark{} & -             &  \checkmark{}   \\
+		Variable references               & \checkmark{}  & \checkmark{} & -             &  \checkmark{}   \\
+		Object Literals                   & \checkmark{}  & \checkmark{} & \checkmark{}  &                 \\
+		Function Definition               & \checkmark{}  & \checkmark{} & \checkmark{}  &                 \\
+		Function Calls 		              & \checkmark{}  & \checkmark{} &               &                 \\
+		Object property access            & \checkmark{}  & \checkmark{} & 	             &                 \\
+		\texttt{while}                    &               &              &               &                 \\
+		\texttt{for}                      &               &              &               &                 \\
+		\texttt{continue}                 &               &              &               &                 \\
+		\texttt{break}                    &               &              &               &                 \\
+		\end{tabular}
+	\end{table}
+
+	`-' indicates partial completion. In both cases, the feature works for
+	primitive types, but not yet for higher order types.
+
+	\section{Changes to Project}
+
+		There are few significant changes to report. Firstly, I decided that
+		treating primitive types polymorphically was beyond the scope of this
+		project. In particular, this means that my system will not be able to
+		type expressions such as \texttt{``Hello '' + ``World''}, as this
+		would require the operands of \texttt{+} may be typed as either
+		integers or as strings. Additionally, this means that I will not be
+		able to type-check function calls which have arguments ommitted (since
+		they are effectively being called with a parameter of type
+		\texttt{undefined}).
+
+	\section{Extension tasks}
+
+		I have already largely implemented the ability to modify an object
+		type by adding properties dynamically. I will not tackle the problem
+		of removal of object properties, since this could only be done with
+		control flow analysis. Array types, although useful, also likely
+		present more complexity than I have time to handle. Their presence
+		could still be handled (with gradual typing) as a kind of `black box',
+		where every array retrieval is handled by introducing a new dynamic
+		type. Prototype inheritance also presents a complex problem, but one
+		which I feel I should be able to attempt to solve. This is such a
+		common feature in production JavaScript code that it would be very
+		beneficial to integrate. It may yet be that large commercial test
+		suites will not be suitable for type-checking by my system, but I am
+		confident I will be able to find fragments of production JavaScript
+		which are. These will present interesting benchmark opportunities.
+
+\end{document}
