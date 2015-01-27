@@ -143,30 +143,26 @@ module.exports = function(src) {
 		}
 
 		// Prepare a helpful message for each typed chunk
-		var typeComment = " jstyper types: ";
-		var sep = "";
-		for (var o = 0; o < chunks[i].gamma.length; o++) {
-			var location = (chunks[i].gamma[o].node)?
-				"l%s c%s".format(
-					chunks[i].gamma[o].node.start.line,
-					chunks[i].gamma[o].node.start.col)
-				:"imported";
-
-			typeComment += sep;
-			typeComment += "%s (%s): %s".format(
-				chunks[i].gamma[o].name,
-				location,
-				chunks[i].gamma[o].type.toString());
-			sep = "; ";
+		function annotate(node) {
+			if (node instanceof UglifyJS.AST_Scope) {
+				if (node.gamma !== undefined) {
+					for (var j=0; j<solution.substitutions.length; j++) {
+						node.gamma.applySubstitution(solution.substitutions[j]);
+					}
+					var typeComment = "\n\tjstyper types: \n" + node.gamma.toString(2);
+					if (node.body.length > 0) {
+						node.body[0].start.comments_before.push(
+							new UglifyJS.AST_Token({
+								type: 'comment2',
+								value: typeComment
+							})
+						);
+					}
+				}
+			}
 		}
-
-		// prepend the types in a comment at the start of the chunk
-		chunks[i].nodes[0].start.comments_before.push(
-			new UglifyJS.AST_Token({
-				type: 'comment1',
-				value: typeComment
-			})
-		);
+		var walker = new UglifyJS.TreeWalker(annotate);
+		ast.walk(walker);
 
 		// TODO: append a notice indicating the end of the typed section (not easy without a trailing comments property!)
 		

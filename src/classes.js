@@ -298,6 +298,9 @@ function TypeEnvEntry(varName, node, type) {
 TypeEnvEntry.prototype.applySubstitution = function(sub) {
 	this.type.applySubstitution(sub);
 };
+TypeEnvEntry.prototype.toString = function() {
+	return this.name + ": " + this.type.toString();
+};
 
 
 
@@ -313,13 +316,16 @@ function TypeEnv(cloneFrom) {
 TypeEnv.nextType = 1;
 TypeEnv.prototype = new Array();
 TypeEnv.prototype.get = function(varName) {
-	// TODO: does this model scope suitably?
+
 	// search backwards through entries to find the most recent defn
 	for (var i = this.length - 1; i >= 0; i--) {
 		if (this[i].name === varName) {
 			return this[i].type;
 		}
 	}
+	// if (this.parentScope !== undefined) {
+	// 	return this.parentScope.get(varName);
+	// }
 	return null;
 };
 TypeEnv.getFreshType = function(opts, node) {
@@ -331,7 +337,22 @@ TypeEnv.prototype.applySubstitution = function(sub) {
 		this[i].applySubstitution(sub);
 	}
 };
-
+TypeEnv.prototype.toString = function(indentation) {
+	var ind = "";
+	if (indentation !== undefined) {
+		for (var j=0; j<indentation; j++) {
+			ind += "\t";
+		}
+	}
+	var res = "";
+	// if (this.parentScope !== undefined) {
+	// 	res += this.parentScope.toString(indentation);
+	// }
+	for (var i = this.length - 1; i >= 0; i--) {
+		res += ind + this[i].toString() + "\n";
+	}
+	return res;
+};
 
 
 

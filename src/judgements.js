@@ -487,6 +487,13 @@ UglifyJS.AST_Block.prototype.check = function(gamma) {
 		judgement.C = judgement.C.concat(j.C);
 		judgement.gamma = gamma = j.gamma;
 	}
+
+	// Implementation detail: Attach gamma to new scopes so we can retrieve
+	// them when annotating/gradual typing
+	if (this instanceof UglifyJS.AST_Scope) {
+		this.gamma = judgement.gamma;
+	}
+
 	judgement.nodes.push(this);
 	return judgement;
 };
@@ -561,4 +568,20 @@ UglifyJS.AST_Var.prototype.check = function(gamma) {
 
 
 	return j;
+};
+
+
+// Implementation detail: attach gamma to all lexical scopes:
+UglifyJS.AST_Scope.prototype.check = function(gamma) {
+	var judgement;
+
+	// actually obtain a judgement
+	if (this instanceof UglifyJS.AST_Lambda) {
+		UglifyJS.AST_Lambda.prototype.check.call(this,gamma);
+	} else if (this instanceof UglifyJS.AST_TopLevel) {
+		UglifyJS.AST_TopLevel.prototype.check.call(this,gamma);
+	}
+
+	this.gamma = judgement.gamma;
+	return judgement;
 };

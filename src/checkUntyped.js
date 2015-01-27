@@ -109,6 +109,13 @@ function seq(statements, par) {
 
 UglifyJS.AST_Block.prototype.checkUntyped = function() {
 	var judgements = seq(this.body, this);
+
+	// Implementation detail: Attach gamma to new scopes so we can retrieve
+	// them when annotating/gradual typing
+	if (this instanceof UglifyJS.AST_Scope) {
+		this.gamma = judgements.gamma;
+	}
+
 	return judgements;
 };
 
