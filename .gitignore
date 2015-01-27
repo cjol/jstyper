@@ -2,3 +2,5 @@ node_modules
 *.log
 *.aux
 *.pdf
+*.synctex.gz
+*.sublime-workspace

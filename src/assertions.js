@@ -9,7 +9,7 @@ function primCheck(expression, name, primType) {
 		condition: new UglifyJS.AST_Binary({
 			left: new UglifyJS.AST_UnaryPrefix({
 				operator: 'typeof',
-				expression: this
+				expression: this // TODO: Is it dangerous to whack this straight in?
 			}),
 			operator: '!==',
 			right: new UglifyJS.AST_String({
@@ -58,7 +58,7 @@ UglifyJS.AST_SymbolRef.prototype.getTypeChecks = function(type) {
 
 UglifyJS.AST_Dot.prototype.getTypeChecks = function(type) {
 	if (!type.isConcrete) return [];
-	if (type !== "object") return [primCheck()]
+	if (type !== "object") return [primCheck()];
 };
 
 UglifyJS.AST_Assign.prototype.getTypeChecks = function(type) {
