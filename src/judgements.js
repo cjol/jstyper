@@ -223,7 +223,7 @@ UglifyJS.AST_Call.prototype.check = function(gamma) {
 			polymorphic in 'this', which is a higher-order construct.
 
 		*/
-		// C.push(new Classes.LEqConstraint(argTypes[0], je.T, this.expression));
+		C.push(new Classes.LEqConstraint(argTypes[0], je.T, this.expression));
 	} else {
 		// normal function call (no this)
 		C.push(new Classes.Constraint(argTypes[0], undefinedType, this.expression));
