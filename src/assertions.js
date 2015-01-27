@@ -9,7 +9,7 @@ function primCheck(expression, name, primType) {
 		condition: new UglifyJS.AST_Binary({
 			left: new UglifyJS.AST_UnaryPrefix({
 				operator: 'typeof',
-				expression: this // TODO: Is it dangerous to whack this straight in?
+				expression: expression
 			}),
 			operator: '!==',
 			right: new UglifyJS.AST_String({

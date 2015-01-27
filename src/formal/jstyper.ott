@@ -1,7 +1,7 @@
-% v0.3.0
+% v0.4.1
 % Version numbering: (project_goals_met?1:0).(added syntax).(refined spec)
-metavar termvar, x, id, l ::=  
-indexvar index, i, j, k ::= {{ isa num }} {{ coq nat }} {{ hol num }} 
+metavar termvar, x, y, z, id, l, this, return ::=  
+indexvar index, i, j, k ::= 
 
 
 grammar
@@ -15,82 +15,106 @@ v :: 'v_' ::=                                   {{ com Values }}
 	| undefined ::  :: Undefined 								{{ com Undefined }}
 	| null      ::  :: null 									{{ com null }}
 	| eps  		::  :: EmptyStatement							{{ com EmptyStatement }}
-																{{ tex \epsilon }}
-	| { l1 : v1 , .. , li : vi } ::  :: ObjVal				{{ com ObjVal }}
+																	{{ tex \epsilon }}
+	| { l1 : v1 , .. , li : vi } ::  :: ObjVal					{{ com ObjVal }}
 	| get( s , id ) :: M:: GetStore 							{{ com GetStore }}
+	| func 		::  :: FuncVal 									{{ com FuncVal }} 
+
+func :: 'func_' ::=
+	| function id ( x1 , .. , xk ) { m } :: :: FunVal			{{ com FuncVal }}
+	| function ( x1 , .. , xk ) { m } :: :: AnonFunVal			{{ com AnonFuncVal }}
 
 s :: 's_' ::=                                   {{ com Store }}
-	|  put( s , id , v ) :: M:: PutStore 						{{ com PutStore }}
+	| put( s , [ id1 , .. , idi ] , [ v1 , .. , vk ] ) :: M:: PutStore 						{{ com PutStore }}
+	| del( s , [ id1 , .. , idi ] ) :: M:: DelStore 							{{ com DelStore }}
 
 vd :: 'vd_' ::=                                 {{ com VariableDeclaration }}
 	| id        ::  :: Declaration 								{{ com Declaration }}
 	| id = e    ::  :: Definition 								{{ com Definition }}
-	| vd , vd'  ::  :: Multiple 								{{ com Multiple }}
 
 e :: 'e_' ::=                                   {{ com Expression }}
 	| v         ::  :: Value 									{{ com Value }}
 	| id        ::  :: Deref 									{{ com Deref }}
-	| id Ass e   ::  :: Assign									{{ com Assign }}
+	| id Ass e  ::  :: Assign									{{ com Assign }}
+	| e . l Ass e' ::  :: PropAssign							{{ com PropAssign }}
 	| e op e'   ::  :: BinExp 									{{ com BinExp }}
 	| e postOp  ::  :: PostExp 									{{ com PostExp }}
 	| preOp e   ::  :: PreExp 									{{ com PreExp }}
-	| { l1 : e1 , .. , li : ei } ::  :: ObjExp				{{ com ObjExp }}
+	| { l1 : e1 , .. , li : ei } ::  :: ObjExp					{{ com ObjExp }}
+	| e . l 	::  :: PropExp									{{ com PropExp }} 
+	| e ( e1 , .. , e2 ) ::  :: CallExp							{{ com CallExp }} 
 
 Ass :: 'a_' ::=	                                {{ com Assignments }}
 				                                	{{ tex \approx }}
 	| = 		::  :: PlainAssign                              {{ com PlainAssign }}
-	| += 		::  :: PlusAssign                               {{ com PlusAssign }}
-				                                                	{{ tex +\!= }}
-	| -= 		::  :: MinusAssign                              {{ com MinusAssign }}
-				                                                	{{ tex -\!\!= }}
-	| *= 		::  :: MultAssign                               {{ com MultAssign }}
-				                                                	{{ tex *\!= }}
-	| /= 		::  :: DivAssign                                {{ com DivAssign }}
-				                                                	{{ tex /\!\!= }}
-	| %= 		::  :: ModAssign                                {{ com ModAssign }}
-				                                                	{{ tex \%\!= }}
+	| numOp =	::  :: NumAssign 								{{ com NumAssign }}
 
 m :: 'm_' ::=                                   {{ com Statement }}
 	| e         ::  :: Expression 								{{ com Expression }}
-	| m ; m'    ::  :: Seq          							{{ com Seq }}
-	| var vd    ::  :: VarDeclaration 							{{ com VarDeclaration }}
-	| if ( e ) { m1 } else { m2 }  ::  :: IfElseStatement		{{ com IfStatement }}
+	| m1 ; .. ; mi    ::  :: Seqs          						{{ com Seqs }}
+	| var vd1 , ... , vdk   ::  :: VarDeclaration 					{{ com VarDeclaration }}
+	| if ( e ) { m1 }  ::  :: IfStatement						{{ com IfStatement }}
+	| if ( e ) { m1 } else { m2 }  ::  :: IfElseStatement		{{ com IfElseStatement }}
+	| return e  ::  :: ReturnStatement							{{ com ReturnStatement }}
+	| return    ::  :: Return 									{{ com Return }}
+	| { m } [ v1 / id1 , .. , vi / idi ] :: :: SubstStatement	{{ com SubstStatement (meta) }}
+	| @def function id ( x1 , .. , xk ) { m } :: :: FuncDef		{{ com FuncDef }}
+
+ret :: 'ret_' ::=
+	| return e 	::  :: ReturnExp								{{ com ReturnExp }}
+	| return 	::  :: Return 									{{ com Return }}
 
 op :: 'op_' ::=                                 {{ com BinaryOperation }}
+	| numOp  	::  :: NumOp 									{{ com NumOp }}
+	| cmpOp 	::  :: CmpOp 									{{ com CmpOp }}
+	| numcmpOp 	::  :: NumCmpOp									{{ com NumCmpOp }}
+	| boolOp 	::  :: BoolOp									{{ com BoolOp }}
+
+
+numOp :: 'nop_' ::=
 	| + 		::  :: Addition                                 {{ com Addition }}
 	| - 		::  :: Subtraction                              {{ com Subtraction }}
 	| / 		::  :: Division                                 {{ com Division }}
 	| * 		::  :: Multiplication                           {{ com Multiplication }}
 	| % 		::  :: Modulo                                   {{ com Modulo }}
+
+
+numcmpOp :: 'ncop_' ::=
 	| < 		::  :: LessThan                                 {{ com LessThan }}
 	| > 		::  :: GreaterThan                              {{ com GreaterThan }}
 	| <= 		::  :: LessEqual                                {{ com LessEqual }}
 																	{{ tex \leq }}
 	| >= 		::  :: GreaterEqual                             {{ com GreaterEqual }}
 																	{{ tex \geq }}
+
+cmpOp :: 'cop_' ::=
 	| == 		::  :: Equal                                    {{ com Equal }}
 	| != 		::  :: Unequal                                  {{ com Unequal }}
 																	{{ tex !\!\!= }}
 	| === 		::  :: StrictEqual                              {{ com StrictEqual }}
 	| !== 		::  :: StrictUnequal                            {{ com StrictUnequal }}
 																	{{ tex !\!\!== }}
+boolOp :: 'bop_' ::=
 	| || 		::  :: BooleanOr                                {{ com BooleanOr }}
 	| && 		::  :: BooleanAnd                               {{ com BooleanAnd }}
 
 preOp :: 'preop_' ::=                           {{ com PrefixOperation }}
-	| ~ 		::  :: Negation                                 {{ com Negation }}
-																	{{ tex -\! }}
+	| preNum 	::  :: PreNum 									{{ com PreNum }}
 	| !			::  :: BoolNegation                             {{ com BoolNegation }}
 																	{{ tex !\! }}
+
+preNum :: 'prenum_' ::=                           {{ com PreNum }}
+	| ~ 		::  :: Negation                                 {{ com Negation }}
+																	{{ tex -\! }}
 	| --		::  :: PreDecrement                             {{ com PreDecrement }}
 																	{{ tex -\!\!-\!\! }}
 	| ++		::  :: PreIncrement                             {{ com PreIncrement }}
 																	{{ tex +\!\!+\!\! }}
 
 postOp :: 'postop_' ::=                         {{ com PostfixOperation }}
-	| --		::  :: PreDecrement                             {{ com PreDecrement }}
+	| --		::  :: PostDecrement                             {{ com PostDecrement }}
 																	{{ tex \!\!\!-\!\!- }}
-	| ++		::  :: PerIncrement                             {{ com PreIncrement }}
+	| ++		::  :: PostIncrement                             {{ com PostIncrement }}
 																	{{ tex \!\!+\!\!+ }}
 
 % Typing definitions
@@ -105,9 +129,9 @@ T :: 'Tval_' ::=				                {{ com Value Type }}
 	| string    ::  :: String 									{{ com String }}
 	| undefined ::  :: undefined 								{{ com undefined }}
 	| null      ::  :: null 									{{ com null }}
-	| { l1 : T1 , .. , li : Ti } ::  :: ObjType			{{ com ObjType }}
-
-% Things Ott wants
+	| { l1 : T1 , .. , li : Ti } ::  :: ObjType					{{ com ObjType }}
+	| T1 , ... , Ti -> Tj ::   :: FunType						{{ com FunType }}
+	| G ["return"] :: :: GammaType 								{{ com GammaType }} 
 
 G {{ tex \Gamma }} :: 'G_' ::= 					{{ com Context }}
 	| \{}		::  :: EmptyContext								{{ com EmptyContext }}
@@ -115,6 +139,7 @@ G {{ tex \Gamma }} :: 'G_' ::= 					{{ com Context }}
 	| G u G'	::  :: UnionContext								{{ com UnionContext }}
 																	{{ tex [[G]] \cup [[G']] }}
 	| id : T 	::  :: ContextItem								{{ com ContextItem }}
+	| { id1 : T1 , .. , idk : Tk } 	::  :: ContextItems			{{ com ContextItems }}
 
 C :: 'C_' ::= 					                {{ com Constraint }}
 	| \{}		 ::  :: EmptyConstraint							{{ com EmptyConstraint }}
@@ -124,22 +149,14 @@ C :: 'C_' ::= 					                {{ com Constraint }}
 																	{{ tex [[C]] \cap [[C']] }}
 	| U setIndex = n1 - n2 C :: :: BigUnion 						{{ com BigUnion }}
 																	{{ tex \bigcup \limits_{i=[[n1]]}^[[n2]] [[C]] }}
-	| { T = T2 } ::  :: ConstraintEquation 						{{ com ConstraintEquation }}
+	| { T1 < T2 } ::  :: ConstLeq 										{{ com ConstLeq }}
+																	{{ tex \{ [[T1]] \preceq [[T2]] \} }}
+	| { T1 > T2 } ::  :: ConstGeq				 						{{ com ConstGeq }}
+																	{{ tex \{ [[T1]] \succeq [[T2]] \} }}
+	| { T1 = T2 } ::  :: ConstEq				 						{{ com ConstEq }}
+																	{{ tex \{ [[T1]] = [[T2]] \} }}
 	| ( C )		 ::  :: BracketedConstraint  					{{ com BracketedConstraint }}
 																	{{ tex [[C]] }}
-
-X :: 'X_' ::= 					                {{ com Variable }}
-	| \{}		::  :: EmptyVariable							{{ com EmptyVariable }}
-	| { T }		::  :: SingletonVariable						{{ com SingletonVariable }}
-	| X u X'	::  :: UnionVariable							{{ com UnionVariable }}
-																	{{ tex [[X]] \cup [[X']] }}
-	| X n X'	::  :: IntersectVariable						{{ com IntersectVariable }}
-																	{{ tex [[X]] \cap [[X']] }}
-	| U setIndex = n1 - n2 X :: :: BigUnion 						{{ com BigUnion }}
-																	{{ tex \bigcup \limits_{i=[[n1]]}^[[n2]] [[X]] }}
-	| FV( T )	::  :: FreeVars									{{ com FreeVars }}
-	| ( X )		::  :: BracketedFreeVar  					    {{ com BracketedFreeVar }}
-																	{{ tex [[X]] }}
 
 terminals :: 'terminals_' ::=
 	| ->        ::  :: rightarrow 									{{ tex \rightarrow }}
@@ -153,6 +170,7 @@ sv :: 'sv_' ::= 								{{ com SetVar }}
 	| C 		::  :: ConstraintSet						    {{ com ConstraintSet }}
 	| X 		::  :: VariableSet							    {{ com VariableSet }}
 	| dom( G )	::  :: dom
+	| codom( G ) ::  :: codom
 
 fv :: 'fv_' ::= 								{{ com FormulaVar }}
 	| G 		::  :: ContextVar							    {{ com ContextVar }}
@@ -202,6 +220,8 @@ formula :: formula_ ::=
 																	{{ tex [[fv]] \in [[sv2]] }}
    |  fv !in sv2	 	              ::  :: NotContains		{{ com NotContains }}
 																	{{ tex [[fv]] \notin [[sv2]] }}
+	| T is fresh 					::  :: Fresh 			{{ com Fresh }} 
+	| T1 , .. , Ti are fresh 					::  :: Freshs 			{{ com Freshs }} 
 
 
 
@@ -214,35 +234,21 @@ Jop :: '' ::=
 	by
 
 		-------------------                        		            ::   Seq1
-		<v; m, s> -> <m, s>
+		<v; m1; ..; mi, s> -> <m1; ..; mi, s>
 
 		<m1, s> -> <m1', s'>
 		----------------------------              		            ::   Seq2
-		<m1; m2, s> -> <m1'; m2, s'>
+		<m1;m2; ..; mi, s> -> <m1'; m2; ..; mi, s'>
 
 		<e, s> -> <e', s'>
 		----------------------------                 		        ::   Assign1
 		<id Ass e, s> -> <id Ass e', s'>
 
 		---------------------------------            		        ::   Assign
-		<id = v, s> -> <v, put(s, id, v)>
+		<id = v, s> -> <v, put(s, [id], [v])>
 
-		% TODO: Verify this is fine (we reduce all Ass and substitute after exp reduction?)
-
-		----------------------------                 		        ::   AssignPlus
-		<id += v, s> -> <id = id + v, s>
-
-		----------------------------                 		        ::   AssignMinus
-		<id -= v, s> -> <id = id - v, s>
-
-		----------------------------                 		        ::   AssignMult
-		<id *= v, s> -> <id = id * v, s>
-
-		----------------------------                 		        ::   AssignDiv
-		<id /= v, s> -> <id = id / v, s>
-
-		----------------------------                 		        ::   AssignMod
-		<id %= v, s> -> <id = id % v, s>
+		----------------------------                 		        ::   AssignNum
+		<id numOp= v, s> -> <id = id numOp v, s>
 
 		--------------------------                  		        ::   Deref
 		<id, s> -> <get(s, id), s>
@@ -254,11 +260,14 @@ Jop :: '' ::=
 		-----------------------------------               		    ::   Var2
 		<var id = e, s> -> <var id = e', s>
 
-		-------------------------------               		        ::   Var3
-		<var id = v, s> -> <eps, s>
+		----------------------------------------       		        ::   Var3
+		<var id = v, s> -> <eps, put(s, [id], [v])>
 
 		----------------------------------------- 			        ::   Var4
 		<var vd, vd', s> -> <var vd; var vd', s >
+
+		------------------------------------------------- 			::   FuncDef
+		<@def function x(y1,..,yi) {m}, s> -> <eps, put(s, [x], [function (y1,..,yi) {m}])> 
 
 		<e, s> -> <e', s'>
 		--------------------------------                            ::   UnOp1
@@ -276,55 +285,9 @@ Jop :: '' ::=
 		-------------------------------                             ::   BinOp2
 		<v op e2, s> -> <v op e2', s'>
 
-		n1 + n2 = n
-		-----------------------                                     ::   OpPlus
-		<n1 + n2, s> -> <n, s>
-
-		n1 - n2 = n
-		-----------------------                                     ::   OpSub
-		<n1 - n2, s> -> <n, s>
-
-		n1 * n2 = n
-		-----------------------                                     ::   OpMult
-		<n1 * n2, s> -> <n, s>
-
-		n1 / n2 = n
-		-----------------------                                     ::   OpDiv
-		<n1 / n2, s> -> <n, s>
-
-		n1 % n2 = n
-		-----------------------                                     ::   OpMod
-		<n1 % n2, s> -> <n, s>
-
-		b1 || b2 = b
-		-----------------------                                     ::   OpOr
-		<b1 || b2, s> -> <b, s>
-
-		b1 && b2 = b
-		-----------------------                                     ::   OpAnd
-		<b1 && b2, s> -> <b, s>
-
-		v1 == v2 = b
-		-----------------------                                     ::   OpEqEq
-		<v1 == v2, s> -> <b, s>
-
-		v1 != v2 = b
-		-----------------------                                     ::   OpNEq
-		<v1 != v2, s> -> <b, s>
-
-		% NB on type coercion in JavaScript
-
-		% == converts the objects if they're not of the same type (=== checks for
-		% equality without type coercion). IMO that's silly behaviour, so in my
-		% type system == is only applicable to objects of the same type.
-
-		v1 === v2 = b
-		-----------------------                                     ::   OpEqEqEq
-		<v1 === v2, s> -> <b, s>
-
-		v1 !== v2 = b
-		-----------------------                                     ::   OpNEqEq
-		<v1 !== v2, s> -> <b, s>
+		n1 op n2 = n
+		-----------------------                                     ::   BinOp3
+		<n1 op n2, s> -> <n, s>
 
 		!b1 = b2
 		-----------------------                                     ::   BoolNeg
@@ -336,21 +299,19 @@ Jop :: '' ::=
 
 		get(s, id) + 1 = v
 		-----------------------------                               ::   PostInc
-		<id++, s> -> <id, put(s, id, v)>
+		<id++, s> -> <id, put(s, [id], [v])>
 
 		get(s, id) + 1 = v
 		-----------------------------                               ::   PreInc
-		<++id, s> -> <id+1, put(s, id, v)>
+		<++id, s> -> <id+1, put(s, [id], [v])>
 
 		get(s, id) - 1 = v
 		-----------------------------                               ::   PostDec
-		<id--, s> -> <id, put(s, id, v)>
+		<id--, s> -> <id, put(s, [id], [v])>
 
 		get(s, id) - 1 = v
 		-----------------------------                               ::   PreDec
-		<--id, s> -> <id+1, put(s, id, v)>
-
-		% TODO: Do I need to duplicate this for ifs without elses?..
+		<--id, s> -> <id+1, put(s, [id], [v])>
 
 		<e, s> -> <e', s'>
 		--------------------------------------------------------    ::	 If1
@@ -361,272 +322,255 @@ Jop :: '' ::=
 
 		--------------------------------------		                ::	 If3
 		<if (false) {m1} else {m2}, s> -> <m2, s>
+		
+		--------------------------------------------------------    ::	 If4
+		<if (e) {m1}, s> -> <if (e) {m1} else {}, s'>
 
 		% TODO: Need to get a line break in here...
 		<e, s> -> <e', s'>
 		---------------------------------------------				::   Obj
 		< {l1: v1, .., lj: vj, l: e, l1': e1', .., lj': ej'}, s> -> <{l1: v1, .., lj: vj, l: e', l1': e1', .., lj': ej'}, s'>
 
+		<e, s> -> <e', s'>
+		----------------------- 									::   Prop1
+		<e.l, s> -> <e'.l, s'>
 
+		----------------------- 									::   Prop2
+		< {l1: v1, .., lj: vj, l: v, l1': v1', .., lj': vj'}.l, s> -> <v, s'>
+
+		<e, s> -> <e', s'>
+		----------------------- 									::   Call1
+		< e(e1,..,ei), s> -> <e'(e1,..,ei), s'>
+
+		<e1, s> -> <e1', s'>
+		----------------------- 									::   Call2
+		< v(v1,..,vi,e1,e2,..,ej), s> -> <v(v1,..,vi,e1',e2,..,ej), s'>
+
+		<m, put( s, [id, x1,..,xi], [function id(x1,..,xi){m},v1,..,vi])> -> <return v; m', s'>
+		----------------------- 									::   Call3
+		< function id(x1,..,xi){m}(v1,..,vi), s> -> <v, del(s', [id,x1,..,xi])>
+
+		<m, put( s, [x1,..,xi], [v1,..,vi])> -> <return v; m', s'>
+		----------------------- 									::   Call4
+		<function (x1,..,xi){m}(v1,..,vi), s> -> <v, del(s', [x1,..,xi])>
+
+		<v.l,s> -> <function id (x1,..,xi){m}, s'>
+		--------------------------------------------------------- 	:: 	PropCall
+		<v.l(e1,..,ei),s> -> <function id (this,x1,..,xi){m}(v,e1,..,ei), s'>
 
 	defn
-	G |- e : T | X C , G' :: ::expType::''
-	 {{ tex [[G]] [[|-]] [[e]] : [[T]]\hspace{5pt}| _{ [[X]] } \hspace{3pt}[[C]], [[G']] }}
+	G |- e : T | C G' :: ::expType::''
+	 {{ tex [[G]] [[|-]] [[e]] : [[T]]\hspace{5pt}| _{ [[C]] } \hspace{5pt} [[G']] }}
 	 by
 		% Note: Only expressions have a type - the more general statements do not
 
 		% typing rules for values
 
 		-------------------------                           		:: V_Num
-		G |- n : number |\{} \{}, G
+		G |- n : number |\{} G
 
 		--------------------------                          		:: V_Bool
-		G |- b : boolean |\{} \{}, G
+		G |- b : boolean |\{} G
 
 		---------------------------                         		:: V_String
-		G |- str : string |\{} \{}, G
+		G |- str : string |\{} G
 
 		------------------------------------                		:: V_Undefined
-		G |- undefined : undefined |\{} \{}, G
+		G |- undefined : undefined |\{} G
 
 		--------------------------                          		:: V_Null
-		G |- null : null |\{} \{}, G
+		G |- null : null |\{} G
 
 		------------------------------                     		    :: V_Skip
-		G |- eps : undefined |\{} \{}, G
+		G |- eps : undefined |\{} G
 	
-		X = U i=1-k Xi 
+		G |- e1 : T1 | C1 G1 --- Gk-1 |- ek : Tk | Ck Gk 
 		C = (U i=1-k Ci) u (U i=1-k {Ti = Ti'})
-		[A i A j (Xi n Xj = {})] for i != j
-		G |- e1 : T1 |X1 C1, G1 --- Gk-1 |- ek : Tk |Xk Ck, Gk 
+		T1', .., Tk' are fresh
 		---------------------------------------------------------   :: V_Obj
-		G |- {l1: e1, .., lk: ek} : {l1: T1', .., lk: Tk'} |X C, Gk
-	
+		G |- {l1: e1, .., lk: ek} : {l1: T1', .., lk: Tk'} |C Gk
 
+		% TODO: Case(s) when G'["return"] doesn't exist
+
+		T, T0, T1, .., Ti are fresh
+		G u {this: T0, x1:T1, .., xi:Ti} |- m1; ..; mj |C G'
+		----------------------------------------------------------------------- :: V_Fun1
+		G |- function (x1, .., xi) { m1; ..; mj } : T0, T1, .., Ti -> T |C u {G'["return"] = T} G
+
+		T0, T1, .., Ti are fresh
+		G u {this: T0, x1:T1, .., xi:Ti, id:T1, .., Ti -> T} |- m1; ..; mj |C G'
+		----------------------------------------------------------------------- :: V_Fun2
+		G |- function id(x1, .., xi) { m1; ..; mj } : T0, T1, .., Ti -> T |C u {G'["return"] = T} G
 
 
 		% Variable retrieval
 
 		G(id) = T
 		---------------------		                                :: IdType
-		G |- id : T |\{} \{}, G
+		G |- id : T |\{} G
 
 		id !in dom(G)
+		T is fresh
 		----------------------------------- 						:: IdTypeUndef
-		G |- id : T |{ T } \{}, G u {id : T}
+		G |- id : T |\{} G u {id : T}
 
+		G |- e : T1 |C G1
+		T2 is fresh
+		---------------------------------------------------------   :: PropType
+		G |- e.l : T2 |C u {{l:T2} < T1} G1
+	
+
+
+		% Function Calls
+
+		% I'm saying this is {} if unspecified (in practice this is global object e.g. window)
+		% TODO: Check direction of T0 constraint (seriously this time!)
+		% Potential fix - constrain T0 to = undefined, such that:
+		%	If the function doesn't use this, it will be so far unconstrained and unify easily
+		% 	If the function does use this, this constraint will fail to unify
+
+		G |- e : T |C0 G0
+		G0 |- e1 : T1' |C1 G1 --- Gk-1 |- ei : Ti' |Ci Gi
+		C' = (U i=0-k Ci) u ( {T=T0, T1, .., Ti -> Tk} u ( (U i=1-k {Ti < Ti'}) u {T0 = undefined} ))
+		T0,T1,..,Ti,Tk are fresh
+		-------------------------------------------------- 			:: CallType
+		G |- e(e1,..,ei) : Tk |C' Gi
+
+		G |- e.l : T |C0 G0
+		G |- e : T0' |C' G'
+		G0 |- e1 : T1' |C1 G1 --- Gk-1 |- ei : Ti' |Ci Gi
+		C' = (U i=0-k Ci) u ( {T=T0, T1, .., Ti -> Tk} u ( (U i=1-k {Ti < Ti'}) u {T0 < T0'} ))
+		T0,T1,..,Ti,Tk are fresh
+		-------------------------------------------------- 			:: PropCallType
+		G |- e.l(e1,..,ei) : Tk |C' Gi
 
 
 
 		% Assignment operations
 
-		G |- e : T1 |X1 C1, G1
-		G1 |- id : T2 |X2 C2, G2
-		X1 n X2 = \{}
-		------------------------------------------------------	 	:: AssignType
-		G |- id = e : T2 |X1 u X2 (C1 u C2) u { T2 = T1 }, G2
+		G |- e : T1 |C1 G1
+		G1 |- id : T2 |C2 G2
+		------------------------------------------------------	 	:: AssignType 
+		G |- id = e : T1 |(C1 u C2) u { T1 > T2 } G2
 
-		G |- e : T1 |X1 C1, G1
-		G1 |- id : T2 |X2 C2, G2
-		X1 n X2 = \{}
-		------------------------------------------------------	 	:: PlusAssignType
-		G |- id += e : T2 |X1 u X2 (C1 u C2) u ({ T2 = T1 } u {T1 = number}), G2
+		G |- e' : T1 |C1 G1
+		G1 |- e : T2 |C2 G2
+		T3 is fresh
+		------------------------------------------------------	 	:: PropAssignType
+		G |- e.l = e' : T1 |(C1 u C2) u ({ {l:T3} < T2 } u {T1 > T3}) G2
 
-		G |- e : T1 |X1 C1, G1
-		G1 |- id : T2 |X2 C2, G2
-		X1 n X2 = \{}
-		-----------------------------------------------------	 	:: MinusAssignType
-		G |- id -= e : T2 |X1 u X2 (C1 u C2) u ({ T2 = T1 } u {T1 = number}), G2
+		G |- e : T1 |C1 G1
+		G1 |- id : T2 |C2 G2
+		------------------------------------------------------	 	:: NumAssignType
+		G |- id numOp= e : T1 |(C1 u C2) u ({ T2 = number } u {T1 = number}) G2
 
-		G |- e : T1 |X1 C1, G1
-		G1 |- id : T2 |X2 C2, G2
-		X1 n X2 = \{}
-		------------------------------------------------------	 	:: TimesAssignType
-		G |- id *= e : T2 |X1 u X2 (C1 u C2) u ({ T2 = T1 } u {T1 = number}), G2
+		G |- e' : T1 |C1 G1
+		G1 |- e : T2 |C2 G2
+		------------------------------------------------------	 	:: PropNumAssignType
+		G |- e.l numOp= e' : T1 |(C1 u C2) u ({ {l:number} < T2 } u {T1 = number}) G2
 
-		G |- e : T1 |X1 C1, G1
-		G1 |- id : T2 |X2 C2, G2
-		X1 n X2 = \{}
-		------------------------------------------------------	 	:: DivAssignType
-		G |- id /= e : T2 |X1 u X2 (C1 u C2) u ({ T2 = T1 } u {T1 = number}), G2
 
-		G |- e : T1 |X1 C1, G1
-		G1 |- id : T2 |X2 C2, G2
-		X1 n X2 = \{}
-		------------------------------------------------------	 	:: ModAssignType
-		G |- id %= e : T2 |X1 u X2 (C1 u C2) u ({ T2 = T1 } u {T1 = number}), G2
-
-		
 
 
 		% Mathematical Binary Operations
 
-		G |- e1 : T1 | X1 C1, G1
-		G1 |- e2 : T2 | X2 C2, G2
-		X1 n X2 = \{}
-		------------------------------------------------------------  :: AddType
-		G |- e1 + e2 : number | X1 u X2 (C1 u C2) u ({T1 = number} u {T2 = number}), G2
-
-		G |- e1 : T1 | X1 C1, G1
-		G1 |- e2 : T2 | X2 C2, G2
-		X1 n X2 = \{}
-		------------------------------------------------------------  :: SubtractType
-		G |- e1 - e2 : number | X1 u X2 (C1 u C2) u ({T1 = number} u {T2 = number}), G2
-
-		G |- e1 : T1 | X1 C1, G1
-		G1 |- e2 : T2 | X2 C2, G2
-		X1 n X2 = \{}
-		------------------------------------------------------------  :: MultType
-		G |- e1 * e2 : number | X1 u X2 (C1 u C2) u ({T1 = number} u {T2 = number}), G2
-
-		G |- e1 : T1 | X1 C1, G1
-		G1 |- e2 : T2 | X2 C2, G2
-		X1 n X2 = \{}
-		------------------------------------------------------------  :: DivType
-		G |- e1 / e2 : number | X1 u X2 (C1 u C2) u ({T1 = number} u {T2 = number}), G2
-
-		G |- e1 : T1 | X1 C1, G1
-		G1 |- e2 : T2 | X2 C2, G2
-		X1 n X2 = \{}
-		------------------------------------------------------------  :: ModType
-		G |- e1 % e2 : number | X1 u X2 (C1 u C2) u ({T1 = number} u {T2 = number}), G2
+		G |- e1 : T1 |C1 G1
+		G1 |- e2 : T2 |C2 G2
+		------------------------------------------------------------  :: NumOpType
+		G |- e1 numOp e2 : number |(C1 u C2) u ({T1 = number} u {T2 = number}) G2
 
 
 
 
 		% Boolean Binary operations
 
-		G |- e1 : T1 | X1 C1, G1
-		G1 |- e2 : T2 | X2 C2, G2
-		X1 n X2 = \{}
-		------------------------------------------------------------  :: OrType
-		G |- e1 || e2 : boolean | X1 u X2 (C1 u C2) u ({T1 = boolean} u {T2 = boolean}), G2
-
-		G |- e1 : T1 | X1 C1, G1
-		G1 |- e2 : T2 | X2 C2, G2
-		X1 n X2 = \{}
-		------------------------------------------------------------  :: AndType
-		G |- e1 && e2 : boolean | X1 u X2 (C1 u C2) u ({T1 = boolean} u {T2 = boolean}), G2
-
+		G |- e1 : T1 |C1 G1
+		G1 |- e2 : T2 |C2 G2
+		------------------------------------------------------------  :: BoolOpType
+		G |- e1 boolOp e2 : boolean | (C1 u C2) u ({T1 = boolean} u {T2 = boolean}) G2
 
 
 
 		% Equality Operations
 
-		G |- e1 : T1 | X1 C1, G1
-		G1 |- e2 : T2 | X2 C2, G2
-		X1 n X2 = \{}
-		-------------------------------------------------------		  :: EqEqType
-		G |- e1 == e2 : boolean | X1 u X2 (C1 u C2) u {T1 = T2}, G2
+		G |- e1 : T1 |C1 G1
+		G1 |- e2 : T2 |C2 G2
+		-------------------------------------------------------		  :: CmpOpType
+		G |- e1 cmpOp e2 : boolean |(C1 u C2) u {T1 = T2} G2
 
-		G |- e1 : T1 | X1 C1, G1
-		G1 |- e2 : T2 | X2 C2, G2
-		X1 n X2 = \{}
-		-------------------------------------------------------		  :: NotEqEqType
-		G |- e1 != e2 : boolean | X1 u X2 (C1 u C2) u {T1 = T2}, G2
-
-		G |- e1 : T1 | X1 C1, G1
-		G1 |- e2 : T2 | X2 C2, G2
-		X1 n X2 = \{}
-		-------------------------------------------------------		  :: EqEqEqType
-		G |- e1 === e2 : boolean | X1 u X2 (C1 u C2) u {T1 = T2}, G2
-
-		G |- e1 : T1 | X1 C1, G1
-		G1 |- e2 : T2 | X2 C2, G2
-		X1 n X2 = \{}
-		-------------------------------------------------------		  :: NotEqEqEqType
-		G |- e1 !== e2 : boolean | X1 u X2 (C1 u C2) u {T1 = T2}, G2
-
-		G |- e1 : T1 | X1 C1, G1
-		G1 |- e2 : T2 | X2 C2, G2
-		X1 n X2 = \{}
-		-------------------------------------------------------		  :: LessType
-		G |- e1 < e2 : boolean | X1 u X2 (C1 u C2) u ({T1 = T2} u {T1 = number}), G2
-
-		G |- e1 : T1 | X1 C1, G1
-		G1 |- e2 : T2 | X2 C2, G2
-		X1 n X2 = \{}
-		-------------------------------------------------------		  :: LEqType
-		G |- e1 <= e2 : boolean | X1 u X2 (C1 u C2) u ({T1 = T2} u {T1 = number}), G2
-
-		G |- e1 : T1 | X1 C1, G1
-		G1 |- e2 : T2 | X2 C2, G2
-		X1 n X2 = \{}
-		-------------------------------------------------------		  :: GreaterType
-		G |- e1 > e2 : boolean | X1 u X2 (C1 u C2) u ({T1 = T2} u {T1 = number}), G2
-
-		G |- e1 : T1 | X1 C1, G1
-		G1 |- e2 : T2 | X2 C2, G2
-		X1 n X2 = \{}
-		-------------------------------------------------------		  :: GEqType
-		G |- e1 >= e2 : boolean | X1 u X2 (C1 u C2) u ({T1 = T2} u {T1 = number}), G2
-
+		G |- e1 : T1 |C1 G1
+		G1 |- e2 : T2 |C2 G2
+		-------------------------------------------------------		  :: NumCmpOpType
+		G |- e1 numcmpOp e2 : boolean |(C1 u C2) u ({T2 = number} u {T1 = number}) G2
 
 
 		% Unary Operation
 
-		G |- e : T1 |X C, G'
-		------------------------------------------- 	:: BoolNegType
-		G |- !e : boolean |X C u {T1 = boolean}, G'
+		G |- e : T1 |C G'
+		------------------------------------------- 	:: NegType
+		G |- !e : boolean |C u {T1 = boolean} G'
 
-		G |- e : T1 |X C, G'
-		------------------------------------------- 	:: NumNegType
-		G |- ~e : number |X C u {T1 = number}, G'
+		G |- e : T1 |C G'
+		------------------------------------------- 	:: PreNumType
+		G |- preNum e : number |C u {T1 = number} G'
 
-		G |- e : T1 |X C, G'
-		------------------------------------------- 	:: PreIncType
-		G |- ++e : number |X C u {T1 = number}, G'
-
-		G |- e : T1 |X C, G'
-		------------------------------------------- 	:: PostIncType
-		G |- e++ : number |X C u {T1 = number}, G'
-
-		G |- e : T1 |X C, G'
-		------------------------------------------- 	:: PreDecType
-		G |- --e : number |X C u {T1 = number}, G'
-
-		G |- e : T1 |X C, G'
-		------------------------------------------- 	:: PostDecType
-		G |- e-- : number |X C u {T1 = number}, G'
+		G |- e : T1 |C G'
+		------------------------------------------- 	:: PostOpType
+		G |- e postOp : number |C u {T1 = number} G'
 
 
 	defn
-	G |- m | X C , G' :: :: typable::'' 
-	 {{ tex [[G]] [[|-]] [[m]] \hspace{5pt}| _{ [[X]] } \hspace{3pt}[[C]], [[G']]}}
+	G |- m | C G' :: :: typable::'' 
+	 {{ tex [[G]] [[|-]] [[m]] \hspace{5pt}| _{ [[C]] } \hspace{5pt} [[G']]}}
 	 by
 		% We say that a statement m is typable if all expressions contained within it are well typed by the definition above.
 
-		---------------------------------                		    :: DecTypable
-		G |- var id |{T} \{}, G u {id : T}
-
-		G |- e : T |X C, G'
+		G |- e : T |C G'
 		-------------------                                		    :: ExpTypable
-		G |- e |X C, G'
+		G |- e |C G'
 
-		G |- m1 |X1 C1, G1
-		G1 |- m2 |X2 C2, G2
-		X1 n X2 = \{}
+		G |- e : T |C G'
+		return !in dom(G)
+		-------------------                                		    :: RetTypable1
+		G |- return e |C G' u {return: T}
+
+		G |- e : T |C G'
+		return in dom(G)
+		-------------------                                		    :: RetTypable2
+		G |- return e |C u {T = G["return"]} G' 
+
+		return !in dom(G)
+		-------------------                                		    :: RetTypable3
+		G |- return |\{} G u {return: undefined}
+
+		return in dom(G)
+		-------------------                                		    :: RetTypable4
+		G |- return |{undefined = G["return"]} G
+
+		G |- m1 |C1 G1 --- Gi-1 |- mi |Ci Gi
 		---------------------------------                		    :: SeqTypable
-		G |- m1 ; m2 |X1 u X2 C1 u C2, G2
+		G |- m1; ...; mi |U i=0-k Ci Gi
 
-		G |- e : T1 |X1 C1, G1
-		G1 |- m1 | X2 C2, G2
-		G1 |- m2 | X3 C3, G3
-		X1 n X2 = \{}
-		---------------------------------                		    :: IfTypable
-		G |- if (e) {m1} else {m2} |(X1 u X2) u X3 (C1 u (C2 u C3)) u {T1 = boolean}, G1
+		G |- e : T1 |C1 G1
+		G1 |- m1 |C2 G2
+		G1 |- m2 |C3 G3
+		---------------------------------                		    :: IfTypable1
+		G |- if (e) {m1} else {m2} |(C1 u (C2 u C3)) u {T1 = boolean} G1
 
-		% NB DefTypable is dubious because we type it with assignment where the AST treats it as separate.
-		% Fixing it would involve making 'var id' an expression though, which would be worse.
+		G |- e : T1 |C1 G1
+		G1 |- m1 |C2 G2
+		---------------------------------                		    :: IfTypable2
+		G |- if (e) {m1} |(C1 u C2) u {T1 = boolean} G1
 
-		G |- var id | X1 C, G1
-		G1 |- id = e : T |X2 C, G2
-		X1 n X2 = \{}
+		T is fresh
+		---------------------------------                		    :: DecTypable
+		G |- var id |\{} G u {id : T}
+
+		G |- e : T |C G'
+		T' is fresh
 		---------------------------------                		    :: DefTypable
-		G |- var id = e |X1 u X2 C1 u C2, G2
+		G |- var id = e |C u {T' < T} G' u {id : T'}
 
-		G |- var vd |X1 C1, G1
-		G1 |- var vd' |X1 C2, G2
-		X1 n X2 = \{}
+		G |- var vd1 |C1 G1 --- Gk-1 |- var vdk |Ck Gk
 		---------------------------------------            		    :: MultiDecTypable
-		G |- var vd , vd' |X1 u X2 C1 u C2, G2
+		G |- var vd1,...,vdk |(U i=i-k Ck) G2

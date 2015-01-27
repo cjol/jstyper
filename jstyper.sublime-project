@@ -4,7 +4,24 @@
 		{
 			"follow_symlinks": true,
 			"path": ".",
-            "folder_exclude_patterns": ["src/node_modules", "report/out"]
+            "folder_exclude_patterns": ["src/node_modules", "report/out"],
+            "file_exclude_patterns": ["*.aux", "*.log", "src/res/*"]
 		}
-	]
+	],
+    "build_systems":
+    [
+        {
+            "name": "Ott to PDF",
+            "working_dir": "$project_path",
+            "cmd": ["ott src/formal/jstyper.ott -o report/tex/spec.tex && pdflatex -output-directory=report/pdf/ report/tex/spec.tex 2>&1 >/dev/null && xdg-open report/pdf/spec.pdf"
+            		],
+            "shell": true
+        },
+        {
+            "name": "Shell-escaped pdflatex",
+            "working_dir": "$project_path/report/pdf",
+            "cmd": ["pdflatex -shell-escape $file"],
+            "shell": true
+        }
+    ]
 }

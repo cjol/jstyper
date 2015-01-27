@@ -25,6 +25,8 @@ String.prototype.format = function() {
 	return newStr;
 };
 
+// obtain a set of substitutions which will make the constraints unifiable
+// also generate checks for dynamic types
 function solveConstraints(constraints) {
 	// originally from Pierce p. 327
 	
@@ -32,51 +34,67 @@ function solveConstraints(constraints) {
 	if (constraints.length < 1)
 		return {substitutions:[], checks:[]};
 
-	var left = constraints[0].left;
-	var right = constraints[0].right;
+	var constraint = constraints[0];
 	var remainder = constraints.slice(1);
 
-	// types are equal => constraint satisfied
-	if (left.equals(right)) {
+	var leftType = constraint.type1;
+	var rightType = constraint.type2;
 
-		if (left.type !== "object")	
-			return solveConstraints(remainder);
-		
-		// if we're talking about objects, though, we need to explode the
-		// object constraints into constraints for each of the object
-		// properties.
-		var newConstraints = [];
-		for (var label in left.memberTypes) {
-			newConstraints.push(new Classes.Constraint(left.memberTypes[label], left.memberTypes[label].node,
-														 right.memberTypes[label], right.memberTypes[label].node));
-		}
+	// if this is an 'enforcing' constraint, then we generate extra members
+	// if (constraint.enforce === true) {
+	// 	for (label in leftType.memberTypes) {
+
+	// 		// if rightType has a field missing, we add it here. Adding these
+	// 		// will make the equals check below return true, and then
+	// 		// constraints will be generated to assert that each of rightType's
+	// 		// members are the same type as leftType's members
+	// 		if (rightType.memberTypes[label] === undefined) {
+	// 			rightType.memberTypes[label] = Classes.TypeEnv.getFreshType();
+	// 		}
+	// 	}
+	// }
+
+	// type structures are equal => constraint satisfied
+	if (constraint.checkStructure()) {
+
+		// if this is a complex structure, there may be sub-constraints to solve
+		var newConstraints = constraint.getSubConstraints();
 		return solveConstraints(remainder.concat(newConstraints));
 	}
 
-	var sub;
 
 	// constraints involving dynamic types are trivially satisfied
-	// if the left (write) type is dynamic, we always allow
-	if (left.isDynamic)
+	// if the leftType (write) type is dynamic, we always allow
+	// TODO: left != write nowadays...
+	if (leftType.isDynamic)
 		return solveConstraints(remainder);
 
-	// if the right (read) type is dynamic, we allow but must typecheck
-	if (right.isDynamic) {
+	// if the rightType (read) type is dynamic, we allow but must typecheck
+	// TODO: object types don't get type-checks, they should get guarded
+	if (rightType.isDynamic && rightType !== "object") {
 		var solution1 = solveConstraints(remainder);
-		solution1.checks.push({node:constraints[0].rightNode, type:left});
+		solution1.checks.push({node:constraint.checkNode, type:leftType});
 		return solution1;
 	}
 
 
 	// if one type is not concrete, it can be substituted by the other
-	if (!left.isConcrete) {
-		sub = new Classes.Substitution(left, right);
-	} else if (!right.isConcrete) {
-		sub = new Classes.Substitution(right, left);
+	var sub;
+	if (!leftType.isConcrete) {
+		sub = new Classes.Substitution(leftType, rightType);
+	} else if (!rightType.isConcrete) {
+		sub = new Classes.Substitution(rightType, leftType);
 
 	} // both are different concrete types
 	else {
-		throw new Error(" Failed Unification: " + left.toString() + " != " + right.toString());
+		// Last opportunity for redemption - if this is a LEqConstraint we can add members to the smaller type
+		if (constraint instanceof Classes.LEqConstraint) {
+			var newleqConstraints = constraint.satisfy();
+			if (newleqConstraints.length > 0) {
+				return solveConstraints(remainder.concat(newleqConstraints));
+			}
+		}
+		throw new Error(" Failed Unification: " + leftType.toString() + " != " + rightType.toString());
 	}
 
 	// apply the substitution to the remaining constraints
@@ -113,7 +131,8 @@ module.exports = function(src) {
 	for (var i = 0; i< chunks.length; i++) {
 
 		// solve the generated constraints, or throw an error if this isn't possible
-		var solution = solveConstraints(chunks[i].C);
+		var solution = solveConstraints(chunks[i].C, chunks[i].gamma);
+
 
 		// apply the solution substitutions to the type environment
 		for (var j=0; j<solution.substitutions.length; j++) {
@@ -153,7 +172,7 @@ module.exports = function(src) {
 		
 		for (var l = 0; l<solution.checks.length; l++) {
 			// insert the checks as appropriate
-			// unfortunately we're replacing nodes as we go, so we'll need to substitute nodes as we go along
+			// unfortunately we're replacing nodes as we go, so we'll also need to substitute nodes as we go along
 			var typeChecks = solution.checks[l].node.getTypeChecks( solution.checks[l].type );
 			if (typeChecks) {
 				for (var p = 0; p < typeChecks.length; p++) {
