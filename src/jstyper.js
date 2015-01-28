@@ -122,6 +122,7 @@ module.exports = function(src) {
 
 	// reset the fresh type counter for consistency
 	Classes.TypeEnv.nextType = 1;
+	Classes.Type.id = 1;
 
 	// generate a judgement for (each annotated section of) the entire tree
 	// it's checkUntyped because, at the time of calling, we're not in the typed world yet

@@ -14,12 +14,16 @@ module.exports = {
 	Judgement: Judgement,
 };
 
+
+Type.id = 0;
 function Type(type, options, node) {
 	options = options || {};
+
 
 	this.type = type;
 	this.isConcrete = (options.concrete === true);
 	this.isDynamic = (options.dynamic === true);
+	this.id = Type.id++;
 	if (this.type === "object") {
 		this.memberTypes = {};
 
@@ -73,7 +77,7 @@ Type.prototype.applySubstitution = function(sub, donotrecurse) {
 			// TODO: is this actually sound?
 			// we don't want to infinitely recurse - if we've already substituted this type somewhere, don't do it again
 			for (var m =0; m<donotrecurse.length; m++) {
-				if (this.memberTypes[k].equals(donotrecurse[m])) continue memberloop;
+				if (this.memberTypes[k].id === donotrecurse[m].id) continue memberloop;
 			}
 			// nb I don't want subcalls to modify my donotrecurse so I'm cloning with slice(0)
 			this.memberTypes[k].applySubstitution(sub, donotrecurse.slice(0));
@@ -85,7 +89,7 @@ Type.prototype.applySubstitution = function(sub, donotrecurse) {
 			// TODO: is this actually sound?
 			// we don't want to infinitely recurse - if we've already substituted this type somewhere, don't do it again
 			for (var n =0; n<donotrecurse.length; n++) {
-				if (this.argTypes[l].equals(donotrecurse[n])) continue argloop;
+				if (this.argTypes[l].id === donotrecurse[n].id) continue argloop;
 			}
 			// nb I don't want subcalls to modify my donotrecurse so I'm cloning with slice(0)
 			this.argTypes[l].applySubstitution(sub, donotrecurse.slice(0));
@@ -93,7 +97,7 @@ Type.prototype.applySubstitution = function(sub, donotrecurse) {
 		// TODO: is this actually sound?
 		// we don't want to infinitely recurse - if we've already substituted this type somewhere, don't do it again
 		for (var o =0; o<donotrecurse.length; o++) {
-			if (this.returnType.equals(donotrecurse[o])) return;
+			if (this.returnType.id === donotrecurse[o].id) return;
 		}
 		// nb I don't want subcalls to modify my donotrecurse so I'm cloning with slice(0)
 		this.returnType.applySubstitution(sub, donotrecurse.slice(0));
@@ -129,7 +133,7 @@ Type.prototype.toString = function(donotrecurse) {
 		var types = [];
 		memberloop: for (var lab in this.memberTypes) {
 			for (var i=0; i<donotrecurse.length; i++) {
-				if (donotrecurse[i].equals(this.memberTypes[lab])) {
+				if (donotrecurse[i].id === this.memberTypes[lab].id) {
 					types.push(lab + ": ... ");
 					continue memberloop;
 				}
@@ -143,7 +147,7 @@ Type.prototype.toString = function(donotrecurse) {
 		argloop: for (var j = 0; j<this.argTypes.length; j++) {
 			
 			for (var k=0; k<donotrecurse.length; k++) {
-				if (donotrecurse[k].equals(this.argTypes[j])) {
+				if (donotrecurse[k].id === this.argTypes[j]) {
 					args.push("...");
 					continue argloop;
 				}
@@ -153,7 +157,7 @@ Type.prototype.toString = function(donotrecurse) {
 		var ret;
 		var safe = true;
 		for (var l=0; l<donotrecurse.length; l++) {
-			if (donotrecurse[l].equals(this.returnType)) {
+			if (donotrecurse[l].id === this.returnType) {
 				ret = "...";
 				break;
 			}
@@ -230,7 +234,7 @@ Constraint.prototype.checkStructure = function() {
 			if (this.type2.memberTypes[i] === undefined) return false;
 		}
 		for (var j in this.type2.memberTypes) {
-			if (this.type1.memberTypes[i] === undefined) return false;
+			if (this.type1.memberTypes[j] === undefined) return false;
 		}
 		return true;
 	} else if (this.type1.type === "function") {
