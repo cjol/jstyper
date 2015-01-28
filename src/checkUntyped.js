@@ -113,8 +113,9 @@ UglifyJS.AST_Block.prototype.checkUntyped = function() {
 	// Implementation detail: Attach gamma to new scopes so we can retrieve
 	// them when annotating/gradual typing
 	if (this instanceof UglifyJS.AST_Scope) {
-		// TODO: In the case of multiple typed chunks within the body, this isn't terribly helpful
-		this.gamma = judgements[0].gamma;
+		// TODO: this assumes at most a single chunk
+		if (judgements.length > 0)
+			this.gamma = judgements[0].gamma;
 	}
 
 	return judgements;

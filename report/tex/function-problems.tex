@@ -14,11 +14,11 @@
 
 \subsection*{Problem 1}
 	
-	Every object method has an implicit 'this' parameter, which must form part
+	Every object method has an implicit `this' parameter, which must form part
 	of the function type. Unfortunately, we then get problems where a call to
 	\texttt{x.f()} would generate the following constraints:
 
-	$$ T_x = \{f:T_f\}$$
+	$$ T_x \succeq \{f:T_f\}$$
 	$$ T_f = fn (T_x \rightarrow T_1)$$
 
 	So the method type includes the object type, and the object type contains
@@ -35,10 +35,10 @@
 		x.f({a:3, b:2})
 	\end{jscode*}
 
-	Lines 1-5 of the fragment above would at some stage generate a constraint
+	Lines 1--5 of the fragment above would at some stage generate a constraint
 	similar to \#1, while looking at line 6 will generate a constraint looking
 	like the \#2 (where $T_1$ are non-concrete types)
-	$$T_x \preceq \{f:fn(\{a:T1\} \rightarrow T_1 ) \} $$
+	$$T_x \preceq \{f:fn(\{a:T_1\} \rightarrow T_1 ) \} $$
 	$$T_x \succeq{} \{f:fn(\{a:number,b:number\} \rightarrow T_2 ) \} $$
 
 	Combining these gives

@@ -58,7 +58,7 @@ UglifyJS.AST_SymbolRef.prototype.getTypeChecks = function(type) {
 
 UglifyJS.AST_Dot.prototype.getTypeChecks = function(type) {
 	if (!type.isConcrete) return [];
-	if (type !== "object") return [primCheck()]
+	if (type !== "object") return [primCheck()];
 };
 
 UglifyJS.AST_Assign.prototype.getTypeChecks = function(type) {
