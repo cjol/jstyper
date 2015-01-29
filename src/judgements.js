@@ -22,21 +22,11 @@ function parent(par) {
  * Checking typability, and also creating type judgements
  ***********************************************************************************/
 
-var numType = new Classes.Type('number', {
-	concrete: true
-});
-var boolType = new Classes.Type('boolean', {
-	concrete: true
-});
-var stringType = new Classes.Type('string', {
-	concrete: true
-});
-var undefinedType = new Classes.Type('undefined', {
-	concrete: true
-});
-var nullType = new Classes.Type('null', {
-	concrete: true
-});
+var numType = new Classes.PrimitiveType('number');
+var boolType = new Classes.PrimitiveType('boolean');
+var stringType = new Classes.PrimitiveType('string');
+var undefinedType = new Classes.PrimitiveType('undefined');
+var nullType = new Classes.PrimitiveType('null');
 UglifyJS.AST_Constant.prototype.check = function(gamma) {
 	if (this.constType === undefined) throw new Error("Unhandled constant type " + this);
 	var j = new Classes.Judgement(this.constType, [], gamma);
@@ -82,9 +72,8 @@ UglifyJS.AST_Object.prototype.check = function(gamma) {
 		gamma = judgement.gamma;
 	}
 
-	var T = new Classes.Type('object', {
-		concrete: true,
-		members: memberType
+	var T = new Classes.ObjectType({
+		memberTypes: memberType
 	});
 
 	return new Classes.Judgement(T, C, gamma);
@@ -97,8 +86,7 @@ UglifyJS.AST_Lambda.prototype.check = function(gamma) {
 	var Ts = [];
 	var retType = gamma.getFreshType(undefined, {detail:'return type of fun ', node: this});
 
-	var funType = new Classes.Type('function', {
-		concrete: true,
+	var funType = new Classes.FunctionType({
 		argTypes: [],
 		returnType: retType
 	});
@@ -173,9 +161,9 @@ UglifyJS.AST_Dot.prototype.check = function(gamma) {
 	// add a new constraint stating the containing object much have this as a property
 	var memberType = {};
 	memberType[this.property] = T;
-	var containerType = new Classes.Type('object', {
-		concrete: true,
-		members: memberType
+
+	var containerType = new Classes.ObjectType({
+		memberTypes: memberType
 	});
 	C.push(new Classes.LEqConstraint(containerType, j1.T, this.expression));
 	var judgement = new Classes.Judgement(T, C, j1.gamma);
@@ -245,8 +233,7 @@ UglifyJS.AST_Call.prototype.check = function(gamma) {
 		gamma = ji.gamma;
 	}
 
-	var funcType = new Classes.Type("function", {
-		concrete: true,
+	var funcType = new Classes.FunctionType({
 		argTypes:argTypes,
 		returnType: gamma.getFreshType(undefined, {detail: 'inferred return type of call', node: this})
 	});
@@ -283,9 +270,8 @@ UglifyJS.AST_Assign.prototype.check = function(gamma) {
 				var memberType = {};
 				memberType[this.left.property] = T3;
 
-				var T = new Classes.Type('object',{
-					concrete: true,
-					members: memberType
+				var T = new Classes.ObjectType({
+					memberTypes: memberType
 				});
 
 				C = j1.C.concat(j2.C);
@@ -314,9 +300,8 @@ UglifyJS.AST_Assign.prototype.check = function(gamma) {
 				var memberTypeNum = {};
 				memberTypeNum[this.left.property] = numType;
 
-				var numT = new Classes.Type('object',{
-					concrete: true,
-					members: memberTypeNum
+				var numT = new Classes.ObjectType({
+					memberTypes: memberTypeNum
 				});
 
 				C = j1.C.concat(j2.C);
