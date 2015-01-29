@@ -6,6 +6,10 @@
 
 module.exports = {
 	Type: Type,
+	PrimitiveType: PrimitiveType,
+	AbstractType: AbstractType,
+	ObjectType: ObjectType,
+	FunctionType: FunctionType,
 	Substitution: Substitution,
 	Constraint: Constraint,
 	LEqConstraint: LEqConstraint,
@@ -14,203 +18,207 @@ module.exports = {
 	Judgement: Judgement,
 };
 
+var tmp = function() {};
 
-Type.id = 0;
+Type.id = 1;
 function Type(type, options, node) {
 	options = options || {};
 
-
 	this.type = type;
-	this.isConcrete = (options.concrete === true);
-	this.isDynamic = (options.dynamic === true);
+	this.isConcrete = (options.isConcrete === true);
+	this.isDynamic = (options.isDynamic === true);
 	this.id = Type.id++;
-	if (this.type === "object") {
-		this.memberTypes = {};
-
-		// Not sure it's strictly necessary to copy one by one but there we go
-		for (var i in options.members) {
-			this.memberTypes[i] = options.members[i];
-		}
-	} else if (this.type === "function") {
-		this.argTypes = [];
-
-		// It's probably not necessary to copy one-by-one EVERYWHERE...
-		for (var j in options.argTypes) {
-			this.argTypes[j] = options.argTypes[j];
-		}
-		this.returnType = options.returnType;
-	}
-
 	if (node !== undefined) this.node = node;
 }
+Type.prototype.cloneTo = function(obj) {
+	obj.type = this.type;
+	obj.isConcrete = this.isConcrete;
+	obj.isDynamic = this.isDynamic;
+	// I think I won't redefine id or node
+};
+Type.prototype.toString = function() {
+	return this.type;
+};
 
-Type.prototype.applySubstitution = function(sub, donotrecurse) {
+function PrimitiveType(type, options, node) {
+	Type.call(this, type, {
+		isConcrete: true,
+		isDynamic: options !== undefined && options.isDynamic === true
+	}, node);
+}
+tmp.prototype = Type.prototype;
+PrimitiveType.prototype = new tmp();
+PrimitiveType.prototype.constructor = PrimitiveType;
 
+PrimitiveType.prototype.applySubstitution = function() {
+	// primitive types can't be substituted
+	return;
+};
+
+function AbstractType(type, options, node) {
+	Type.call(this, type, {
+		isConcrete: false,
+		isDynamic: options !== undefined && options.isDynamic === true
+	}, node);
+}
+tmp.prototype = Type.prototype;
+AbstractType.prototype = new tmp();
+AbstractType.prototype.constructor = AbstractType;
+
+AbstractType.prototype.applySubstitution = function(sub) {
 	if (sub.from.type === this.type) {
-		this.type = sub.to.type;
-		this.isConcrete = sub.to.isConcrete;
-
-		if (this.type === "object") {
-			this.memberTypes = {};
-
-			// It's probably not necessary to copy one-by-one EVERYWHERE...
-			for (var i in sub.to.memberTypes) {
-				this.memberTypes[i] = sub.to.memberTypes[i];
-			}
-		} else if (this.type === "function") {
-			this.argTypes = [];
-
-			// It's probably not necessary to copy one-by-one EVERYWHERE...
-			for (var j in sub.to.argTypes) {
-				this.argTypes[j] = sub.to.argTypes[j];
-			}
-			this.returnType = sub.to.returnType;
-
-		}
+		sub.to.cloneTo(this);
 	}
+};
+
+function ObjectType(options, node) {
+	PrimitiveType.call(this, "object", options, node);
+
+	this.memberTypes = {};
+
+	for (var i in options.memberTypes) {
+		this.memberTypes[i] = options.memberTypes[i];
+	}
+}
+tmp.prototype = PrimitiveType.prototype;
+ObjectType.prototype = new tmp();
+ObjectType.prototype.constructor = ObjectType;
+
+ObjectType.prototype.cloneTo = function(obj) {
+	PrimitiveType.prototype.cloneTo.call(this, obj);
+	obj.memberTypes = {};
+
+	for (var i in this.memberTypes) {
+		obj.memberTypes[i] = this.memberTypes[i];
+	}
+	obj.applySubstitution = ObjectType.prototype.applySubstitution;
+	obj.toString = ObjectType.prototype.toString;
+	obj.cloneTo = ObjectType.prototype.cloneTo;
+};
+ObjectType.prototype.applySubstitution = function(sub, donotrecurse) {
 	if (donotrecurse === undefined) donotrecurse = [];
 	donotrecurse.push(this);
 
-	// need to apply substitution to child types too if they exist
-	if (this.type === "object") {
-		memberloop: for (var k in this.memberTypes) {
-			// TODO: is this actually sound?
-			// we don't want to infinitely recurse - if we've already substituted this type somewhere, don't do it again
-			for (var m =0; m<donotrecurse.length; m++) {
-				if (this.memberTypes[k].id === donotrecurse[m].id) continue memberloop;
-			}
-			// nb I don't want subcalls to modify my donotrecurse so I'm cloning with slice(0)
-			this.memberTypes[k].applySubstitution(sub, donotrecurse.slice(0));
-		}
-	} else if (this.type === "function") {
+	// An object itself cannot be substituted, but members might be abstract
 
-		argloop: for (var l in this.argTypes) {
-		
-			// TODO: is this actually sound?
-			// we don't want to infinitely recurse - if we've already substituted this type somewhere, don't do it again
-			for (var n =0; n<donotrecurse.length; n++) {
-				if (this.argTypes[l].id === donotrecurse[n].id) continue argloop;
-			}
-			// nb I don't want subcalls to modify my donotrecurse so I'm cloning with slice(0)
-			this.argTypes[l].applySubstitution(sub, donotrecurse.slice(0));
+	outerLoop: for (var j in this.memberTypes) {
+		for (var i =0; i<donotrecurse.length; i++) {
+			if (this.memberTypes[j].id === donotrecurse[i].id) continue outerLoop;
 		}
-		// TODO: is this actually sound?
-		// we don't want to infinitely recurse - if we've already substituted this type somewhere, don't do it again
-		for (var o =0; o<donotrecurse.length; o++) {
-			if (this.returnType.id === donotrecurse[o].id) return;
-		}
+
 		// nb I don't want subcalls to modify my donotrecurse so I'm cloning with slice(0)
-		this.returnType.applySubstitution(sub, donotrecurse.slice(0));
+		this.memberTypes[j].applySubstitution(sub, donotrecurse.slice(0));
 	}
 };
+ObjectType.prototype.toString = function(donotrecurse) {
 
-// TODO: Rename this - we're only here checking "structure", not actual (sub)types
-Type.prototype.equals = function(type) {
-	if (this.type !== type.type) return false;
-	
-	if (this.type === "object") {
-
-		// return true;
-
-		// Deliberately only check that 'type' has at least the same fields as this
-		for (var i in this.memberTypes) {
-			if (type.memberTypes[i] === undefined) return false;
-		}
-	} else if (this.type === "function") {
-
-		// check arity
-		// TODO: can we have "extra" structure here (e.g. unused arguments?)
-		return type.argTypes.length === this.argTypes.length;
-	}
-	
-	return true;
-};
-
-Type.prototype.toString = function(donotrecurse) {
 	if (donotrecurse === undefined) donotrecurse = [];
 	donotrecurse.push(this);
-	if (this.type === "object") {
-		var types = [];
-		memberloop: for (var lab in this.memberTypes) {
-			for (var i=0; i<donotrecurse.length; i++) {
-				if (donotrecurse[i].id === this.memberTypes[lab].id) {
-					types.push(lab + ": ... ");
-					continue memberloop;
-				}
-			}
-			types.push(lab + ":" + this.memberTypes[lab].toString(donotrecurse));
-		}
-		
-		return "{" + types.join(", ") + "}";
-	} else if (this.type === "function") {
-		var args = [];
-		argloop: for (var j = 0; j<this.argTypes.length; j++) {
-			
-			for (var k=0; k<donotrecurse.length; k++) {
-				if (donotrecurse[k].id === this.argTypes[j]) {
-					args.push("...");
-					continue argloop;
-				}
-			}
-			args.push(this.argTypes[j].toString(donotrecurse));
-		}
-		var ret;
-		var safe = true;
-		for (var l=0; l<donotrecurse.length; l++) {
-			if (donotrecurse[l].id === this.returnType) {
-				ret = "...";
-				break;
+
+	var types = [];
+	outerLoop: for (var lab in this.memberTypes) {
+		for (var i=0; i<donotrecurse.length; i++) {
+			if (donotrecurse[i].id === this.memberTypes[lab].id) {
+				types.push(lab + ": ..[" + this.memberTypes[lab].type + "]..");
+				continue outerLoop;
 			}
 		}
-		if (safe) ret = this.returnType.toString(donotrecurse);
-		return "fn(" + args.join(", ") + " -> " + ret + ")";
-	} else {
-		return this.type;
+		types.push(lab + ":" + this.memberTypes[lab].toString(donotrecurse.slice(0)) );
 	}
+	return "{" + types.join(", ") + "}";
 };
 
+function FunctionType(options, node) {
+	PrimitiveType.call(this, "function", options, node);
 
+	this.argTypes = [];
+
+	for (var i =0; i<options.argTypes.length; i++) {
+		this.argTypes[i] = options.argTypes[i];
+	}
+	this.returnType = options.returnType;
+}
+tmp.prototype = PrimitiveType.prototype;
+FunctionType.prototype = new tmp();
+FunctionType.prototype.constructor = FunctionType;
+
+FunctionType.prototype.cloneTo = function(obj) {
+	PrimitiveType.prototype.cloneTo.call(this, obj);
+	obj.argTypes = [];
+
+	for (var i =0; i<this.argTypes.length; i++) {
+		obj.argTypes[i] = this.argTypes[i];
+	}
+	obj.returnType = this.returnType;
+	obj.applySubstitution = FunctionType.prototype.applySubstitution;
+	obj.toString = FunctionType.prototype.toString;
+	obj.cloneTo = FunctionType.prototype.cloneTo;
+};
+
+FunctionType.prototype.applySubstitution = function(sub, donotrecurse) {
+	if (donotrecurse === undefined) donotrecurse = [];
+	donotrecurse.push(this);
+
+	// A function itself cannot be substituted, but arg or return types might be abstract
+	var i;
+	outerLoop: for (var j=0; j<this.argTypes.length; j++) {
+		for (i =0; i<donotrecurse.length; i++) {
+			if (this.argTypes[j].id === donotrecurse[i].id) continue outerLoop;
+		}
+
+		// nb I don't want subcalls to modify my donotrecurse so I'm cloning with slice(0)
+		this.argTypes[j].applySubstitution(sub, donotrecurse.slice(0));
+	}
+	for (i =0; i<donotrecurse.length; i++) {
+		if (this.returnType.id === donotrecurse[i].id) return;
+	}
+	this.returnType.applySubstitution(sub, donotrecurse.slice(0));
+};
+FunctionType.prototype.toString = function(donotrecurse) {
+
+	var j;
+	if (donotrecurse === undefined) donotrecurse = [];
+	donotrecurse.push(this);
+	
+	// argument types
+	var args = [];
+	outerLoop: for (var i = 0; i<this.argTypes.length; i++) {
+		
+		for (j=0; j<donotrecurse.length; j++) {
+			if (donotrecurse[j].id === this.argTypes[i]) {
+				args.push("..[" + this.argTypes[i].type + "]..");
+				continue outerLoop;
+			}
+		}
+		args.push(this.argTypes[i].toString(donotrecurse.slice(0)));
+	}
+
+	// return type
+	var ret;
+	var safe = true;
+	for (j=0; j<donotrecurse.length; j++) {
+		if (donotrecurse[j].id === this.returnType) {
+			ret = "...";
+			safe = false;
+			break;
+		}
+	}
+	if (safe) ret = this.returnType.toString(donotrecurse);
+
+	return "fn(" + args.join(", ") + " -> " + ret + ")";
+};
 
 
 function Substitution(from, to) {
-	this.from = new Type(from.type);
-
-	//  {
-	// 	type: from.type,
-	// 	// isConcrete will always be false (we only substitute non-concrete types)
-	// 	// isConcrete: from.isConcrete,
-	// 	// I don't think we care if the from type was dynamic or not
-	// 	// isDynamic: from.isDynamic
-	// };
-	var opts = {
-		concrete: to.isConcrete
-	};
-	if (to.type === "object") {
-		opts.members = {};
-
-		// Again not sure it's strictly necessary to copy one by one 
-		for (var i in to.memberTypes) {
-			opts.members[i] = to.memberTypes[i];
-		}
-	} else if (to.type === "function") {
-		opts.argTypes = [];
-
-		// It's probably not necessary to copy one-by-one EVERYWHERE...
-		for (var j in to.argTypes) {
-			opts.argTypes[j] = to.argTypes[j];
-		}
-		opts.returnType = to.returnType;
-	}
-
-	this.to = new Type(to.type, opts);
+	this.from = new Type();
+	this.to = new Type();
+	from.cloneTo(this.from);
+	to.cloneTo(this.to);
 }
 // shortcut method
 Substitution.prototype.apply = function(element) {
 	element.applySubstitution(this);
 };
-
-
-
 
 
 function Constraint(leftType, rightType, rightNode) {
@@ -274,17 +282,55 @@ Constraint.prototype.getSubConstraints = function() {
 	}
 };
 Constraint.prototype.regenDesc = function() {
-	this.description = this.type1.toString() + " must be " + this.type2.toString();
+	this.description = this.type1.toString() + " = " + this.type2.toString();
 };
 Constraint.prototype.applySubstitution = function(sub) {
 	this.type1.applySubstitution(sub);
 	this.type2.applySubstitution(sub);
 	this.regenDesc();
 };
+Constraint.compare = function(a, b) {
+	// Anything which might generate subconstraints should be solved first
+	// Also regular constraints should be solved before LEqConstraints
+	if (a.type1.type === "object" || a.type1.type === "function") {
+		if (b.type1.type === "object" || b.type1.type === "function") {
+
+			// both subconstraint generating - compare by Constraint/LEqConstraint
+			if (a instanceof LEqConstraint) {
+				if (b instanceof LEqConstraint) {
+					return 0; // LEqConstraint a = LEqConstraint b
+				}
+				return 1; // LEqConstraint a > Constraint b
+			}
+
+			if (b instanceof LEqConstraint) {
+				return -1; // Constraint a < LEqConstraint b
+			}
+			return 0; // Constraint a = Constraint b
+		}
+		return -1; // subgen a < not subgen b
+	}
+	if (b.type1.type === "object" || b.type1.type === "function") {
+		return 1; // not subgen a > subgen b
+	}
+	// both not subgen - compare by Constraint/LEqConstraint
+
+	if (a instanceof LEqConstraint) {
+		if (b instanceof LEqConstraint) {
+			return 0; // LEqConstraint a = LEqConstraint b
+		}
+		return 1; // LEqConstraint a > Constraint b
+	}
+
+	if (b instanceof LEqConstraint) {
+		return -1; // Constraint a < LEqConstraint b
+	}
+	return 0; // Constraint a = Constraint b
+};
 function LEqConstraint(smallType, bigType, checkNode) {
 	Constraint.call(this, smallType, bigType, checkNode);
 }
-var tmp = function() {};
+tmp = function() {};
 tmp.prototype = Constraint.prototype;
 LEqConstraint.prototype = new tmp();
 LEqConstraint.prototype.constructor = LEqConstraint;
@@ -321,25 +367,8 @@ LEqConstraint.prototype.satisfy = function() {
 	return C;
 };
 LEqConstraint.prototype.regenDesc = function() {
-	this.desc = this.type2.toString() + " must have more structure than " + this.type1.toString();
+	this.desc = this.type1.toString() + " <= " + this.type2.toString();
 };
-
-// LEqConstraint.prototype.getSubConstraints = function() {
-	
-// 	// NB: We know that type1 is included in type2
-
-// 	var newConstraints = [];
-// 	if (this.type1.type === "object")	{
-
-// 		for (var label in this.type1.memberTypes) {
-// 			newConstraints.push(new LEqConstraint(this.type1.memberTypes[label], this.type2.memberTypes[label], null));
-// 		}
-
-// 		return newConstraints;	
-// 	}
-// 	return newConstraints;	
-// };
-
 
 
 function TypeEnvEntry(varName, node, type) {
@@ -353,9 +382,6 @@ TypeEnvEntry.prototype.applySubstitution = function(sub) {
 TypeEnvEntry.prototype.toString = function() {
 	return this.name + ": " + this.type.toString();
 };
-
-
-
 
 
 function TypeEnv(cloneFrom) {
@@ -381,7 +407,7 @@ TypeEnv.prototype.get = function(varName) {
 	return null;
 };
 TypeEnv.getFreshType = function(opts, node) {
-	return new Type("T" + (TypeEnv.nextType++), opts, node);
+	return new AbstractType("T" + (TypeEnv.nextType++), opts, node);
 };
 TypeEnv.prototype.getFreshType = TypeEnv.getFreshType;
 TypeEnv.prototype.applySubstitution = function(sub) {
@@ -405,7 +431,6 @@ TypeEnv.prototype.toString = function(indentation) {
 	}
 	return res;
 };
-
 
 
 function Judgement(type, constraints, gamma) {

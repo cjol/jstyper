@@ -29,6 +29,9 @@ String.prototype.format = function() {
 // also generate checks for dynamic types
 function solveConstraints(constraints) {
 	// originally from Pierce p. 327
+
+	// sort constraints before attacking them
+	constraints.sort(Classes.Constraint.compare);
 	
 	// base case
 	if (constraints.length < 1)
