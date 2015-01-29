@@ -9,15 +9,26 @@
 
 	\vfil 
 	\centerline{\large Computer Science Project Progress Report}
-	\vspace{0.4in}
+	\vspace{0.2in}
 	\centerline{\Large Building a Gradual Type System for JavaScript }
-	\vspace{0.4in}
+	\vspace{0.1in}
 	\centerline{\large Christopher J.O. Little, Emmanuel College}
+	\centerline{\large \texttt{cl554@cam.ac.uk}}
+
+	\vspace{0.3in}
+
+	\noindent{\bf Project Supervisor:} Dr Kathryn E. Gray
+	\vspace{0.2in}
+
+	\noindent{\bf Director of Studies:} Dr Jonathan Hayman
+	\vspace{0.2in}\noindent 
+	
+	\noindent{\bf Project Overseers:} Dr~Markus~Kuhn \& Dr~Neal~Lathia
 
 	\section*{Introduction}
 
 	At this point in my project, I am confident that I am sufficiently on
-	schedule, and confident that the project will be successfully completed on
+	schedule, and that the project will be successfully completed on
 	time. The table below summarises my completed goals in relation to the
 	features of JavaScript outlined in my proposal. Most of the remaining
 	features should be complete very soon (loops, for example, should present
@@ -93,13 +104,13 @@
 
 	\section{Changes to Project}
 
-		There are few significant changes to report. Firstly, I decided that
-		treating primitive types polymorphically was beyond the scope of this
+		There are few significant changes to report. Firstly, I have decided that
+		treating primitive types polymorphically is beyond the scope of this
 		project. In particular, this means that my system will not be able to
 		type expressions such as \texttt{``Hello '' + ``World''}, as this
-		would require the operands of \texttt{+} may be typed as either
+		would require the operands of \texttt{+} to be typed either as
 		integers or as strings. Additionally, this means that I will not be
-		able to type-check function calls which have arguments ommitted (since
+		able to type-check function calls which have arguments omitted (since
 		they are effectively being called with a parameter of type
 		\texttt{undefined}).
 
@@ -113,11 +124,34 @@
 		could still be handled (with gradual typing) as a kind of `black box',
 		where every array retrieval is handled by introducing a new dynamic
 		type. Prototype inheritance also presents a complex problem, but one
-		which I feel I should be able to attempt to solve. This is such a
-		common feature in production JavaScript code that it would be very
-		beneficial to integrate. It may yet be that large commercial test
-		suites will not be suitable for type-checking by my system, but I am
-		confident I will be able to find fragments of production JavaScript
-		which are. These will present interesting benchmark opportunities.
+		which I believe I will be able to solve. This is such a common feature
+		in production JavaScript code that it would be very beneficial to
+		integrate. It may yet be that large commercial test suites will not be
+		suitable for type-checking by my system, but I am confident I will be
+		able to find fragments of production JavaScript which are. These will
+		present interesting benchmarking opportunities.
+
+	\section{Adjusted Timetable}
+
+		\subsection*{Weeks 15 \& 16 (\nth{30} Jan -- \nth{12} Feb)}
+
+		Extend gradual typing compiler to handle higher order types (guard and
+		mimic wrappers). Extend type inference system to handle loops.
+
+		\subsection*{Weeks 17 \& 18 (\nth{13} Feb -- \nth{26} Feb)}
+
+		Investigate appropriate ways of modelling prototypal inheritance
+		within my type inference system. Implement, or at least document
+		promising avenues.
+
+		\subsection*{Weeks 19 -- 23 (\nth{27} Feb -- \nth{26} Mar)}
+
+		Finalise test suite, and obtain appropriate fragments of production
+		JavaScript. Evaluate performance and additional memory overhead of
+		compiled code.
+		
+		\subsection*{Weeks 24 -- 28 (\nth{27} Mar -- \nth{23} Apr)}
+
+		Write dissertation and refine after feedback before submission.
 
 \end{document}
