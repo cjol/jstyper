@@ -187,30 +187,9 @@ UglifyJS.AST_Call.prototype.check = function(gamma) {
 		// PropCallType
 
 		// annoyingly we have to check e and e.l separately (this is probably avoidable)
+		// I don't care about je.C or je.gamma - they will come through when we check this.expression (j0)
 		var je = this.expression.expression.check(gamma);
-		// I don't care about je.C or je.gamma - they will come through when we check this.expression 
 
-		// commented out for now because it causes this problem:
-
-		// PROBLEM:
-		/*
-			
-			Every object method has an implicit 'this' parameter, which must
-			form part of the function type else we'll get problems with:
-
-				function doubleHeight() { return this.height * 2; }
-				var x = {height:3, doubleHeight: doubleHeight};
-				var y = {doubleHeight: doubleHeight};
-				var totalHeight = x.doubleHeight() + 
-									y.doubleHeight();
-			
-			So the method type includes the object type, and obviously the
-			object type contains the function type too. Infinite arrows!
-
-			I guess the problem might be that we're creating a function that's
-			polymorphic in 'this', which is a higher-order construct.
-
-		*/
 		C.push(new Classes.LEqConstraint(argTypes[0], je.T, this.expression));
 	} else {
 		// normal function call (no this)
@@ -239,7 +218,10 @@ UglifyJS.AST_Call.prototype.check = function(gamma) {
 	});
 	C.push(new Classes.Constraint(j0.T, funcType, this));
 
-	var judgement = new Classes.Judgement(funcType.returnType, C, gamma);
+	var useType = gamma.getFreshType(undefined, {detail: 'use type of call', node:this});
+	C.push(new Classes.LEqConstraint(useType, funcType.returnType, null));
+
+	var judgement = new Classes.Judgement(useType, C, gamma);
 	judgement.nodes.push(this);
 	return judgement;
 };

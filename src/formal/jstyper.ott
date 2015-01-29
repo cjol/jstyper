@@ -148,7 +148,7 @@ C :: 'C_' ::= 					                {{ com Constraint }}
 	| C n C'	 ::  :: IntersectConstraint						{{ com IntersectConstraint }}
 																	{{ tex [[C]] \cap [[C']] }}
 	| U setIndex = n1 - n2 C :: :: BigUnion 						{{ com BigUnion }}
-																	{{ tex \bigcup \limits_{i=[[n1]]}^[[n2]] [[C]] }}
+																	{{ tex \bigcup \limits_{[[setIndex]]=[[n1]]}^[[n2]] [[C]] }}
 	| { T1 < T2 } ::  :: ConstLeq 										{{ com ConstLeq }}
 																	{{ tex \{ [[T1]] \preceq [[T2]] \} }}
 	| { T1 > T2 } ::  :: ConstGeq				 						{{ com ConstGeq }}
@@ -430,19 +430,19 @@ Jop :: '' ::=
 		% 	If the function does use this, this constraint will fail to unify
 
 		G |- e : T |C0 G0
-		G0 |- e1 : T1' |C1 G1 --- Gk-1 |- ei : Ti' |Ci Gi
-		C' = (U i=0-k Ci) u ( {T=T0, T1, .., Ti -> Tk} u ( (U i=1-k {Ti < Ti'}) u {T0 = undefined} ))
-		T0,T1,..,Ti,Tk are fresh
+		G0 |- e1 : T1' |C1 G1 --- Gi-1 |- ei : Ti' |Ci Gi
+		C' = (U j=0-i Cj) u ( ((U j=1-i {Tj < Tj'}) u {Tk > Tk'})u ({T=T0, T1, .., Ti -> Tk} u {T0 = undefined} ))
+		T0,T1,..,Ti,Tk,Tk' are fresh
 		-------------------------------------------------- 			:: CallType
-		G |- e(e1,..,ei) : Tk |C' Gi
+		G |- e(e1,..,ei) : Tk' |C' Gi
 
 		G |- e.l : T |C0 G0
 		G |- e : T0' |C' G'
-		G0 |- e1 : T1' |C1 G1 --- Gk-1 |- ei : Ti' |Ci Gi
-		C' = (U i=0-k Ci) u ( {T=T0, T1, .., Ti -> Tk} u ( (U i=1-k {Ti < Ti'}) u {T0 < T0'} ))
-		T0,T1,..,Ti,Tk are fresh
+		G0 |- e1 : T1' |C1 G1 --- Gi-1 |- ei : Ti' |Ci Gi
+		C' = (U j=0-i Cj) u ( ((U j=1-i {Tj < Tj'}) u {Tk > Tk'})u ({T=T0, T1, .., Ti -> Tk} u {T0 < T0'} ))
+		T0,T1,..,Ti,Tk,Tk' are fresh
 		-------------------------------------------------- 			:: PropCallType
-		G |- e.l(e1,..,ei) : Tk |C' Gi
+		G |- e.l(e1,..,ei) : Tk' |C' Gi
 
 
 

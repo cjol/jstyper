@@ -91,24 +91,39 @@ function solveConstraints(constraints) {
 			continue;
 		}
 
-		// if one type is not concrete, it can be substituted by the other
 		var sub;
-		if (!leftType.isConcrete) {
-			sub = new Classes.Substitution(leftType, rightType);
-		} else if (!rightType.isConcrete) {
-			sub = new Classes.Substitution(rightType, leftType);
+		// if one type is not concrete, it can be substituted by the other
+		if (constraint instanceof Classes.LEqConstraint && (leftType.type === "object" || rightType.type === "object")) {
+			// we can't just do a straight substitution for LEqConstraints between objects
+			// here we have a constraint of the form leftType <= rightType
 
-		} // both are different concrete types
-		else {
-			// Last opportunity for redemption - if this is a LEqConstraint we can add members to the smaller type
-			if (constraint instanceof Classes.LEqConstraint) {
+			if (!leftType.isConcrete) {
+				// the minimal solution is for the leftType to be instantiated with {}
+				// var emptyObj = new Classes.ObjectType({memberTypes:{}});
+				sub = new Classes.Substitution(leftType, rightType);
+			} else if (!rightType.isConcrete) {
+				// the minimal solution is for the rightType to be instantiated with the leftType
+				sub = new Classes.Substitution(rightType, leftType);
+			} else {
+
+				// for two concrete types we can try adding members to the
+				// smaller type and checking subconstraints
 				var newleqConstraints = constraint.satisfy();
 				if (newleqConstraints.length > 0) {
 					constraints = constraints.concat(newleqConstraints);
 					continue;
 				}
 			}
-			throw new Error(" Failed Unification: " + leftType.toString() + " != " + rightType.toString());
+		} else {
+			if (!leftType.isConcrete) {
+				sub = new Classes.Substitution(leftType, rightType);
+			} else if (!rightType.isConcrete) {
+				sub = new Classes.Substitution(rightType, leftType);
+
+			} // both are different concrete types
+			else {
+				throw new Error(" Failed Unification: " + leftType.toString() + " != " + rightType.toString());
+			}
 		}
 
 		// apply the substitution to the remaining constraints

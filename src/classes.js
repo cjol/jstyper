@@ -270,7 +270,6 @@ Constraint.prototype.getSubConstraints = function() {
 
 		// generate new constraints asserting that the arguments and
 		// return type of type1 and of type2 have the same type
-		// TODO: Contravariance and covariance?..
 		for (var i=0; i<this.type1.argTypes.length; i++) {
 			newConstraints.push(new Constraint(this.type1.argTypes[i], this.type2.argTypes[i], null));
 		}
