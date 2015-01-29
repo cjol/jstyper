@@ -366,14 +366,16 @@ Constraint.compare = function(a, b) {
 	// }
 	// // both not subgen - compare by Constraint/LEqConstraint
 
-	if (a instanceof LEqConstraint) {
-		if (b instanceof LEqConstraint) {
+	// A LEqConstraint between any types other than object are effectively just constraints
+
+	if (a instanceof LEqConstraint && (a.type1.type === "object" || a.type2.type === "object")) {
+		if (b instanceof LEqConstraint && (b.type1.type === "object" || b.type2.type === "object")) {
 			return 0; // LEqConstraint a = LEqConstraint b
 		}
 		return 1; // LEqConstraint a > Constraint b
 	}
 
-	if (b instanceof LEqConstraint) {
+	if (b instanceof LEqConstraint && (b.type1.type === "object" || b.type2.type === "object")) {
 		return -1; // Constraint a < LEqConstraint b
 	}
 	return 0; // Constraint a = Constraint b
