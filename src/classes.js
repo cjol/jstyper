@@ -289,31 +289,82 @@ Constraint.prototype.applySubstitution = function(sub) {
 	this.type2.applySubstitution(sub);
 	this.regenDesc();
 };
-Constraint.compare = function(a, b) {
-	// Anything which might generate subconstraints should be solved first
-	// Also regular constraints should be solved before LEqConstraints
-	if (a.type1.type === "object" || a.type1.type === "function") {
-		if (b.type1.type === "object" || b.type1.type === "function") {
 
-			// both subconstraint generating - compare by Constraint/LEqConstraint
-			if (a instanceof LEqConstraint) {
-				if (b instanceof LEqConstraint) {
-					return 0; // LEqConstraint a = LEqConstraint b
-				}
-				return 1; // LEqConstraint a > Constraint b
-			}
-
-			if (b instanceof LEqConstraint) {
-				return -1; // Constraint a < LEqConstraint b
-			}
-			return 0; // Constraint a = Constraint b
+function compare1(a,b) {
+	// check if the constraints are immediately going to generate subconstraints
+	if ((a.type1.type ===  "object"  && a.type2.type ===  "object" ) ||
+		(a.type1.type === "function" && a.type2.type === "function")) {
+		if ((b.type1.type ===  "object"  && b.type2.type ===  "object" ) ||
+			(b.type1.type === "function" && b.type2.type === "function")) {
+			// both will, so no priority here
+			return 0;
 		}
-		return -1; // subgen a < not subgen b
+		// a will, but b won't, so a<b
+		return -1;
 	}
-	if (b.type1.type === "object" || b.type1.type === "function") {
-		return 1; // not subgen a > subgen b
+
+	if ((b.type1.type ===  "object"  && b.type2.type ===  "object" ) ||
+		(b.type1.type === "function" && b.type2.type === "function")) {
+		// a won't, but a will, so a>b
+		return 1;
 	}
-	// both not subgen - compare by Constraint/LEqConstraint
+
+	// neither will, so no priority here
+	return 0;
+}
+
+function compare2(a,b) {
+	// check if the constraints are immediately going to generate subconstraints
+	if ((a.type1.type ===  "object"  && a.type2.type ===  "object" ) ||
+		(a.type1.type === "function" && a.type2.type === "function")) {
+		if ((b.type1.type ===  "object"  && b.type2.type ===  "object" ) ||
+			(b.type1.type === "function" && b.type2.type === "function")) {
+			// both will, so no priority here
+			return 0;
+		}
+		// a will, but b won't, so a<b
+		return -1;
+	}
+
+	if ((b.type1.type ===  "object"  && b.type2.type ===  "object" ) ||
+		(b.type1.type === "function" && b.type2.type === "function")) {
+		// a won't, but a will, so a>b
+		return 1;
+	}
+
+	// neither will, so no priority here
+	return 0;
+}
+
+Constraint.compare = function(a, b) {
+	// var r;
+	// r = compare1(a,b);
+	// if (r !== 0) return r;
+
+	// // Anything which might generate subconstraints should be solved first
+	// // Also regular constraints should be solved before LEqConstraints
+	// if (a.type1.type === "object" || a.type1.type === "function") {
+	// 	if (b.type1.type === "object" || b.type1.type === "function") {
+
+	// 		// both subconstraint generating - compare by Constraint/LEqConstraint
+	// 		if (a instanceof LEqConstraint) {
+	// 			if (b instanceof LEqConstraint) {
+	// 				return 0; // LEqConstraint a = LEqConstraint b
+	// 			}
+	// 			return 1; // LEqConstraint a > Constraint b
+	// 		}
+
+	// 		if (b instanceof LEqConstraint) {
+	// 			return -1; // Constraint a < LEqConstraint b
+	// 		}
+	// 		return 0; // Constraint a = Constraint b
+	// 	}
+	// 	return -1; // subgen a < not subgen b
+	// }
+	// if (b.type1.type === "object" || b.type1.type === "function") {
+	// 	return 1; // not subgen a > subgen b
+	// }
+	// // both not subgen - compare by Constraint/LEqConstraint
 
 	if (a instanceof LEqConstraint) {
 		if (b instanceof LEqConstraint) {

@@ -31,6 +31,34 @@ function solveConstraints(constraints) {
 	// originally from Pierce p. 327
 
 	// sort constraints before attacking them
+	/*
+
+		By inspection of solveConstraints, we see that there are two outcomes
+		to this function:
+
+			 - More constraints are generated or
+			 - A substitution occurs.
+
+		No single constraint will ever cause both generation of sub-
+		constraints, and a substitution. Ideally, we want to generate all
+		possible constraints before carrying out any substitutions (why?).
+
+		If any constraints involve two objects or two functions, they will
+		immediately generate more constraints - they must be first.
+	
+		Equality constraints between one object/function and one abstract type
+		can be safely substituted, because ???
+
+		 If some
+		constraint involves one object/function and one abstract type, it may
+		become a constraint of the form above after a single substitution, so
+		it should come next. If a constraint involves two abstract variables,
+		a single iteration will not generate any new subconstraints, so it can
+		go next. If a constraint involves a concrete primitive type, it will
+		never generate subconstraints, so it should go last.
+
+	*/
+
 	constraints.sort(Classes.Constraint.compare);
 	
 	// base case
@@ -42,20 +70,6 @@ function solveConstraints(constraints) {
 
 	var leftType = constraint.type1;
 	var rightType = constraint.type2;
-
-	// if this is an 'enforcing' constraint, then we generate extra members
-	// if (constraint.enforce === true) {
-	// 	for (label in leftType.memberTypes) {
-
-	// 		// if rightType has a field missing, we add it here. Adding these
-	// 		// will make the equals check below return true, and then
-	// 		// constraints will be generated to assert that each of rightType's
-	// 		// members are the same type as leftType's members
-	// 		if (rightType.memberTypes[label] === undefined) {
-	// 			rightType.memberTypes[label] = Classes.TypeEnv.getFreshType();
-	// 		}
-	// 	}
-	// }
 
 	// type structures are equal => constraint satisfied
 	if (constraint.checkStructure()) {
