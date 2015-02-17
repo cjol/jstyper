@@ -29,6 +29,7 @@ function Type(type, options, node) {
 	this.isConcrete = (options.isConcrete === true);
 	this.isDynamic = (options.isDynamic === true);
 	this.id = Type.id++;
+	this.containers = [];
 	if (node !== undefined) this.node = node;
 }
 Type.prototype.cloneTo = function(obj) {
@@ -263,7 +264,7 @@ Constraint.prototype.getSubConstraints = function() {
 	if (this.type1.type === "object")	{
 
 		for (var label in this.type1.memberTypes) {
-			newConstraints.push(new Constraint(this.type1.memberTypes[label], this.type2.memberTypes[label], null));
+			newConstraints.push(new this.constructor(this.type1.memberTypes[label], this.type2.memberTypes[label], null));
 		}
 
 		return newConstraints;	
@@ -291,19 +292,25 @@ Constraint.prototype.applySubstitution = function(sub) {
 };
 
 Constraint.compare = function(a, b) {
+	var AScore = 0, BScore = 0;
 	// A LEqConstraint between any types other than object are effectively just constraints
-
-	if (a instanceof LEqConstraint && (a.type1.type === "object" || a.type2.type === "object")) {
-		if (b instanceof LEqConstraint && (b.type1.type === "object" || b.type2.type === "object")) {
-			return 0; // LEqConstraint a = LEqConstraint b
-		}
-		return 1; // LEqConstraint a > Constraint b
+	if (a instanceof LEqCheckConstraint && (a.type1.type === "object" || a.type2.type === "object")) {
+		AScore = 3;
+	} else if (a instanceof LEqConstraint && (a.type1.type === "object" || a.type2.type === "object")) {
+		AScore = 2;
+	} else {
+		AScore = 1;
 	}
-
-	if (b instanceof LEqConstraint && (b.type1.type === "object" || b.type2.type === "object")) {
-		return -1; // Constraint a < LEqConstraint b
+	if (b instanceof LEqCheckConstraint && (b.type1.type === "object" || b.type2.type === "object")) {
+		BScore = 3;
+	} else if (b instanceof LEqConstraint && (b.type1.type === "object" || b.type2.type === "object")) {
+		BScore = 2;
+	} else {
+		BScore = 1;
 	}
-	return 0; // Constraint a = Constraint b
+	a.regenDesc();
+	b.regenDesc();
+	return AScore - BScore;
 };
 
 function LEqConstraint(smallType, bigType, checkNode) {
@@ -355,7 +362,7 @@ LEqConstraint.prototype.check = function() {
 	return this.checkStructure();
 };
 LEqConstraint.prototype.regenDesc = function() {
-	this.desc = this.type1.toString() + " <=c " + this.type2.toString();
+	this.desc = this.type1.toString() + " <= " + this.type2.toString();
 };
 
 
@@ -373,7 +380,7 @@ LEqCheckConstraint.prototype.check = function() {
 	this.checkStructure();
 };
 LEqCheckConstraint.prototype.regenDesc = function() {
-	this.desc = this.type1.toString() + " <= " + this.type2.toString();
+	this.desc = this.type1.toString() + " <=c " + this.type2.toString();
 };
 
 

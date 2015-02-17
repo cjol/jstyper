@@ -240,7 +240,8 @@ UglifyJS.AST_Assign.prototype.check = function(gamma) {
 			// TODO: This remains unproven and potentially dubious
 			if (! (this.left instanceof UglifyJS.AST_Dot)) {
 			
-				C.push(new Classes.LEqCheckConstraint(j2.T, j1.T, this.right));
+				C.push(new Classes.LEqConstraint(j2.T, j1.T, this.right));
+				// C.push(new Classes.LEqCheckConstraint(j2.T, j1.T, this.right));
 				returnType = j1.T;
 				break;
 			} else {
@@ -259,7 +260,8 @@ UglifyJS.AST_Assign.prototype.check = function(gamma) {
 				C = j1.C.concat(j2.C);
 				var constraint = new Classes.LEqConstraint(T, j2.T, this.left.expression);
 				C.push(constraint);
-				C.push(new Classes.LEqCheckConstraint(T3, j1.T, this.left.expression));
+				C.push(new Classes.LEqConstraint(T3, j1.T, this.left.expression));
+				// C.push(new Classes.LEqCheckConstraint(T3, j1.T, this.left.expression));
 			}
 		break;
 		case ("+="):
@@ -503,7 +505,12 @@ UglifyJS.AST_VarDef.prototype.check = function(gamma) {
 	if (this.value) {
 		this.value.parent = parent(this);
 		var judgement = this.value.check(gamma);
-		C = judgement.C.concat([new Classes.LEqCheckConstraint(T, judgement.T, this.value)]);
+		// Contention: Should this be LEqCheck or not?
+		// Straight LEq is required to be able to later expand the object, but
+		// LEqCheck is required for the constraint to actually have any effect
+
+		// C = judgement.C.concat([new Classes.LEqCheckConstraint(T, judgement.T, this.value)]);
+		C = judgement.C.concat([new Classes.LEqConstraint(T, judgement.T, this.value)]);
 	}
 
 	gamma = new Classes.TypeEnv(gamma);
