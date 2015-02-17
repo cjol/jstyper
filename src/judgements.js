@@ -190,7 +190,7 @@ UglifyJS.AST_Call.prototype.check = function(gamma) {
 		// I don't care about je.C or je.gamma - they will come through when we check this.expression (j0)
 		var je = this.expression.expression.check(gamma);
 
-		C.push(new Classes.LEqConstraint(argTypes[0], je.T, this.expression));
+		C.push(new Classes.LEqCheckConstraint(argTypes[0], je.T, this.expression));
 	} else {
 		// normal function call (no this)
 		C.push(new Classes.Constraint(argTypes[0], undefinedType, this.expression));
@@ -207,7 +207,7 @@ UglifyJS.AST_Call.prototype.check = function(gamma) {
 		var T = gamma.getFreshType(undefined, {detail: 'inferred arg' + i + ' type of call', node: this});
 		argTypes.push(T);
 		
-		C.push(new Classes.LEqConstraint(T, ji.T, this.args[i]));
+		C.push(new Classes.LEqCheckConstraint(T, ji.T, this.args[i]));
 
 		gamma = ji.gamma;
 	}
@@ -219,7 +219,7 @@ UglifyJS.AST_Call.prototype.check = function(gamma) {
 	C.push(new Classes.Constraint(j0.T, funcType, this));
 
 	var useType = gamma.getFreshType(undefined, {detail: 'use type of call', node:this});
-	C.push(new Classes.LEqConstraint(useType, funcType.returnType, null));
+	C.push(new Classes.LEqCheckConstraint(useType, funcType.returnType, null));
 
 	var judgement = new Classes.Judgement(useType, C, gamma);
 	judgement.nodes.push(this);
@@ -240,7 +240,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma) {
 			// TODO: This remains unproven and potentially dubious
 			if (! (this.left instanceof UglifyJS.AST_Dot)) {
 			
-				C.push(new Classes.LEqConstraint(j2.T, j1.T, this.right));
+				C.push(new Classes.LEqCheckConstraint(j2.T, j1.T, this.right));
 				returnType = j1.T;
 				break;
 			} else {
@@ -259,7 +259,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma) {
 				C = j1.C.concat(j2.C);
 				var constraint = new Classes.LEqConstraint(T, j2.T, this.left.expression);
 				C.push(constraint);
-				C.push(new Classes.LEqConstraint(T3, j1.T, this.left.expression));
+				C.push(new Classes.LEqCheckConstraint(T3, j1.T, this.left.expression));
 			}
 		break;
 		case ("+="):
@@ -503,7 +503,7 @@ UglifyJS.AST_VarDef.prototype.check = function(gamma) {
 	if (this.value) {
 		this.value.parent = parent(this);
 		var judgement = this.value.check(gamma);
-		C = judgement.C.concat([new Classes.LEqConstraint(T, judgement.T, this.value)]);
+		C = judgement.C.concat([new Classes.LEqCheckConstraint(T, judgement.T, this.value)]);
 	}
 
 	gamma = new Classes.TypeEnv(gamma);

@@ -13,6 +13,7 @@ module.exports = {
 	Substitution: Substitution,
 	Constraint: Constraint,
 	LEqConstraint: LEqConstraint,
+	LEqCheckConstraint: LEqCheckConstraint,
 	TypeEnvEntry: TypeEnvEntry,
 	TypeEnv: TypeEnv,
 	Judgement: Judgement,
@@ -228,7 +229,7 @@ function Constraint(leftType, rightType, rightNode) {
 	this.checkNode = rightNode;
 	this.regenDesc();
 }
-Constraint.prototype.checkStructure = function() {
+Constraint.prototype.check = function() {
 
 	if (this.type2.type !== this.type1.type) return false;
 	
@@ -289,82 +290,7 @@ Constraint.prototype.applySubstitution = function(sub) {
 	this.regenDesc();
 };
 
-function compare1(a,b) {
-	// check if the constraints are immediately going to generate subconstraints
-	if ((a.type1.type ===  "object"  && a.type2.type ===  "object" ) ||
-		(a.type1.type === "function" && a.type2.type === "function")) {
-		if ((b.type1.type ===  "object"  && b.type2.type ===  "object" ) ||
-			(b.type1.type === "function" && b.type2.type === "function")) {
-			// both will, so no priority here
-			return 0;
-		}
-		// a will, but b won't, so a<b
-		return -1;
-	}
-
-	if ((b.type1.type ===  "object"  && b.type2.type ===  "object" ) ||
-		(b.type1.type === "function" && b.type2.type === "function")) {
-		// a won't, but a will, so a>b
-		return 1;
-	}
-
-	// neither will, so no priority here
-	return 0;
-}
-
-function compare2(a,b) {
-	// check if the constraints are immediately going to generate subconstraints
-	if ((a.type1.type ===  "object"  && a.type2.type ===  "object" ) ||
-		(a.type1.type === "function" && a.type2.type === "function")) {
-		if ((b.type1.type ===  "object"  && b.type2.type ===  "object" ) ||
-			(b.type1.type === "function" && b.type2.type === "function")) {
-			// both will, so no priority here
-			return 0;
-		}
-		// a will, but b won't, so a<b
-		return -1;
-	}
-
-	if ((b.type1.type ===  "object"  && b.type2.type ===  "object" ) ||
-		(b.type1.type === "function" && b.type2.type === "function")) {
-		// a won't, but a will, so a>b
-		return 1;
-	}
-
-	// neither will, so no priority here
-	return 0;
-}
-
 Constraint.compare = function(a, b) {
-	// var r;
-	// r = compare1(a,b);
-	// if (r !== 0) return r;
-
-	// // Anything which might generate subconstraints should be solved first
-	// // Also regular constraints should be solved before LEqConstraints
-	// if (a.type1.type === "object" || a.type1.type === "function") {
-	// 	if (b.type1.type === "object" || b.type1.type === "function") {
-
-	// 		// both subconstraint generating - compare by Constraint/LEqConstraint
-	// 		if (a instanceof LEqConstraint) {
-	// 			if (b instanceof LEqConstraint) {
-	// 				return 0; // LEqConstraint a = LEqConstraint b
-	// 			}
-	// 			return 1; // LEqConstraint a > Constraint b
-	// 		}
-
-	// 		if (b instanceof LEqConstraint) {
-	// 			return -1; // Constraint a < LEqConstraint b
-	// 		}
-	// 		return 0; // Constraint a = Constraint b
-	// 	}
-	// 	return -1; // subgen a < not subgen b
-	// }
-	// if (b.type1.type === "object" || b.type1.type === "function") {
-	// 	return 1; // not subgen a > subgen b
-	// }
-	// // both not subgen - compare by Constraint/LEqConstraint
-
 	// A LEqConstraint between any types other than object are effectively just constraints
 
 	if (a instanceof LEqConstraint && (a.type1.type === "object" || a.type2.type === "object")) {
@@ -379,6 +305,7 @@ Constraint.compare = function(a, b) {
 	}
 	return 0; // Constraint a = Constraint b
 };
+
 function LEqConstraint(smallType, bigType, checkNode) {
 	Constraint.call(this, smallType, bigType, checkNode);
 }
@@ -386,6 +313,19 @@ tmp = function() {};
 tmp.prototype = Constraint.prototype;
 LEqConstraint.prototype = new tmp();
 LEqConstraint.prototype.constructor = LEqConstraint;
+
+// NB should only be called for two concrete object types
+LEqConstraint.prototype.enforce = function() {
+	// we can add smallType's properties to bigType to satisfy the constraint
+	for (var l in this.type1.memberTypes) {
+		if (this.type2.memberTypes[l] === undefined) {
+
+			// TODO: Can I avoid generating fresh types during solution?
+			var T = TypeEnv.getFreshType();
+			this.type2.memberTypes[l] = T;
+		}
+	}
+};
 LEqConstraint.prototype.checkStructure = function() {
 	// NB This only differs from Constraint for objects
 	if (this.type1.type !== this.type2.type) return false;
@@ -402,25 +342,43 @@ LEqConstraint.prototype.checkStructure = function() {
 	}
 	return true;
 };
-LEqConstraint.prototype.satisfy = function() {
-	if (this.type1.type !== "object") return [];
-
-	var C = [];
-	// we can add smallType's properties to bigType to satisfy the constraint
-	for (var l in this.type1.memberTypes) {
-		if (this.type2.memberTypes[l] === undefined) {
-
-			// TODO: Can I avoid generating fresh types during solution?
-			var T = TypeEnv.getFreshType();
-			this.type2.memberTypes[l] = T;
-			C.push(new LEqConstraint(this.type1.memberTypes[l], T));
-		}
+LEqConstraint.prototype.check = function() {
+	// if rightType has a field missing, we add it here. Adding these
+	// will make the equals check below return true, and then
+	// constraints will be generated to assert that each of rightType's
+	// members are the same type as leftType's members
+	// we only want to enforce for concrete types
+	if (this.type1.type === "object" && this.type2.type === "object") {
+		this.enforce();
+		
 	}
-	return C;
+	return this.checkStructure();
 };
 LEqConstraint.prototype.regenDesc = function() {
+	this.desc = this.type1.toString() + " <=c " + this.type2.toString();
+};
+
+
+
+
+function LEqCheckConstraint(smallType, bigType, checkNode) {
+	LEqConstraint.call(this, smallType, bigType, checkNode);
+}
+tmp = function() {};
+tmp.prototype = LEqConstraint.prototype;
+LEqCheckConstraint.prototype = new tmp();
+LEqCheckConstraint.prototype.constructor = LEqCheckConstraint;
+LEqCheckConstraint.prototype.check = function() {
+	// NB No enforce
+	this.checkStructure();
+};
+LEqCheckConstraint.prototype.regenDesc = function() {
 	this.desc = this.type1.toString() + " <= " + this.type2.toString();
 };
+
+
+
+
 
 
 function TypeEnvEntry(varName, node, type) {

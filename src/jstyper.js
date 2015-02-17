@@ -71,50 +71,50 @@ function solveConstraints(constraints) {
 		var rightType = constraint.type2;
 
 		// type structures are equal => constraint satisfied
-		if (constraint.checkStructure()) {
+		if (constraint.check()) {
 
 			// if this is a complex structure, there may be sub-constraints to solve
 			constraints = constraints.concat(constraint.getSubConstraints());
 			continue;
 		}
 
+		// TODO: Gradual Typing
+		// // constraints involving dynamic types are trivially satisfied
+		// // if the leftType (write) type is dynamic, we always allow
+		// // TODO: left != write nowadays...
+		// if (leftType.isDynamic) continue;
 
-		// constraints involving dynamic types are trivially satisfied
-		// if the leftType (write) type is dynamic, we always allow
-		// TODO: left != write nowadays...
-		if (leftType.isDynamic) continue;
-
-		// if the rightType (read) type is dynamic, we allow but must typecheck
-		// TODO: object types don't get type-checks, they should get guarded
-		if (rightType.isDynamic && rightType !== "object") {
-			result.checks.push({node:constraint.checkNode, type:leftType});
-			continue;
-		}
+		// // if the rightType (read) type is dynamic, we allow but must typecheck
+		// // TODO: object types don't get type-checks, they should get guarded
+		// if (rightType.isDynamic && rightType !== "object") {
+		// 	result.checks.push({node:constraint.checkNode, type:leftType});
+		// 	continue;
+		// }
 
 		var sub;
 		// if one type is not concrete, it can be substituted by the other
-		if (constraint instanceof Classes.LEqConstraint && (leftType.type === "object" || rightType.type === "object")) {
-			// we can't just do a straight substitution for LEqConstraints between objects
-			// here we have a constraint of the form leftType <= rightType
+		// if (constraint instanceof Classes.LEqConstraint && (leftType.type === "object" || rightType.type === "object")) {
+		// 	// we can't just do a straight substitution for LEqConstraints between objects
+		// 	// here we have a constraint of the form leftType <= rightType
 
-			if (!leftType.isConcrete) {
-				// the minimal solution is for the leftType to be instantiated with {}
-				// var emptyObj = new Classes.ObjectType({memberTypes:{}});
-				sub = new Classes.Substitution(leftType, rightType);
-			} else if (!rightType.isConcrete) {
-				// the minimal solution is for the rightType to be instantiated with the leftType
-				sub = new Classes.Substitution(rightType, leftType);
-			} else {
+		// 	if (!leftType.isConcrete) {
+		// 		// the minimal solution is for the leftType to be instantiated with {}
+		// 		// var emptyObj = new Classes.ObjectType({memberTypes:{}});
+		// 		sub = new Classes.Substitution(leftType, rightType);
+		// 	} else if (!rightType.isConcrete) {
+		// 		// the minimal solution is for the rightType to be instantiated with the leftType
+		// 		sub = new Classes.Substitution(rightType, leftType);
+		// 	} else {
 
-				// for two concrete types we can try adding members to the
-				// smaller type and checking subconstraints
-				var newleqConstraints = constraint.satisfy();
-				if (newleqConstraints.length > 0) {
-					constraints = constraints.concat(newleqConstraints);
-					continue;
-				}
-			}
-		} else {
+		// 		// for two concrete types we can try adding members to the
+		// 		// smaller type and checking subconstraints
+		// 		var newleqConstraints = constraint.satisfy();
+		// 		if (newleqConstraints.length > 0) {
+		// 			constraints = constraints.concat(newleqConstraints);
+		// 			continue;
+		// 		}
+		// 	}
+		// } else {
 			if (!leftType.isConcrete) {
 				sub = new Classes.Substitution(leftType, rightType);
 			} else if (!rightType.isConcrete) {
@@ -124,7 +124,7 @@ function solveConstraints(constraints) {
 			else {
 				throw new Error(" Failed Unification: " + leftType.toString() + " != " + rightType.toString());
 			}
-		}
+		// }
 
 		// apply the substitution to the remaining constraints
 		for (var i = 0; i < constraints.length; i++) {

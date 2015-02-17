@@ -150,9 +150,13 @@ C :: 'C_' ::= 					                {{ com Constraint }}
 	| U setIndex = n1 - n2 C :: :: BigUnion 						{{ com BigUnion }}
 																	{{ tex \bigcup \limits_{[[setIndex]]=[[n1]]}^[[n2]] [[C]] }}
 	| { T1 < T2 } ::  :: ConstLeq 										{{ com ConstLeq }}
-																	{{ tex \{ [[T1]] \preceq [[T2]] \} }}
+																	{{ tex \{ \textcolor{red}{ [[T1]] \preceq [[T2]] } \} }}
 	| { T1 > T2 } ::  :: ConstGeq				 						{{ com ConstGeq }}
-																	{{ tex \{ [[T1]] \succeq [[T2]] \} }}
+																	{{ tex \{ \textcolor{red}{ [[T1]] \succeq [[T2]] } \} }}
+	| { T1 <c T2 } :: :: ConstCheckLeq									{{ com ConstCheckLeq }}
+																	{{ tex \{ \textcolor{red}{ [[T1]] \preceq_c [[T2]] } \} }}
+	| { T1 >c T2 } :: :: ConstCheckGeq		 						    {{ com ConstCheckGeq }}
+																	{{ tex \{ \textcolor{red}{ [[T1]] \succeq_c [[T2]] } \} }}
 	| { T1 = T2 } ::  :: ConstEq				 						{{ com ConstEq }}
 																	{{ tex \{ [[T1]] = [[T2]] \} }}
 	| ( C )		 ::  :: BracketedConstraint  					{{ com BracketedConstraint }}
@@ -431,7 +435,7 @@ Jop :: '' ::=
 
 		G |- e : T |C0 G0
 		G0 |- e1 : T1' |C1 G1 --- Gi-1 |- ei : Ti' |Ci Gi
-		C' = (U j=0-i Cj) u ( ((U j=1-i {Tj < Tj'}) u {Tk > Tk'})u ({T=T0, T1, .., Ti -> Tk} u {T0 = undefined} ))
+		C' = (U j=0-i Cj) u ( ((U j=1-i {Tj <c Tj'}) u {Tk >c Tk'})u ({T=T0, T1, .., Ti -> Tk} u {T0 = undefined} ))
 		T0,T1,..,Ti,Tk,Tk' are fresh
 		-------------------------------------------------- 			:: CallType
 		G |- e(e1,..,ei) : Tk' |C' Gi
@@ -439,7 +443,7 @@ Jop :: '' ::=
 		G |- e.l : T |C0 G0
 		G |- e : T0' |C' G'
 		G0 |- e1 : T1' |C1 G1 --- Gi-1 |- ei : Ti' |Ci Gi
-		C' = (U j=0-i Cj) u ( ((U j=1-i {Tj < Tj'}) u {Tk > Tk'})u ({T=T0, T1, .., Ti -> Tk} u {T0 < T0'} ))
+		C' = (U j=0-i Cj) u ( ((U j=1-i {Tj <c Tj'}) u {Tk >c Tk'})u ({T=T0, T1, .., Ti -> Tk} u {T0 <c T0'} ))
 		T0,T1,..,Ti,Tk,Tk' are fresh
 		-------------------------------------------------- 			:: PropCallType
 		G |- e.l(e1,..,ei) : Tk' |C' Gi
@@ -451,13 +455,13 @@ Jop :: '' ::=
 		G |- e : T1 |C1 G1
 		G1 |- id : T2 |C2 G2
 		------------------------------------------------------	 	:: AssignType 
-		G |- id = e : T1 |(C1 u C2) u { T1 > T2 } G2
+		G |- id = e : T1 |(C1 u C2) u { T1 >c T2 } G2
 
 		G |- e' : T1 |C1 G1
 		G1 |- e : T2 |C2 G2
 		T3 is fresh
 		------------------------------------------------------	 	:: PropAssignType
-		G |- e.l = e' : T1 |(C1 u C2) u ({ {l:T3} < T2 } u {T1 > T3}) G2
+		G |- e.l = e' : T1 |(C1 u C2) u ({ {l:T3} < T2 } u {T1 >c T3}) G2
 
 		G |- e : T1 |C1 G1
 		G1 |- id : T2 |C2 G2
@@ -569,7 +573,7 @@ Jop :: '' ::=
 		G |- e : T |C G'
 		T' is fresh
 		---------------------------------                		    :: DefTypable
-		G |- var id = e |C u {T' < T} G' u {id : T'}
+		G |- var id = e |C u {T' <c T} G' u {id : T'}
 
 		G |- var vd1 |C1 G1 --- Gk-1 |- var vdk |Ck Gk
 		---------------------------------------            		    :: MultiDecTypable
