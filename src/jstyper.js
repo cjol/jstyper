@@ -59,7 +59,7 @@ function solveConstraints(constraints) {
 
 	*/
 
-	var result =  {substitutions:[], checks:[]};
+	var substitutions = [];
 
 	while (constraints.length > 0) {
 		constraints.sort(Classes.Constraint.compare);
@@ -133,10 +133,10 @@ function solveConstraints(constraints) {
 
 		// it's quite important that substitutions are applied in the right order
 		// here first item should be applied first
-		result.substitutions.push(sub);
+		substitutions.push(sub);
 		continue;
 	}
-	return result;
+	return substitutions;
 	
 	// // base case
 	// if (constraints.length < 1)
@@ -226,23 +226,25 @@ module.exports = function(src) {
 	for (var i = 0; i< chunks.length; i++) {
 
 		// solve the generated constraints, or throw an error if this isn't possible
-		var solution = solveConstraints(chunks[i].C, chunks[i].gamma);
+		var substitutions = solveConstraints(chunks[i].C, chunks[i].gamma);
 
 
 		// apply the solution substitutions to the type environment
-		for (var j=0; j<solution.substitutions.length; j++) {
-			chunks[i].gamma.applySubstitution(solution.substitutions[j]);
-			for (var k = 0; k<solution.checks.length; k++) {
-				solution.checks[k].type.applySubstitution(solution.substitutions[j]);
+		for (var j=0; j<substitutions.length; j++) {
+
+			chunks[i].gamma.applySubstitution(substitutions[j]);
+
+			for (var k = 0; k<chunks[i].W.length; k++) {
+				chunks[i].W[k].applySubstitution(substitutions[j]);
 			}
 		}
 
 		// Prepare a helpful message for each typed chunk
-		function annotate(node) {
+		var annotate = function(node) {
 			if (node instanceof UglifyJS.AST_Scope) {
 				if (node.gamma !== undefined) {
-					for (var j=0; j<solution.substitutions.length; j++) {
-						node.gamma.applySubstitution(solution.substitutions[j]);
+					for (var j=0; j<substitutions.length; j++) {
+						node.gamma.applySubstitution(substitutions[j]);
 					}
 					var typeComment = "\n\tjstyper types: \n" + node.gamma.toString(2);
 					if (node.body.length > 0) {
@@ -255,30 +257,58 @@ module.exports = function(src) {
 					}
 				}
 			}
-		}
+		};
 		var walker = new UglifyJS.TreeWalker(annotate);
 		ast.walk(walker);
+		function getWrapper(wrappers) {
+			return function(node) {
+				var wrapper;
+				for (var j=0; j<wrappers.length; j++) {
+					if (node === wrappers[j].parent) {
+						wrapper = wrappers[j];
+						break;
+					}
+				}
+				if (wrapper === undefined) return;
+
+				// node is the parent of something which needs wrapping
+				// TODO: assign parents correctly within here
+				var mimic = new UglifyJS.AST_Call({
+					expression: new UglifyJS.AST_Symbol({
+						name: 'mimic'
+					}),
+					args: [
+						wrapper.type.toAST(),
+						wrapper.expression
+					]
+				});
+				node.insertBefore(mimic, wrapper.expression, true);
+			};
+		}
+		walker = new UglifyJS.TreeWalker(getWrapper(chunks[i].W));
+		ast.walk(walker);
+
 
 		// TODO: append a notice indicating the end of the typed section (not easy without a trailing comments property!)
 		
-		for (var l = 0; l<solution.checks.length; l++) {
-			// insert the checks as appropriate
-			// unfortunately we're replacing nodes as we go, so we'll also need to substitute nodes as we go along
-			var typeChecks = solution.checks[l].node.getTypeChecks( solution.checks[l].type );
-			if (typeChecks) {
-				for (var p = 0; p < typeChecks.length; p++) {
-					var subs = solution.checks[l].node.parent().insertBefore(typeChecks[p], solution.checks[l].node);
-					for (var m = 0; m<subs.length; m++) {
-						for (var n=l; n<solution.checks.length; n++) {
-							if (solution.checks[n].node === subs[m].from) {
-								solution.checks[n].node = subs[m].to;
-							}
-						}
-					}
+		// for (var l = 0; l<solution.checks.length; l++) {
+		// 	// insert the checks as appropriate
+		// 	// unfortunately we're replacing nodes as we go, so we'll also need to substitute nodes as we go along
+		// 	var typeChecks = solution.checks[l].node.getTypeChecks( solution.checks[l].type );
+		// 	if (typeChecks) {
+		// 		for (var p = 0; p < typeChecks.length; p++) {
+		// 			var subs = solution.checks[l].node.parent().insertBefore(typeChecks[p], solution.checks[l].node);
+		// 			for (var m = 0; m<subs.length; m++) {
+		// 				for (var n=l; n<solution.checks.length; n++) {
+		// 					if (solution.checks[n].node === subs[m].from) {
+		// 						solution.checks[n].node = subs[m].to;
+		// 					}
+		// 				}
+		// 			}
 					
-				}
-			}
-		}
+		// 		}
+		// 	}
+		// }
 	}
 
 	var checkRes = chunks;
