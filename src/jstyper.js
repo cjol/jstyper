@@ -67,9 +67,6 @@ function solveConstraints(constraints) {
 		var constraint = constraints[0];
 		constraints = constraints.slice(1);
 
-		var leftType = constraint.type1;
-		var rightType = constraint.type2;
-
 		// type structures are equal => constraint satisfied
 		if (constraint.check()) {
 
@@ -115,14 +112,14 @@ function solveConstraints(constraints) {
 		// 		}
 		// 	}
 		// } else {
-			if (!leftType.isConcrete) {
-				sub = new Classes.Substitution(leftType, rightType);
-			} else if (!rightType.isConcrete) {
-				sub = new Classes.Substitution(rightType, leftType);
+			if (!Classes.Type.store[constraint.type1].isConcrete) {
+				sub = new Classes.Substitution(constraint.type1, constraint.type2);
+			} else if (!Classes.Type.store[constraint.type2].isConcrete) {
+				sub = new Classes.Substitution(constraint.type2, constraint.type1);
 
 			} // both are different concrete types
 			else {
-				throw new Error(" Failed Unification: " + leftType.toString() + " != " + rightType.toString());
+				throw new Error(" Failed Unification: " + Classes.Type.store[constraint.type1].toString() + " != " + Classes.Type.store[constraint.type2].toString());
 			}
 		// }
 
@@ -216,7 +213,7 @@ module.exports = function(src) {
 
 	// reset the fresh type counter for consistency
 	Classes.TypeEnv.nextType = 1;
-	Classes.Type.id = 1;
+	Classes.Type.resetStore();
 
 	// generate a judgement for (each annotated section of) the entire tree
 	// it's checkUntyped because, at the time of calling, we're not in the typed world yet

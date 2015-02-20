@@ -22,26 +22,38 @@ function parent(par) {
  * Checking typability, and also creating type judgements
  ***********************************************************************************/
 
-var numType = new Classes.PrimitiveType('number');
-var boolType = new Classes.PrimitiveType('boolean');
-var stringType = new Classes.PrimitiveType('string');
-var undefinedType = new Classes.PrimitiveType('undefined');
-var nullType = new Classes.PrimitiveType('null');
 UglifyJS.AST_Constant.prototype.check = function(gamma) {
-	if (this.constType === undefined) throw new Error("Unhandled constant type " + this);
-	var j = new Classes.Judgement(this.constType, [], gamma);
+	throw new Error("Unhandled constant type " + this);
+};
+UglifyJS.AST_Number.prototype.check = function(gamma) {
+	var j = new Classes.Judgement(Classes.Type.numType, [], gamma);
 	j.nodes.push(this);
 	return j;
 };
-UglifyJS.AST_Number.prototype.constType = numType;
-UglifyJS.AST_Boolean.prototype.constType = boolType;
-UglifyJS.AST_String.prototype.constType = stringType;
-UglifyJS.AST_Undefined.prototype.constType = undefinedType;
-UglifyJS.AST_Null.prototype.constType = nullType;
+UglifyJS.AST_Boolean.prototype.check = function(gamma) {
+	var j = new Classes.Judgement(Classes.Type.boolType, [], gamma);
+	j.nodes.push(this);
+	return j;
+};
+UglifyJS.AST_String.prototype.check = function(gamma) {
+	var j = new Classes.Judgement(Classes.Type.stringType, [], gamma);
+	j.nodes.push(this);
+	return j;
+};
+UglifyJS.AST_Undefined.prototype.check = function(gamma) {
+	var j = new Classes.Judgement(Classes.Type.undefinedType, [], gamma);
+	j.nodes.push(this);
+	return j;
+};
+UglifyJS.AST_Null.prototype.check = function(gamma) {
+	var j = new Classes.Judgement(Classes.Type.nullType, [], gamma);
+	j.nodes.push(this);
+	return j;
+};
 
 // Rule V_Skip (special case of expression when e is skip)
 UglifyJS.AST_EmptyStatement.prototype.check = function(gamma) {
-	var j = new Classes.Judgement(undefinedType, [], gamma);
+	var j = new Classes.Judgement(Classes.Type.undefinedType, [], gamma);
 	j.nodes.push(this);
 	return j;
 };
@@ -64,8 +76,8 @@ UglifyJS.AST_Object.prototype.check = function(gamma) {
 		var propType = gamma.getFreshType(undefined, {detail:'prop ' + i + 'type of ', node: this});
 
 		// TODO: Check the direction of this constraint
-		C.push(new Classes.Constraint(propType, judgement.T, this.properties[i].value));
-		memberType[this.properties[i].key] = propType;
+		C.push(new Classes.Constraint(propType.id, judgement.T.id));
+		memberType[this.properties[i].key] = propType.id;
 		memberType[this.properties[i].key].node = this.properties[i];
 
 		// thread gamma through to the next property
@@ -88,7 +100,7 @@ UglifyJS.AST_Lambda.prototype.check = function(gamma) {
 
 	var funType = new Classes.FunctionType({
 		argTypes: [],
-		returnType: retType
+		returnType: retType.id
 	});
 
 	// generate a fresh type for each of the arguments (including 'this')
@@ -101,13 +113,13 @@ UglifyJS.AST_Lambda.prototype.check = function(gamma) {
 		Ts[i] = gamma.getFreshType(undefined, {detail:'arg' + i + ' type of fun ', node: this});
 		var name = (i===0)?'this':this.argnames[i-1].name ;
 		
-		gamma1.push(new Classes.TypeEnvEntry(name, null, Ts[i]));
-		funType.argTypes.push(Ts[i]);
+		gamma1.push(new Classes.TypeEnvEntry(name, null, Ts[i].id));
+		funType.argTypes.push(Ts[i].id);
 	}
 
 	// V_Fun2
 	if (this.name !== undefined && this.name !== null) {
-		gamma1.push(new Classes.TypeEnvEntry(this.name.name, this, funType));
+		gamma1.push(new Classes.TypeEnvEntry(this.name.name, this, funType.id));
 	}
 
 	// type the body using the new gamma (treat it as a block statement)
@@ -116,10 +128,10 @@ UglifyJS.AST_Lambda.prototype.check = function(gamma) {
 	var C;
 	if (j1.gamma.get('return') === null) {
 		// there are no return statements in the block
-		C = j1.C.concat(new Classes.Constraint(undefinedType, retType, null));
+		C = j1.C.concat(new Classes.Constraint(Classes.Type.undefinedType.id, retType.id));
 	} else {
 		// TODO: potentially don't want this to be null...
-		C = j1.C.concat(new Classes.Constraint(j1.gamma.get('return'), retType, null));
+		C = j1.C.concat(new Classes.Constraint(j1.gamma.get('return').id, retType.id));
 	}
 
 	// return the original gamma
@@ -138,7 +150,7 @@ UglifyJS.AST_Symbol.prototype.check = function(gamma) {
 		// need to select a new type, but create a new env for it
 		T = gamma.getFreshType(undefined, {detail:'symbol type for ' + this.name, node: this});
 		gamma = new Classes.TypeEnv(gamma);
-		gamma.push(new Classes.TypeEnvEntry(this.name, this, T));
+		gamma.push(new Classes.TypeEnvEntry(this.name, this, T.id));
 	}
 
 	var j = new Classes.Judgement(T, C, gamma);
@@ -160,12 +172,12 @@ UglifyJS.AST_Dot.prototype.check = function(gamma) {
 
 	// add a new constraint stating the containing object much have this as a property
 	var memberType = {};
-	memberType[this.property] = T;
+	memberType[this.property] = T.id;
 
 	var containerType = new Classes.ObjectType({
 		memberTypes: memberType
 	});
-	C.push(new Classes.LEqConstraint(containerType, j1.T, this.expression));
+	C.push(new Classes.LEqConstraint(containerType.id, j1.T.id));
 	var judgement = new Classes.Judgement(T, C, j1.gamma);
 	judgement.nodes.push(this);
 	return judgement;
@@ -181,7 +193,7 @@ UglifyJS.AST_Call.prototype.check = function(gamma) {
 	var C = j0.C;
 
 	// prepare new constraints
-	var argTypes = [gamma.getFreshType(undefined, {detail:'inferred \'this\' type of call ', node: this})];
+	var argTypes = [gamma.getFreshType(undefined, {detail:'inferred \'this\' type of call ', node: this}).id];
 	if (this.expression instanceof UglifyJS.AST_Dot) {
 		// this is an instance call
 		// PropCallType
@@ -190,10 +202,10 @@ UglifyJS.AST_Call.prototype.check = function(gamma) {
 		// I don't care about je.C or je.gamma - they will come through when we check this.expression (j0)
 		var je = this.expression.expression.check(gamma);
 
-		C.push(new Classes.LEqCheckConstraint(argTypes[0], je.T, this.expression));
+		C.push(new Classes.LEqCheckConstraint(argTypes[0], je.T.id));
 	} else {
 		// normal function call (no this)
-		C.push(new Classes.Constraint(argTypes[0], undefinedType, this.expression));
+		C.push(new Classes.Constraint(argTypes[0], Classes.Type.undefinedType.id));
 	}
 	gamma = j0.gamma;
 	
@@ -205,21 +217,21 @@ UglifyJS.AST_Call.prototype.check = function(gamma) {
 		C = C.concat(ji.C);
 
 		var T = gamma.getFreshType(undefined, {detail: 'inferred arg' + i + ' type of call', node: this});
-		argTypes.push(T);
+		argTypes.push(T.id);
 		
-		C.push(new Classes.LEqCheckConstraint(T, ji.T, this.args[i]));
+		C.push(new Classes.LEqCheckConstraint(T.id, ji.T.id));
 
 		gamma = ji.gamma;
 	}
 
 	var funcType = new Classes.FunctionType({
 		argTypes:argTypes,
-		returnType: gamma.getFreshType(undefined, {detail: 'inferred return type of call', node: this})
+		returnType: gamma.getFreshType(undefined, {detail: 'inferred return type of call', node: this}).id
 	});
-	C.push(new Classes.Constraint(j0.T, funcType, this));
+	C.push(new Classes.Constraint(j0.T.id, funcType.id));
 
 	var useType = gamma.getFreshType(undefined, {detail: 'use type of call', node:this});
-	C.push(new Classes.LEqCheckConstraint(useType, funcType.returnType, null));
+	C.push(new Classes.LEqCheckConstraint(useType.id, funcType.returnType));
 
 	var judgement = new Classes.Judgement(useType, C, gamma);
 	judgement.nodes.push(this);
@@ -240,7 +252,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma) {
 			// TODO: This remains unproven and potentially dubious
 			if (! (this.left instanceof UglifyJS.AST_Dot)) {
 			
-				C.push(new Classes.LEqConstraint(j2.T, j1.T, this.right));
+				C.push(new Classes.LEqConstraint(j2.T.id, j1.T.id));
 				// C.push(new Classes.LEqCheckConstraint(j2.T, j1.T, this.right));
 				returnType = j1.T;
 				break;
@@ -251,16 +263,16 @@ UglifyJS.AST_Assign.prototype.check = function(gamma) {
 
 				var T3 = gamma.getFreshType();
 				var memberType = {};
-				memberType[this.left.property] = T3;
+				memberType[this.left.property] = T3.id;
 
 				var T = new Classes.ObjectType({
 					memberTypes: memberType
 				});
 
 				C = j1.C.concat(j2.C);
-				var constraint = new Classes.LEqConstraint(T, j2.T, this.left.expression);
+				var constraint = new Classes.LEqConstraint(T.id, j2.T.id);
 				C.push(constraint);
-				C.push(new Classes.LEqConstraint(T3, j1.T, this.left.expression));
+				C.push(new Classes.LEqConstraint(T3.id, j1.T.id));
 				// C.push(new Classes.LEqCheckConstraint(T3, j1.T, this.left.expression));
 			}
 		break;
@@ -273,8 +285,8 @@ UglifyJS.AST_Assign.prototype.check = function(gamma) {
 			// since we're about to say the two types are equal, can just say left must be number
 
 			if (! (this.left instanceof UglifyJS.AST_Dot)) {
-				C.push(new Classes.Constraint(numType, j1.T, this.right));
-				C.push(new Classes.Constraint(numType, j2.T, this.left));
+				C.push(new Classes.Constraint(Classes.Type.numType.id, j1.T.id));
+				C.push(new Classes.Constraint(Classes.Type.numType.id, j2.T.id));
 				returnType = j1.T;
 			} else {
 				// PropNumAssignType
@@ -282,16 +294,16 @@ UglifyJS.AST_Assign.prototype.check = function(gamma) {
 				j2 = this.left.expression.check(j1.gamma);
 
 				var memberTypeNum = {};
-				memberTypeNum[this.left.property] = numType;
+				memberTypeNum[this.left.property] = Classes.Type.numType.id;
 
 				var numT = new Classes.ObjectType({
 					memberTypes: memberTypeNum
 				});
 
 				C = j1.C.concat(j2.C);
-				var constraintNum = new Classes.LEqConstraint(numT, j2.T, this.left.expression);
+				var constraintNum = new Classes.LEqConstraint(numT.id, j2.T.id);
 				C.push(constraintNum);
-				C.push(new Classes.Constraint(numType, j1.T, this.left));
+				C.push(new Classes.Constraint(Classes.Type.numType.id, j1.T.id));
 			}
 		break;
 		default:
@@ -323,17 +335,17 @@ UglifyJS.AST_Binary.prototype.check = function(gamma) {
 		case ("/"):
 		case ("%"):
 			// TODO: Check order of constraint
-			C = j1.C.concat(j2.C.concat([new Classes.Constraint(numType, j1.T, this.left), 
-											new Classes.Constraint(numType, j2.T, this.right)]));
-			returnType = numType;
+			C = j1.C.concat(j2.C.concat([new Classes.Constraint(Classes.Type.numType.id, j1.T.id), 
+											new Classes.Constraint(Classes.Type.numType.id, j2.T.id)]));
+			returnType = Classes.Type.numType;
 			break;
 		// boolean operators (should both be boolean)
 		case ("||"):
 		case("&&"):
 			// TODO: Check order of constraint
-			C = j1.C.concat(j2.C.concat([new Classes.Constraint(boolType, j1.T, this.left), 
-											new Classes.Constraint(boolType, j2.T, this.right)]));
-			returnType = boolType;
+			C = j1.C.concat(j2.C.concat([new Classes.Constraint(Classes.Type.boolType.id, j1.T.id), 
+											new Classes.Constraint(Classes.Type.boolType.id, j2.T.id)]));
+			returnType = Classes.Type.boolType;
 			break;
 		
 		// misc comparison (should both be equal of any type)
@@ -342,9 +354,9 @@ UglifyJS.AST_Binary.prototype.check = function(gamma) {
 		case ("==="):
 		case ("!=="):
 			// TODO: Check order of constraint
-			C = j1.C.concat(j2.C.concat([new Classes.Constraint(j2.T, j1.T, this.left), 
-											new Classes.Constraint(j1.T, j2.T, this.right)]));
-			returnType = boolType;
+			C = j1.C.concat(j2.C.concat([new Classes.Constraint(j2.T.id, j1.T.id), 
+											new Classes.Constraint(j1.T.id, j2.T.id)]));
+			returnType = Classes.Type.boolType;
 			break;
 		
 		// numeric comparison (should both be number)
@@ -353,9 +365,9 @@ UglifyJS.AST_Binary.prototype.check = function(gamma) {
 		case (">"):
 		case (">="):
 			// TODO: Check order of constraint
-			C = j1.C.concat(j2.C.concat([new Classes.Constraint(numType, j1.T, this.left), 
-											new Classes.Constraint(numType, j2.T, this.right)]));
-			returnType = boolType;
+			C = j1.C.concat(j2.C.concat([new Classes.Constraint(Classes.Type.numType.id, j1.T.id), 
+											new Classes.Constraint(Classes.Type.numType.id, j2.T.id)]));
+			returnType = Classes.Type.boolType;
 			break;
 	
 		default:
@@ -368,7 +380,7 @@ UglifyJS.AST_Binary.prototype.check = function(gamma) {
 	return j;
 };
 
-// Rule NegType / PreNumType / PostOpType
+// Rule NegType / PreClasses.Type.numType / PostOpType
 // NB We're combining prefix and postfix operators here because I don't need to distinguish so far
 UglifyJS.AST_Unary.prototype.check = function(gamma) {
 
@@ -381,17 +393,17 @@ UglifyJS.AST_Unary.prototype.check = function(gamma) {
 		case ("!"):
 			
 			// TODO: Check order of constraint
-			C = j1.C.concat([new Classes.Constraint(boolType, j1.T, this.expression)]);
-			returnType = boolType;
+			C = j1.C.concat([new Classes.Constraint(Classes.Type.boolType.id, j1.T.id)]);
+			returnType = Classes.Type.boolType;
 			break;
-		// PreNumType / PostOpType
+		// PreClasses.Type.numType / PostOpType
 		case ("-"):
 		case ("++"):
 		case ("--"):
 
 			// TODO: Check order of constraint
-			C = j1.C.concat([new Classes.Constraint(numType, j1.T, this.expression)]);
-			returnType = numType;
+			C = j1.C.concat([new Classes.Constraint(Classes.Type.numType.id, j1.T.id)]);
+			returnType = Classes.Type.numType;
 			break;
 		
 		default:
@@ -429,17 +441,17 @@ UglifyJS.AST_Return.prototype.check = function(gamma) {
 	{
 		newGamma = gamma;
 		C = [];
-		T = undefinedType;
+		T = Classes.Type.undefinedType;
 	}
 
 	// check if 'return' has already been defined in this scope
 	// RetTypable 1/3
 	if (gamma.get('return') === null) {
-		newGamma.push(new Classes.TypeEnvEntry('return', this, T));
+		newGamma.push(new Classes.TypeEnvEntry('return', this, T.id));
 	} else
 	// RetTypable 2/4
 	{
-		C.push(new Classes.Constraint(T, gamma.get('return'), this));
+		C.push(new Classes.Constraint(T.id, gamma.get('return').id));
 	}
 
 	var judgement = new Classes.Judgement(null, C, newGamma);
@@ -475,7 +487,7 @@ UglifyJS.AST_If.prototype.check = function(gamma) {
 	var C = j1.C;
 
 	// TODO: Check order of constraint
-	C.push(new Classes.Constraint(boolType, j1.T, this.condition));
+	C.push(new Classes.Constraint(Classes.Type.boolType.id, j1.T.id));
 	
 	this.body.parent = parent(this);
 	var j2 = this.body.check(j1.gamma);
@@ -510,11 +522,11 @@ UglifyJS.AST_VarDef.prototype.check = function(gamma) {
 		// LEqCheck is required for the constraint to actually have any effect
 
 		// C = judgement.C.concat([new Classes.LEqCheckConstraint(T, judgement.T, this.value)]);
-		C = judgement.C.concat([new Classes.LEqConstraint(T, judgement.T, this.value)]);
+		C = judgement.C.concat([new Classes.LEqConstraint(T.id, judgement.T.id)]);
 	}
 
 	gamma = new Classes.TypeEnv(gamma);
-	gamma.push(new Classes.TypeEnvEntry(this.name.name, this.name, T));
+	gamma.push(new Classes.TypeEnvEntry(this.name.name, this.name, T.id));
 	var j = new Classes.Judgement(null, C, gamma);
 	j.nodes.push(this);
 

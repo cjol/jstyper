@@ -20,8 +20,17 @@ module.exports = {
 };
 
 var tmp = function() {};
+Type.resetStore = function() {
+	Type.store = [];
+	Type.id = 0;
 
-Type.id = 1;
+	Type.numType = new PrimitiveType('number');
+	Type.boolType = new PrimitiveType('boolean');
+	Type.stringType = new PrimitiveType('string');
+	Type.undefinedType = new PrimitiveType('undefined');
+	Type.nullType = new PrimitiveType('null');
+};
+
 function Type(type, options, node) {
 	options = options || {};
 
@@ -29,15 +38,16 @@ function Type(type, options, node) {
 	this.isConcrete = (options.isConcrete === true);
 	this.isDynamic = (options.isDynamic === true);
 	this.id = Type.id++;
+	Type.store[this.id] = this;
 	this.containers = [];
 	if (node !== undefined) this.node = node;
 }
-Type.prototype.cloneTo = function(obj) {
-	obj.type = this.type;
-	obj.isConcrete = this.isConcrete;
-	obj.isDynamic = this.isDynamic;
-	// I think I won't redefine id or node
-};
+// Type.prototype.cloneTo = function(obj) {
+// 	obj.type = this.type;
+// 	obj.isConcrete = this.isConcrete;
+// 	obj.isDynamic = this.isDynamic;
+// 	// I think I won't redefine id or node
+// };
 Type.prototype.toString = function() {
 	return this.type;
 };
@@ -68,9 +78,9 @@ AbstractType.prototype = new tmp();
 AbstractType.prototype.constructor = AbstractType;
 
 AbstractType.prototype.applySubstitution = function(sub) {
-	if (sub.from.type === this.type) {
-		sub.to.cloneTo(this);
-	}
+	// if (sub.from.type === this.type) {
+	// 	sub.to.cloneTo(this);
+	// }
 };
 
 function ObjectType(options, node) {
@@ -86,46 +96,50 @@ tmp.prototype = PrimitiveType.prototype;
 ObjectType.prototype = new tmp();
 ObjectType.prototype.constructor = ObjectType;
 
-ObjectType.prototype.cloneTo = function(obj) {
-	PrimitiveType.prototype.cloneTo.call(this, obj);
-	obj.memberTypes = {};
+// ObjectType.prototype.cloneTo = function(obj) {
+// 	PrimitiveType.prototype.cloneTo.call(this, obj);
+// 	obj.memberTypes = {};
 
-	for (var i in this.memberTypes) {
-		obj.memberTypes[i] = this.memberTypes[i];
-	}
-	obj.applySubstitution = ObjectType.prototype.applySubstitution;
-	obj.toString = ObjectType.prototype.toString;
-	obj.cloneTo = ObjectType.prototype.cloneTo;
-};
+// 	for (var i in this.memberTypes) {
+// 		obj.memberTypes[i] = this.memberTypes[i];
+// 	}
+// 	obj.applySubstitution = ObjectType.prototype.applySubstitution;
+// 	obj.toString = ObjectType.prototype.toString;
+// 	obj.cloneTo = ObjectType.prototype.cloneTo;
+// };
 ObjectType.prototype.applySubstitution = function(sub, donotrecurse) {
 	if (donotrecurse === undefined) donotrecurse = [];
-	donotrecurse.push(this);
-
-	// An object itself cannot be substituted, but members might be abstract
+	donotrecurse.push(this.id);
 
 	outerLoop: for (var j in this.memberTypes) {
+		// if one of my membertypes is the substitution target, then we will replace it
+		if (this.memberTypes[j] === sub.from) {
+			this.memberTypes[j] = sub.to;
+		}
+
+		// now recursively apply substitution to children
 		for (var i =0; i<donotrecurse.length; i++) {
-			if (this.memberTypes[j].id === donotrecurse[i].id) continue outerLoop;
+			if (this.memberTypes[j] === donotrecurse[i]) continue outerLoop;
 		}
 
 		// nb I don't want subcalls to modify my donotrecurse so I'm cloning with slice(0)
-		this.memberTypes[j].applySubstitution(sub, donotrecurse.slice(0));
+		Type.store[this.memberTypes[j]].applySubstitution(sub, donotrecurse.slice(0));
 	}
 };
 ObjectType.prototype.toString = function(donotrecurse) {
 
 	if (donotrecurse === undefined) donotrecurse = [];
-	donotrecurse.push(this);
+	donotrecurse.push(this.id);
 
 	var types = [];
 	outerLoop: for (var lab in this.memberTypes) {
 		for (var i=0; i<donotrecurse.length; i++) {
-			if (donotrecurse[i].id === this.memberTypes[lab].id) {
-				types.push(lab + ": ..[" + this.memberTypes[lab].type + "]..");
+			if (donotrecurse[i] === this.memberTypes[lab]) {
+				types.push(lab + ": [" + Type.store[this.memberTypes[lab]].type + "]");
 				continue outerLoop;
 			}
 		}
-		types.push(lab + ":" + this.memberTypes[lab].toString(donotrecurse.slice(0)) );
+		types.push(lab + ":" + Type.store[this.memberTypes[lab]].toString(donotrecurse.slice(0)) );
 	}
 	return "{" + types.join(", ") + "}";
 };
@@ -144,78 +158,80 @@ tmp.prototype = PrimitiveType.prototype;
 FunctionType.prototype = new tmp();
 FunctionType.prototype.constructor = FunctionType;
 
-FunctionType.prototype.cloneTo = function(obj) {
-	PrimitiveType.prototype.cloneTo.call(this, obj);
-	obj.argTypes = [];
+// FunctionType.prototype.cloneTo = function(obj) {
+// 	PrimitiveType.prototype.cloneTo.call(this, obj);
+// 	obj.argTypes = [];
 
-	for (var i =0; i<this.argTypes.length; i++) {
-		obj.argTypes[i] = this.argTypes[i];
-	}
-	obj.returnType = this.returnType;
-	obj.applySubstitution = FunctionType.prototype.applySubstitution;
-	obj.toString = FunctionType.prototype.toString;
-	obj.cloneTo = FunctionType.prototype.cloneTo;
-};
+// 	for (var i =0; i<this.argTypes.length; i++) {
+// 		obj.argTypes[i] = this.argTypes[i];
+// 	}
+// 	obj.returnType = this.returnType;
+// 	obj.applySubstitution = FunctionType.prototype.applySubstitution;
+// 	obj.toString = FunctionType.prototype.toString;
+// 	obj.cloneTo = FunctionType.prototype.cloneTo;
+// };
 
 FunctionType.prototype.applySubstitution = function(sub, donotrecurse) {
 	if (donotrecurse === undefined) donotrecurse = [];
-	donotrecurse.push(this);
+	donotrecurse.push(this.id);
 
 	// A function itself cannot be substituted, but arg or return types might be abstract
 	var i;
 	outerLoop: for (var j=0; j<this.argTypes.length; j++) {
+		if (this.argTypes[j] === sub.from) this.argTypes[j] = sub.to;
+
 		for (i =0; i<donotrecurse.length; i++) {
-			if (this.argTypes[j].id === donotrecurse[i].id) continue outerLoop;
+			if (this.argTypes[j] === donotrecurse[i]) continue outerLoop;
 		}
 
 		// nb I don't want subcalls to modify my donotrecurse so I'm cloning with slice(0)
-		this.argTypes[j].applySubstitution(sub, donotrecurse.slice(0));
+		Type.store[this.argTypes[j]].applySubstitution(sub, donotrecurse.slice(0));
 	}
+
+	if (this.returnType === sub.from) this.returnType = sub.to;
 	for (i =0; i<donotrecurse.length; i++) {
-		if (this.returnType.id === donotrecurse[i].id) return;
+		if (this.returnType === donotrecurse[i]) return;
 	}
-	this.returnType.applySubstitution(sub, donotrecurse.slice(0));
+	Type.store[this.returnType].applySubstitution(sub, donotrecurse.slice(0));
 };
 FunctionType.prototype.toString = function(donotrecurse) {
 
 	var j;
 	if (donotrecurse === undefined) donotrecurse = [];
-	donotrecurse.push(this);
+	donotrecurse.push(this.id);
 	
 	// argument types
 	var args = [];
 	outerLoop: for (var i = 0; i<this.argTypes.length; i++) {
 		
 		for (j=0; j<donotrecurse.length; j++) {
-			if (donotrecurse[j].id === this.argTypes[i]) {
-				args.push("..[" + this.argTypes[i].type + "]..");
+			if (donotrecurse[j] === this.argTypes[i]) {
+				args.push("[" + Type.store[this.argTypes[i]].type + "]");
 				continue outerLoop;
 			}
 		}
-		args.push(this.argTypes[i].toString(donotrecurse.slice(0)));
+		args.push(Type.store[this.argTypes[i]].toString(donotrecurse.slice(0)));
 	}
 
 	// return type
 	var ret;
 	var safe = true;
 	for (j=0; j<donotrecurse.length; j++) {
-		if (donotrecurse[j].id === this.returnType) {
-			ret = "...";
+		if (donotrecurse[j] === this.returnType) {
+			ret = "[" + Type.store[this.returnType].type + "]";
 			safe = false;
 			break;
 		}
 	}
-	if (safe) ret = this.returnType.toString(donotrecurse);
+	if (safe) ret = Type.store[this.returnType].toString(donotrecurse);
 
 	return "fn(" + args.join(", ") + " -> " + ret + ")";
 };
 
 
 function Substitution(from, to) {
-	this.from = new Type();
-	this.to = new Type();
-	from.cloneTo(this.from);
-	to.cloneTo(this.to);
+	this.from = from;
+	this.to = to;
 }
 // shortcut method
 Substitution.prototype.apply = function(element) {
@@ -223,59 +239,62 @@ Substitution.prototype.apply = function(element) {
 };
 
 
-function Constraint(leftType, rightType, rightNode) {
+function Constraint(leftType, rightType) {
 	this.type1 = leftType;
 	this.type2 = rightType;
 	
-	this.checkNode = rightNode;
 	this.regenDesc();
 }
 Constraint.prototype.check = function() {
+	var type1 = Type.store[this.type1];
+	var type2 = Type.store[this.type2];
 
-	if (this.type2.type !== this.type1.type) return false;
-	
 	// NB Since all types are created fresh, we only get this far if both types are concrete
-
-	if (this.type1.type === "object") {
+	if (type2.type !== type1.type) return false;
+	
+	if (type1.type === "object") {
 
 		// check inclusion in both directions
 		// NB: Not recursive (ok because we recurse in caller)
-		for (var i in this.type1.memberTypes) {
-			if (this.type2.memberTypes[i] === undefined) return false;
+		for (var i in type1.memberTypes) {
+			if (type2.memberTypes[i] === undefined) return false;
 		}
-		for (var j in this.type2.memberTypes) {
-			if (this.type1.memberTypes[j] === undefined) return false;
+		for (var j in type2.memberTypes) {
+			if (type1.memberTypes[j] === undefined) return false;
 		}
 		return true;
-	} else if (this.type1.type === "function") {
+	} else if (type1.type === "function") {
 
 		// check arity
-		return this.type1.argTypes.length === this.type2.argTypes.length;
+		return type1.argTypes.length === type2.argTypes.length;
 	} else {
 		// these are primitive types so they're fine
 		return true;
 	}
 };
 Constraint.prototype.getSubConstraints = function() {
+
+	var type1 = Type.store[this.type1];
+	var type2 = Type.store[this.type2];
 	
-	// NB: We know that type1 and type2 have identical structure
+	// NB: We know by now that type1 and type2 have identical structure
 
 	var newConstraints = [];
-	if (this.type1.type === "object")	{
+	if (type1.type === "object")	{
 
-		for (var label in this.type1.memberTypes) {
-			newConstraints.push(new this.constructor(this.type1.memberTypes[label], this.type2.memberTypes[label], null));
+		for (var label in type1.memberTypes) {
+			newConstraints.push(new this.constructor(type1.memberTypes[label], type2.memberTypes[label]));
 		}
 
 		return newConstraints;	
-	} else if (this.type1.type === "function") {
+	} else if (type1.type === "function") {
 
 		// generate new constraints asserting that the arguments and
 		// return type of type1 and of type2 have the same type
-		for (var i=0; i<this.type1.argTypes.length; i++) {
-			newConstraints.push(new Constraint(this.type1.argTypes[i], this.type2.argTypes[i], null));
+		for (var i=0; i<type1.argTypes.length; i++) {
+			newConstraints.push(new Constraint(type1.argTypes[i], type2.argTypes[i]));
 		}
-		newConstraints.push(new Constraint(this.type1.returnType, this.type2.returnType, null));
+		newConstraints.push(new Constraint(type1.returnType, type2.returnType));
 		return newConstraints;	
 		
 	} else {
@@ -283,38 +302,39 @@ Constraint.prototype.getSubConstraints = function() {
 	}
 };
 Constraint.prototype.regenDesc = function() {
-	this.description = this.type1.toString() + " = " + this.type2.toString();
+	this.description = Type.store[this.type1].toString() + " = " + Type.store[this.type2].toString();
 };
 Constraint.prototype.applySubstitution = function(sub) {
-	this.type1.applySubstitution(sub);
-	this.type2.applySubstitution(sub);
+	if (this.type1 === sub.from) this.type1 = sub.to;
+	if (this.type2 === sub.from) this.type2 = sub.to;
+	Type.store[this.type1].applySubstitution(sub);
+	Type.store[this.type2].applySubstitution(sub);
 	this.regenDesc();
 };
 
 Constraint.compare = function(a, b) {
-	var AScore = 0, BScore = 0;
-	// A LEqConstraint between any types other than object are effectively just constraints
-	if (a instanceof LEqCheckConstraint && (a.type1.type === "object" || a.type2.type === "object")) {
-		AScore = 3;
-	} else if (a instanceof LEqConstraint && (a.type1.type === "object" || a.type2.type === "object")) {
-		AScore = 2;
-	} else {
-		AScore = 1;
-	}
-	if (b instanceof LEqCheckConstraint && (b.type1.type === "object" || b.type2.type === "object")) {
-		BScore = 3;
-	} else if (b instanceof LEqConstraint && (b.type1.type === "object" || b.type2.type === "object")) {
-		BScore = 2;
-	} else {
-		BScore = 1;
-	}
+	var score = function(c) {
+		// A LEqConstraint between any types other than object are effectively just constraints
+		if (c instanceof LEqCheckConstraint && (Type.store[c.type1].type === "object" || Type.store[c.type2].type === "object")) {
+			return 4;
+		} else if (c instanceof LEqConstraint && (Type.store[c.type1].type === "object" || Type.store[c.type2].type === "object")) {
+			return 3;
+		} else if (c instanceof LEqCheckConstraint) {
+			return 2;
+		} else if (c instanceof LEqConstraint) {
+			return 1;
+		} else {
+			return 0;
+		}
+	};
+
 	a.regenDesc();
 	b.regenDesc();
-	return AScore - BScore;
+	return score(a) - score(b);
 };
 
-function LEqConstraint(smallType, bigType, checkNode) {
-	Constraint.call(this, smallType, bigType, checkNode);
+function LEqConstraint(smallType, bigType) {
+	Constraint.call(this, smallType, bigType);
 }
 tmp = function() {};
 tmp.prototype = Constraint.prototype;
@@ -324,28 +344,31 @@ LEqConstraint.prototype.constructor = LEqConstraint;
 // NB should only be called for two concrete object types
 LEqConstraint.prototype.enforce = function() {
 	// we can add smallType's properties to bigType to satisfy the constraint
-	for (var l in this.type1.memberTypes) {
-		if (this.type2.memberTypes[l] === undefined) {
+	for (var l in Type.store[this.type1].memberTypes) {
+		if (Type.store[this.type2].memberTypes[l] === undefined) {
 
 			// TODO: Can I avoid generating fresh types during solution?
 			var T = TypeEnv.getFreshType();
-			this.type2.memberTypes[l] = T;
+			Type.store[this.type2].memberTypes[l] = T.id;
 		}
 	}
+	this.regenDesc();
 };
 LEqConstraint.prototype.checkStructure = function() {
+	var type1 = Type.store[this.type1];
+	var type2 = Type.store[this.type2];
 	// NB This only differs from Constraint for objects
-	if (this.type1.type !== this.type2.type) return false;
-	if (this.type1.type === "object") {
+	if (type1.type !== type2.type) return false;
+	if (type1.type === "object") {
 		// only check that everything in smallType (type1) is included in bigType (type2)
 		// NB Still not recursive 
-		for (var i in this.type1.memberTypes) {
-			if (this.type2.memberTypes[i] === undefined) return false;
+		for (var i in type1.memberTypes) {
+			if (type2.memberTypes[i] === undefined) return false;
 		}
-	} else if (this.type1.type === "function") {
+	} else if (type1.type === "function") {
 
 		// check arity
-		return this.type1.argTypes.length === this.type2.argTypes.length;
+		return type1.argTypes.length === type2.argTypes.length;
 	}
 	return true;
 };
@@ -355,21 +378,21 @@ LEqConstraint.prototype.check = function() {
 	// constraints will be generated to assert that each of rightType's
 	// members are the same type as leftType's members
 	// we only want to enforce for concrete types
-	if (this.type1.type === "object" && this.type2.type === "object") {
+	if (Type.store[this.type1].type === "object" && Type.store[this.type2].type === "object") {
 		this.enforce();
 		
 	}
 	return this.checkStructure();
 };
 LEqConstraint.prototype.regenDesc = function() {
-	this.desc = this.type1.toString() + " <= " + this.type2.toString();
+	this.desc = Type.store[this.type1].toString() + " <= " + Type.store[this.type2].toString();
 };
 
 
 
 
-function LEqCheckConstraint(smallType, bigType, checkNode) {
-	LEqConstraint.call(this, smallType, bigType, checkNode);
+function LEqCheckConstraint(smallType, bigType) {
+	LEqConstraint.call(this, smallType, bigType);
 }
 tmp = function() {};
 tmp.prototype = LEqConstraint.prototype;
@@ -377,10 +400,10 @@ LEqCheckConstraint.prototype = new tmp();
 LEqCheckConstraint.prototype.constructor = LEqCheckConstraint;
 LEqCheckConstraint.prototype.check = function() {
 	// NB No enforce
-	this.checkStructure();
+	return this.checkStructure();
 };
 LEqCheckConstraint.prototype.regenDesc = function() {
-	this.desc = this.type1.toString() + " <=c " + this.type2.toString();
+	this.desc = Type.store[this.type1].toString() + " <=c " + Type.store[this.type2].toString();
 };
 
 
@@ -394,10 +417,13 @@ function TypeEnvEntry(varName, node, type) {
 	this.type = type;
 }
 TypeEnvEntry.prototype.applySubstitution = function(sub) {
-	this.type.applySubstitution(sub);
+	if (sub.from === this.type) {
+		this.type = sub.to;
+	}
+	Type.store[this.type].applySubstitution(sub);
 };
 TypeEnvEntry.prototype.toString = function() {
-	return this.name + ": " + this.type.toString();
+	return this.name + ": " + Type.store[this.type].toString();
 };
 
 
@@ -415,7 +441,7 @@ TypeEnv.prototype.get = function(varName) {
 	// search backwards through entries to find the most recent defn
 	for (var i = this.length - 1; i >= 0; i--) {
 		if (this[i].name === varName) {
-			return this[i].type;
+			return Type.store[this[i].type];
 		}
 	}
 	// if (this.parentScope !== undefined) {
@@ -477,7 +503,7 @@ Judgement.InitFromDirective = function(directive) {
 			});
 
 			// TODO: replace "null" with an actual program point
-			gamma.push(new TypeEnvEntry(name, null, T));
+			gamma.push(new TypeEnvEntry(name, null, T.id));
 		}
 	}
 
