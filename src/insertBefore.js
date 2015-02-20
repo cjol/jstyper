@@ -115,16 +115,31 @@ UglifyJS.AST_Binary.prototype.insertBefore = function(newNode, target, del) {
 };
 
 UglifyJS.AST_Assign.prototype.insertBefore = function(newNode, target, del) {
-	if (del) throw new Error("Can't delete subnode here");
 
 	if (target === this.left) {
+		if (del) {
+			transferComments(this.left, newNode);
+			newNode.parent = parent(this);
+			var deleted = [this.left];
+			this.left = newNode;
+			return deleted;
+		}
 		// wrap the value with an IIFE which runs the new node before returning the expression value
 		var iife = getIIFE(newNode, this.left);
-		transferComments(this.right, iife);
+		transferComments(this.left, iife);
 		iife = parent(this);
-		this.right = iife;
+		this.left = iife;
 		return [];
 	} else if (target === this.right) {
+
+		if (del) {
+			transferComments(this.right, newNode);
+			newNode.parent = parent(this);
+			var deleted = [this.right];
+			this.right = newNode;
+			return deleted;
+		}
+
 		// RHS is executed first, so can safely execute before the whole assignment
 		return this.parent().insertBefore(newNode, this);
 	} else {

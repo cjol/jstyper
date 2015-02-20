@@ -35,55 +35,83 @@ function getAnnotations(comments) {
 		return annotations;
 
 	var keyword = " jstyper ";
+	var toRemove = [];
 	for (var i = 0; i < comments.length; i++) {
 		if (comments[i].value.search(keyword) === 0) {
 			var directive = comments[i].value.substr(keyword.length);
 			annotations.push(directive);
 
 			// remove the annotation from the AST
-			comments.splice(i, 1);
+			toRemove.push(i);
 		}
+	}
+	for (var j=0; j<toRemove.length; j++) {
+		comments.splice(toRemove[j], 1);
 	}
 	return annotations;
 }
 
-function initFromDirectives(node, judgements, currentlyTyping) {
+function initFromDirectives(node, judgements, currentlyTyping, dynamics) {
 
 	// get any new directives for this statement
 	var directives = getAnnotations(node.start.comments_before);
+	var keywords = {
+		import: "import ",
+		start: "start",
+		end: "end"
+	};
 
 	// determine if we should be type-checking the next chunk or not
 	for (var j = 0; j < directives.length; j++) {
-		if (directives[j].search("start") === 0) {
+		var directive = directives[j];
+		if (directive.search(keywords.start) === 0) {
 
 			if (currentlyTyping)
 				throw new Error("Unexpected start directive");
 			currentlyTyping = true;
-			var directive = directives[j].substr("start".length);
-			// initialise a new judgement with imported variables
-			judgements.push(Classes.Judgement.InitFromDirective(directive));
+			dynamics = [];
 
-		} else if (directives[j].search("end") === 0) {
+			// initialise a new judgement with imported variables
+			judgements.push(Classes.Judgement.InitEmpty());
+
+		} else if (directive.search(keywords.end) === 0) {
 
 			if (!currentlyTyping)
 				throw new Error("Unexpected end directive");
 			currentlyTyping = false;
 
+		} else if (directive.search(keywords.import) === 0) {
+			directive = directive.substr(keywords.import.length);
+
+			var imported = directive.split(/,\s*/);
+
+			for (var i = 0; i < imported.length; i++) {
+				var name = imported[i].trim();
+				if (name.length === 0)
+					continue;
+				dynamics.push(name);
+			}
 		} else {
 			throw new Error("Unexpected directive " + directives[j]);
 		}
 	}
 
-	return currentlyTyping;
+	return {
+		currentlyTyping: currentlyTyping,
+		dynamics: dynamics
+	};
 }
 
 // seq takes an array of statements, and iterates through finding judgements in subnodes
 function seq(statements, par) {
 	var judgements = [];
 	var currentlyTyping = false;
+	var dynamics = [];
 
 	for (var i=0; i<statements.length; i++){
-		currentlyTyping = initFromDirectives(statements[i], judgements, currentlyTyping);
+		var r = initFromDirectives(statements[i], judgements, currentlyTyping, dynamics);
+		currentlyTyping = r.currentlyTyping;
+		dynamics = r.dynamics;
 
 		statements[i].parent = parent(par);
 		if (!currentlyTyping) {
@@ -96,11 +124,12 @@ function seq(statements, par) {
 			// the next judgement is based on the current judgement
 			var judgement = judgements[judgements.length - 1];
 			judgement.nodes.push(statements[i]);
-			var newJudgement = statements[i].check(judgement.gamma);
+			var newJudgement = statements[i].check(judgement.gamma, dynamics);
 			
 			// carry the new judgement into the next statement
 			judgement.gamma = newJudgement.gamma;
 			judgement.C = judgement.C.concat(newJudgement.C);
+			judgement.W = judgement.W.concat(newJudgement.W);
 		}
 	}
 

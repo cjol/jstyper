@@ -3,6 +3,7 @@
 	Some of the classes (those without prototype stuff) could almost be done away
 	with if we had a reasonable type checker... 
 */
+var UglifyJS = require("uglify-js2");
 
 module.exports = {
 	Type: Type,
@@ -16,6 +17,7 @@ module.exports = {
 	LEqCheckConstraint: LEqCheckConstraint,
 	TypeEnvEntry: TypeEnvEntry,
 	TypeEnv: TypeEnv,
+	Wrapper: Wrapper,
 	Judgement: Judgement,
 };
 
@@ -50,6 +52,12 @@ function Type(type, options, node) {
 // };
 Type.prototype.toString = function() {
 	return this.type;
+};
+Type.prototype.toAST = function() {
+	// TODO: make more accurate
+	return new UglifyJS.AST_String({
+		value: this.toString()
+	});
 };
 
 function PrimitiveType(type, options, node) {
@@ -476,17 +484,34 @@ TypeEnv.prototype.toString = function(indentation) {
 };
 
 
-function Judgement(type, constraints, gamma) {
+function Wrapper(expression, parent, type) {
+	this.expression = expression;
+	this.parent = parent;
+	this.type = type;
+}
+Wrapper.prototype.applySubstitution = function(sub) {
+	if (sub.from.id === this.type.id) {
+		this.type = sub.to;
+	}
+	this.type.applySubstitution(sub);
+};
+
+
+function Judgement(type, constraints, gamma, wrappers) {
 	this.T = type;
 	this.gamma = gamma;
 	this.C = constraints || [];
 	this.nodes = [];
+	this.W = wrappers || [];
 }
+Judgement.InitEmpty = function() {
+	return new Judgement(null, [], new TypeEnv(), []);
+};
 Judgement.InitFromDirective = function(directive) {
 	var gamma = new TypeEnv();
 
 	directive = directive.trim();
-	var importKeyword = "import ";
+	var importKeyword = "dynamic ";
 	if (directive.search(importKeyword) === 0) {
 		directive = directive.substr(importKeyword.length);
 
@@ -507,5 +532,5 @@ Judgement.InitFromDirective = function(directive) {
 		}
 	}
 
-	return new Judgement(null, [], gamma);
+	return new Judgement(null, [], gamma, []);
 };
