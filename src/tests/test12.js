@@ -1,3 +1,4 @@
+// expected result: fail, y.result is used as bool and number
 // jstyper start
 var y = {
 	one:1,

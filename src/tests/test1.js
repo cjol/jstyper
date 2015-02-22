@@ -1,4 +1,5 @@
-function f(x) {
+// EXPECTED RESULT: Nothing (no directives)
+ function f(x) {
 	if (typeof x === "string") { 
 		return 0; }
 	else {

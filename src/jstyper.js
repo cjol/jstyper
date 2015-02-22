@@ -26,39 +26,7 @@ String.prototype.format = function() {
 };
 
 // obtain a set of substitutions which will make the constraints unifiable
-// also generate checks for dynamic types
 function solveConstraints(constraints) {
-	// originally from Pierce p. 327
-
-	// sort constraints before attacking them
-	/*
-
-		By inspection of solveConstraints, we see that there are two outcomes
-		to this function:
-
-			 - More constraints are generated or
-			 - A substitution occurs.
-
-		No single constraint will ever cause both generation of sub-
-		constraints, and a substitution. Ideally, we want to generate all
-		possible constraints before carrying out any substitutions (why?).
-
-		If any constraints involve two objects or two functions, they will
-		immediately generate more constraints - they must be first.
-	
-		Equality constraints between one object/function and one abstract type
-		can be safely substituted, because ???
-
-		 If some
-		constraint involves one object/function and one abstract type, it may
-		become a constraint of the form above after a single substitution, so
-		it should come next. If a constraint involves two abstract variables,
-		a single iteration will not generate any new subconstraints, so it can
-		go next. If a constraint involves a concrete primitive type, it will
-		never generate subconstraints, so it should go last.
-
-	*/
-
 	var substitutions = [];
 
 	while (constraints.length > 0) {
@@ -67,137 +35,22 @@ function solveConstraints(constraints) {
 		var constraint = constraints[0];
 		constraints = constraints.slice(1);
 
-		// type structures are equal => constraint satisfied
-		if (constraint.check()) {
+		var r = constraint.solve();
+		var subs = r.substitutions;
 
-			// if this is a complex structure, there may be sub-constraints to solve
-			constraints = constraints.concat(constraint.getSubConstraints());
-			continue;
-		}
-
-		// TODO: Gradual Typing
-		// // constraints involving dynamic types are trivially satisfied
-		// // if the leftType (write) type is dynamic, we always allow
-		// // TODO: left != write nowadays...
-		// if (leftType.isDynamic) continue;
-
-		// // if the rightType (read) type is dynamic, we allow but must typecheck
-		// // TODO: object types don't get type-checks, they should get guarded
-		// if (rightType.isDynamic && rightType !== "object") {
-		// 	result.checks.push({node:constraint.checkNode, type:leftType});
-		// 	continue;
-		// }
-
-		var sub;
-		// if one type is not concrete, it can be substituted by the other
-		// if (constraint instanceof Classes.LEqConstraint && (leftType.type === "object" || rightType.type === "object")) {
-		// 	// we can't just do a straight substitution for LEqConstraints between objects
-		// 	// here we have a constraint of the form leftType <= rightType
-
-		// 	if (!leftType.isConcrete) {
-		// 		// the minimal solution is for the leftType to be instantiated with {}
-		// 		// var emptyObj = new Classes.ObjectType({memberTypes:{}});
-		// 		sub = new Classes.Substitution(leftType, rightType);
-		// 	} else if (!rightType.isConcrete) {
-		// 		// the minimal solution is for the rightType to be instantiated with the leftType
-		// 		sub = new Classes.Substitution(rightType, leftType);
-		// 	} else {
-
-		// 		// for two concrete types we can try adding members to the
-		// 		// smaller type and checking subconstraints
-		// 		var newleqConstraints = constraint.satisfy();
-		// 		if (newleqConstraints.length > 0) {
-		// 			constraints = constraints.concat(newleqConstraints);
-		// 			continue;
-		// 		}
-		// 	}
-		// } else {
-			if (!Classes.Type.store[constraint.type1].isConcrete) {
-				sub = new Classes.Substitution(constraint.type1, constraint.type2);
-			} else if (!Classes.Type.store[constraint.type2].isConcrete) {
-				sub = new Classes.Substitution(constraint.type2, constraint.type1);
-
-			} // both are different concrete types
-			else {
-				throw new Error(" Failed Unification: " + Classes.Type.store[constraint.type1].toString() + " != " + Classes.Type.store[constraint.type2].toString());
-			}
-		// }
-
+		constraints = constraints.concat(r.constraints);
 		// apply the substitution to the remaining constraints
-		for (var i = 0; i < constraints.length; i++) {
-			sub.apply(constraints[i]);
+		for (var j=0; j<subs.length; j++) {
+			for (var i = 0; i < constraints.length; i++) {
+				subs[j].apply(constraints[i]);
+			}
 		}
-
 		// it's quite important that substitutions are applied in the right order
 		// here first item should be applied first
-		substitutions.push(sub);
+		substitutions = substitutions.concat(subs);
 		continue;
 	}
 	return substitutions;
-	
-	// // base case
-	// if (constraints.length < 1)
-	// 	return {substitutions:[], checks:[]};
-
-	// var constraint = constraints[0];
-	// var remainder = constraints.slice(1);
-
-	// var leftType = constraint.type1;
-	// var rightType = constraint.type2;
-
-	// // type structures are equal => constraint satisfied
-	// if (constraint.checkStructure()) {
-
-	// 	// if this is a complex structure, there may be sub-constraints to solve
-	// 	var newConstraints = constraint.getSubConstraints();
-	// 	return solveConstraints(remainder.concat(newConstraints));
-	// }
-
-
-	// // constraints involving dynamic types are trivially satisfied
-	// // if the leftType (write) type is dynamic, we always allow
-	// // TODO: left != write nowadays...
-	// if (leftType.isDynamic)
-	// 	return solveConstraints(remainder);
-
-	// // if the rightType (read) type is dynamic, we allow but must typecheck
-	// // TODO: object types don't get type-checks, they should get guarded
-	// if (rightType.isDynamic && rightType !== "object") {
-	// 	var solution1 = solveConstraints(remainder);
-	// 	solution1.checks.push({node:constraint.checkNode, type:leftType});
-	// 	return solution1;
-	// }
-
-
-	// // if one type is not concrete, it can be substituted by the other
-	// var sub;
-	// if (!leftType.isConcrete) {
-	// 	sub = new Classes.Substitution(leftType, rightType);
-	// } else if (!rightType.isConcrete) {
-	// 	sub = new Classes.Substitution(rightType, leftType);
-
-	// } // both are different concrete types
-	// else {
-	// 	// Last opportunity for redemption - if this is a LEqConstraint we can add members to the smaller type
-	// 	if (constraint instanceof Classes.LEqConstraint) {
-	// 		var newleqConstraints = constraint.satisfy();
-	// 		if (newleqConstraints.length > 0) {
-	// 			return solveConstraints(remainder.concat(newleqConstraints));
-	// 		}
-	// 	}
-	// 	throw new Error(" Failed Unification: " + leftType.toString() + " != " + rightType.toString());
-	// }
-
-	// // apply the substitution to the remaining constraints
-	// for (var i = 0; i < remainder.length; i++) {
-	// 	sub.apply(remainder[i]);
-	// }
-
-	// // it's quite important that substitutions are applied in the right order
-	// // here first item should be applied first
-	// var solution = solveConstraints(remainder);
-	// solution.substitutions = [sub].concat(solution.substitutions);
-	// return solution;
 }
 
 module.exports = function(src) {
@@ -275,7 +128,7 @@ module.exports = function(src) {
 						name: 'mimic'
 					}),
 					args: [
-						wrapper.type.toAST(),
+						Classes.Type.store[wrapper.type].toAST(),
 						wrapper.expression
 					]
 				});

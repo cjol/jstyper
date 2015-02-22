@@ -25,6 +25,9 @@ app.use('/tests/', express.static(__dirname + '/tests'));
 // serve static files in the 'res' folder under the /assets path
 app.use('/assets', express.static(__dirname + '/res'));
 
+// serve static files in the 'res' folder under the /assets path
+app.use('/js', express.static(__dirname + '/js'));
+
 // make every request use bodyParser middleware
 app.use(bodyParser.text());
 

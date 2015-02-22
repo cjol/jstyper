@@ -37,10 +37,10 @@ UglifyJS.AST_Node.prototype.insertBefore = function() {
 	throw new Error("insertBefore not implemented yet...");			
 };
 
+UglifyJS.AST_Lambda.prototype.insertBefore = noSubchildren;
 UglifyJS.AST_Constant.prototype.insertBefore = noSubchildren;
 
 UglifyJS.AST_Object.prototype.insertBefore = function(newNode, target, del) {
-	if (del) throw new Error("Can't delete expressions");
 
 	// I need to insert newNode immediately before target, which will be a
 	// property. I could potentially try and put newNode at the end of the
@@ -49,6 +49,13 @@ UglifyJS.AST_Object.prototype.insertBefore = function(newNode, target, del) {
 
 	for (var i =0; i<this.properties.length; i++) {
 		if (target === this.properties[i].value) {
+			if (del) {
+				var deleted = [this.properties[i]];
+				newNode.parent = parent(this);
+				transferComments(this.properties[i], newNode);
+				this.properties[i] = newNode;
+				return deleted;
+			}
 			return this.properties[i].insertBefore(newNode, target, del);
 		}
 	}
@@ -78,7 +85,6 @@ UglifyJS.AST_SymbolRef.prototype.insertBefore = noSubchildren;
 
 // Might want to split this into pre/postfix?
 UglifyJS.AST_Unary.prototype.insertBefore = function(newNode, target, del) {
-	if (del) throw new Error("Can't delete subnode here");
 	switch (this.operator) {
 		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Expressions_and_Operators
 		// arithmetic (should be number)
@@ -87,6 +93,14 @@ UglifyJS.AST_Unary.prototype.insertBefore = function(newNode, target, del) {
 		case ("-"):
 		// boolean operators (should be boolean)
 		case ("!"):
+
+			if (del) {
+				var deleted = [this.expression];
+				newNode.parent = parent(this);
+				transferComments(this.expression, newNode);
+				this.expression = newNode;
+				return deleted;
+			}
 			// the single expression will be next to evaluate so just insert before this statement
 			return this.parent().insertBefore(newNode, this);
 		default:
@@ -95,15 +109,29 @@ UglifyJS.AST_Unary.prototype.insertBefore = function(newNode, target, del) {
 };
 
 UglifyJS.AST_Binary.prototype.insertBefore = function(newNode, target, del) {
-	if (del) throw new Error("Can't delete subnode here");
 
 	// assuming left-to-right evaluation
-
+	var deleted;
 	if (target === this.left) {
 		// left is evaluated first, so we can insert before this whole expression
+		if (del) {
+			deleted = [this.left];
+			newNode.parent = parent(this);
+			transferComments(this.left, newNode);
+			this.left = newNode;
+			return deleted;
+		}
 		return this.parent().insertBefore(newNode, this);
 	} else if (target === this.right) {
 		// wrap the RHS in an IIFE which runs newNode before returning the value of RHS
+
+		if (del) {
+			deleted = [this.right];
+			newNode.parent = parent(this);
+			transferComments(this.right, newNode);
+			this.right = newNode;
+			return deleted;
+		}
 		var iife = getIIFE(newNode, this.right);
 		transferComments(this.right, iife);
 		iife.parent = parent(this);
@@ -148,8 +176,16 @@ UglifyJS.AST_Assign.prototype.insertBefore = function(newNode, target, del) {
 };
 
 UglifyJS.AST_If.prototype.insertBefore = function(newNode, target, del) {
+	var deleted;
 	if (target === this.condition) {
-		if (del) throw new Error("Can't delete in condition here");
+
+		if (del) {
+			deleted = [this.condition];
+			newNode.parent = parent(this);
+			transferComments(this.condition, newNode);
+			this.condition = newNode;
+			return deleted;
+		}
 		// condition is the first code executed, so can just insert before the if
 		return this.parent().insertBefore(newNode, this, del);
 	}
@@ -157,7 +193,7 @@ UglifyJS.AST_If.prototype.insertBefore = function(newNode, target, del) {
 	// body and alternative are single statements, so if we want to prepend we
 	// will need to wrap the whole in a BlockStatement (or we can just replace)
 	if (del) {
-		var deleted = [];
+		deleted = [];
 		if (target === this.body) {
 			deleted = [{
 				from:this.body,
@@ -219,10 +255,18 @@ UglifyJS.AST_EmptyStatement.prototype.insertBefore = noSubchildren;
 
 // e.g. var ___x=y+z___;
 UglifyJS.AST_VarDef.prototype.insertBefore = function(newNode, target, del) {
-	if (del) throw new Error("Can't delete subnode here");
 
+	var deleted;
 	if (target === this.name) {
 		// wrap the value with an IIFE which check's the identifier's type before returning
+
+		if (del) {
+			deleted = [this.name];
+			newNode.parent = parent(this);
+			transferComments(this.name, newNode);
+			this.name = newNode;
+			return deleted;
+		}
 		var iife = getIIFE(newNode, this.value);
 		iife.parent = parent(this); 
 		transferComments(this.value, iife);
@@ -230,8 +274,16 @@ UglifyJS.AST_VarDef.prototype.insertBefore = function(newNode, target, del) {
 		return [];
 
 	} else if (target === this.value) {
-		return this.parent().insertBefore(newNode, this);
+		
+		if (del) {
+			deleted = [this.value];
+			newNode.parent = parent(this);
+			transferComments(this.value, newNode);
+			this.value = newNode;
+			return deleted;
+		}
 
+		return this.parent().insertBefore(newNode, this);
 	} else {
 		throw new Error("target is not a subnode");
 	}
@@ -299,6 +351,67 @@ UglifyJS.AST_Block.prototype.insertBefore = function(newStatement, target, del) 
 };
 
 
+UglifyJS.AST_Return.prototype.insertBefore = function(newNode, target, del) {
+	if (this.value === target) {
+
+		if (del) {
+			var deleted = [this.value];
+			newNode.parent = parent(this);
+			transferComments(this.value, newNode);
+			this.value = newNode;
+			return deleted;
+		} else {
+			return this.parent().insertBefore(newNode, this);
+		}
+	} else {
+		throw new Error("target is not a subnode");
+	}
+};
+UglifyJS.AST_Dot.prototype.insertBefore = function(newNode, target, del) {
+	if (this.expression === target) {
+		if (del) {
+			var deleted = [this.expression];
+			newNode.parent = parent(this);
+			transferComments(this.expression, newNode);
+			this.expression = newNode;
+			return deleted;
+		} else {
+			return this.parent().insertBefore(newNode, this);
+		}
+	} else {
+		throw new Error("target is not a subnode");
+	}
+};
+UglifyJS.AST_Call.prototype.insertBefore = function(newNode, target, del) {
+	var deleted;
+	if (this.expression === target) {
+		if (del) {
+			deleted = [this.expression];
+			newNode.parent = parent(this);
+			transferComments(this.expression, newNode);
+			this.expression = newNode;
+			return deleted;
+		} else {
+			return this.parent().insertBefore(newNode, this);
+		}
+	} else {
+		for (var i=0; i<this.args.length; i++) {
+			if (target === this.args[i]) {
+				if (!del) {
+					newNode = getIIFE(newNode, this.args[i]);
+					deleted = [];
+				} else {
+					deleted = [this.expression];
+				}
+				newNode.parent = parent(this);
+				transferComments(this.args[i], newNode);
+				this.args[i] = newNode;
+				return deleted;
+			}
+		}
+	}
+	throw new Error("target is not a subnode");
+};
 
 /*************** HELPER FUNCTIONS ***************/
 

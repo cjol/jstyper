@@ -1,4 +1,6 @@
-// jstyper start import p
+// expected result: pass - the extra data doesn't make a difference
+// NB should this work if x has extra, but not y? Probably not...
+// jstyper start
 var x = {
 	"hello": "world",
 	myValue: {

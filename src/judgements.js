@@ -22,7 +22,6 @@ function parent(par) {
  * Checking typability, and also creating type judgements
  ***********************************************************************************/
 
-<<<<<<< HEAD
 UglifyJS.AST_Constant.prototype.check = function(gamma) {
 	throw new Error("Unhandled constant type " + this);
 };
@@ -126,7 +125,7 @@ UglifyJS.AST_Lambda.prototype.check = function(gamma, dynamics) {
 	}
 
 	// type the body using the new gamma (treat it as a block statement)
-	var j1 = UglifyJS.AST_Block.prototype.check.call(this, gamma1);
+	var j1 = UglifyJS.AST_Block.prototype.check.call(this, gamma1, dynamics);
 
 	var C;
 	var W = j1.W;
@@ -148,7 +147,7 @@ UglifyJS.AST_Lambda.prototype.check = function(gamma, dynamics) {
 UglifyJS.AST_Symbol.prototype.check = function(gamma, dynamics, doNotWrap) {
 	var T, C = [], W = [];
 	var dynamic = false;
-	if (dynamics.indexOf(this.name) >= 0 && !doNotWrap) {
+	if (dynamics.indexOf(this.name) >= 0) {
 		// this is a dynamic variable, so we will be wrapping with a mimic
 		dynamic = true;
 	}
@@ -161,7 +160,7 @@ UglifyJS.AST_Symbol.prototype.check = function(gamma, dynamics, doNotWrap) {
 		if (!dynamic) gamma.push(new Classes.TypeEnvEntry(this.name, this, T.id));
 	}
 
-	if (dynamic) {
+	if (dynamic && !doNotWrap) {
 		W.push(new Classes.Wrapper(this, this.parent(), T.id));
 	}
 
@@ -281,7 +280,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 			if (! (this.left instanceof UglifyJS.AST_Dot)) {
 				// AssignType (if it's not a dot, it must be a variable)
 				
-				if (!dynamicWrite) C.push(new Classes.LEqConstraint(j2.T.id, j1.T.id));
+				if (!dynamicWrite) C.push(new Classes.Constraint(j2.T.id, j1.T.id));
 				// if (!dynamicWrite) C.push(new Classes.LEqCheckConstraint(j2.T, j1.T, this.right));
 
 				returnType = j1.T;
@@ -300,9 +299,10 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 				});
 
 				C = j1.C.concat(j2.C);
+				W = j1.W.concat(j2.W);
 				var constraint = new Classes.LEqConstraint(T.id, j2.T.id);
 				C.push(constraint);
-				C.push(new Classes.LEqConstraint(T3.id, j1.T.id));
+				C.push(new Classes.Constraint(T3.id, j1.T.id));
 				// C.push(new Classes.LEqCheckConstraint(T3, j1.T, this.left.expression));
 			}
 		break;
@@ -332,6 +332,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 
 				C = j1.C.concat(j2.C);
 				W = j1.W.concat(j2.W);
+				var constraintNum = new Classes.LEqConstraint(numT.id, j2.T.id);
 				C.push(constraintNum);
 				C.push(new Classes.Constraint(Classes.Type.numType.id, j1.T.id));
 			}
@@ -560,7 +561,7 @@ UglifyJS.AST_VarDef.prototype.check = function(gamma, dynamics) {
 		// LEqCheck is required for the constraint to actually have any effect
 
 		// C = judgement.C.concat([new Classes.LEqCheckConstraint(T, judgement.T, this.value)]);
-		C = judgement.C.concat([new Classes.LEqConstraint(T.id, judgement.T.id)]);
+		C = judgement.C.concat([new Classes.Constraint(T.id, judgement.T.id)]);
 		W = judgement.W;
 	}
 
@@ -603,9 +604,9 @@ UglifyJS.AST_Scope.prototype.check = function(gamma, dynamics) {
 
 	// actually obtain a judgement
 	if (this instanceof UglifyJS.AST_Lambda) {
-		UglifyJS.AST_Lambda.prototype.check.call(this,gamma);
+		UglifyJS.AST_Lambda.prototype.check.call(this,gamma, dynamics);
 	} else if (this instanceof UglifyJS.AST_TopLevel) {
-		UglifyJS.AST_TopLevel.prototype.check.call(this,gamma);
+		UglifyJS.AST_TopLevel.prototype.check.call(this,gamma, dynamics);
 	}
 
 	this.gamma = judgement.gamma;

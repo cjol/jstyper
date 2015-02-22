@@ -53,12 +53,6 @@ function Type(type, options, node) {
 Type.prototype.toString = function() {
 	return this.type;
 };
-Type.prototype.toAST = function() {
-	// TODO: make more accurate
-	return new UglifyJS.AST_String({
-		value: this.toString()
-	});
-};
 
 function PrimitiveType(type, options, node) {
 	Type.call(this, type, {
@@ -73,6 +67,20 @@ PrimitiveType.prototype.constructor = PrimitiveType;
 PrimitiveType.prototype.applySubstitution = function() {
 	// primitive types can't be substituted
 	return;
+};
+PrimitiveType.prototype.toAST = function() {
+	return new UglifyJS.AST_Object({
+		properties: [
+			new UglifyJS.AST_ObjectKeyVal({
+				key: "kind",
+				value: new UglifyJS.AST_String({value:"primitive"})
+			}),
+			new UglifyJS.AST_ObjectKeyVal({
+				key: "type",
+				value: new UglifyJS.AST_String({value:this.type})
+			})
+		]
+	});
 };
 
 function AbstractType(type, options, node) {
@@ -90,6 +98,17 @@ AbstractType.prototype.applySubstitution = function(sub) {
 	// 	sub.to.cloneTo(this);
 	// }
 };
+AbstractType.prototype.toAST = function() {
+	return new UglifyJS.AST_Object({
+		properties: [
+			new UglifyJS.AST_ObjectKeyVal({
+				key: "kind",
+				value: new UglifyJS.AST_String({value:"abstract"})
+			})
+		]
+	});
+};
+
 
 function ObjectType(options, node) {
 	PrimitiveType.call(this, "object", options, node);
@@ -150,6 +169,45 @@ ObjectType.prototype.toString = function(donotrecurse) {
 		types.push(lab + ":" + Type.store[this.memberTypes[lab]].toString(donotrecurse.slice(0)) );
 	}
 	return "{" + types.join(", ") + "}";
+};
+ObjectType.prototype.toAST = function(donotrecurse) {
+	if (donotrecurse === undefined) donotrecurse = [];
+	donotrecurse.push(this.id);
+
+	var types = [];
+	outerLoop: for (var lab in this.memberTypes) {
+		for (var i=0; i<donotrecurse.length; i++) {
+			if (donotrecurse[i] === this.memberTypes[lab]) {
+				// TODO: Relative link to parent?
+				types.push(new UglifyJS.AST_ObjectKeyVal({
+					key: lab,
+					value: new UglifyJS.AST_String({
+						value: "[" + Type.store[this.memberTypes[lab]].type + "]"
+					})
+				}));
+				continue outerLoop;
+			}
+		}
+		types.push(new UglifyJS.AST_ObjectKeyVal({
+			key: lab,
+			value: Type.store[this.memberTypes[lab]].toAST(donotrecurse.slice(0))
+		}));
+	}
+
+	return new UglifyJS.AST_Object({
+		properties: [
+			new UglifyJS.AST_ObjectKeyVal({
+				key: "kind",
+				value: new UglifyJS.AST_String({value:"object"})
+			}),
+			new UglifyJS.AST_ObjectKeyVal({
+				key: "memberTypes",
+				value: new UglifyJS.AST_Object({
+					properties: types
+				})
+			})
+		]
+	});
 };
 
 function FunctionType(options, node) {
@@ -237,6 +295,65 @@ FunctionType.prototype.toString = function(donotrecurse) {
 };
 
 
+FunctionType.prototype.toAST = function(donotrecurse) {
+
+
+	var j;
+	if (donotrecurse === undefined) donotrecurse = [];
+	donotrecurse.push(this.id);
+	
+	// argument types
+	var args = [];
+	outerLoop: for (var i = 0; i<this.argTypes.length; i++) {
+		
+		for (j=0; j<donotrecurse.length; j++) {
+			if (donotrecurse[j] === this.argTypes[i]) {
+				args.push(new UglifyJS.AST_String({
+					value: "[" + Type.store[this.argTypes[i]].type + "]"
+				}));
+				continue outerLoop;
+			}
+		}
+		args.push(Type.store[this.argTypes[i]].toAST(donotrecurse.slice(0)));
+	}
+
+	// return type
+	var ret;
+	var safe = true;
+	for (j=0; j<donotrecurse.length; j++) {
+		if (donotrecurse[j] === this.returnType) {
+			ret = new UglifyJS.AST_String({
+				value: "[" + Type.store[this.returnType].type + "]"
+			});
+			safe = false;
+			break;
+		}
+	}
+	if (safe) {
+		ret = Type.store[this.returnType].toAST(donotrecurse);
+	}
+
+	return new UglifyJS.AST_Object({
+		properties: [
+			new UglifyJS.AST_ObjectKeyVal({
+				key: "kind",
+				value: new UglifyJS.AST_String({value:"function"})
+			}),
+			new UglifyJS.AST_ObjectKeyVal({
+				key: "argTypes",
+				value: new UglifyJS.AST_Array({
+					elements: args
+				})
+			}),
+			new UglifyJS.AST_ObjectKeyVal({
+				key: "returnType",
+				value: ret
+			})
+		]
+	});
+};
+
+
 function Substitution(from, to) {
 	this.from = from;
 	this.to = to;
@@ -253,6 +370,34 @@ function Constraint(leftType, rightType) {
 	
 	this.regenDesc();
 }
+Constraint.prototype.solve = function() {
+	// straight equality - easy
+	var subs = [], constraints = [];
+
+	// if one is concrete and the other abstract, sub from abs to conc
+	if (!Type.store[this.type1].isConcrete) {
+		subs.push(new Substitution(this.type1, this.type2));
+	} else if (!Type.store[this.type2].isConcrete) {
+		subs.push(new Substitution(this.type2, this.type1));
+
+	} // both are concrete types
+	else {
+		// if they're the same type, we're okay, else we have a type error
+		// check the structure of the types (not sufficient for complex types)
+		if (this.check()) {
+			// if this is a complex structure, there may also be sub-constraints to solve
+			constraints = this.getSubConstraints();
+		} else {
+			throw new Error(" Failed Unification: " + Type.store[this.type1].toString() + " != " + Type.store[this.type2].toString());
+		}
+	}
+
+	return {
+		constraints: constraints,
+		substitutions: subs
+	};
+};
+
 Constraint.prototype.check = function() {
 	var type1 = Type.store[this.type1];
 	var type2 = Type.store[this.type2];
@@ -322,10 +467,10 @@ Constraint.prototype.applySubstitution = function(sub) {
 
 Constraint.compare = function(a, b) {
 	var score = function(c) {
-		// A LEqConstraint between any types other than object are effectively just constraints
-		if (c instanceof LEqCheckConstraint && (Type.store[c.type1].type === "object" || Type.store[c.type2].type === "object")) {
+		// LEq between two abstracts should be last
+		if (c instanceof LEqCheckConstraint && (!Type.store[c.type1].isConcrete && !Type.store[c.type2].isConcrete)) {
 			return 4;
-		} else if (c instanceof LEqConstraint && (Type.store[c.type1].type === "object" || Type.store[c.type2].type === "object")) {
+		} else if (c instanceof LEqConstraint && (!Type.store[c.type1].isConcrete && !Type.store[c.type2].isConcrete)) {
 			return 3;
 		} else if (c instanceof LEqCheckConstraint) {
 			return 2;
@@ -388,14 +533,118 @@ LEqConstraint.prototype.check = function() {
 	// we only want to enforce for concrete types
 	if (Type.store[this.type1].type === "object" && Type.store[this.type2].type === "object") {
 		this.enforce();
-		
 	}
 	return this.checkStructure();
 };
 LEqConstraint.prototype.regenDesc = function() {
 	this.desc = Type.store[this.type1].toString() + " <= " + Type.store[this.type2].toString();
 };
+LEqConstraint.prototype.solve = function() {
+	// straight equality - easy
+	var subs = [], constraints = [];
 
+	if (!Type.store[this.type1].isConcrete) {
+		if (!Type.store[this.type2].isConcrete) {
+			// abs <= abs
+			throw new Error("I don't know how to deal with this");
+		}
+
+		if (Type.store[this.type2].type === "object") {
+			// abs <= object
+			// without knowing what type1 is yet, I do know it must be an object
+			var objType = new ObjectType({
+				memberTypes: {}
+			});
+
+			subs.push(new Substitution(this.type1, objType.id));
+
+			// I have contributed some information, but the constraint isn't solved yet
+			constraints.push(this);
+
+		} else if (Type.store[this.type2].type === "function") {
+			// abs <= function
+			// without knowing what type1 really is yet - I do at least know it must be a function with the same number of parameters
+
+			var retType = TypeEnv.getFreshType();
+
+			var funType = new FunctionType({
+				argTypes: [],
+				returnType: retType.id
+			});
+			for (var i=0; i<Type.store[this.type2].argTypes.length; i++) {
+				funType.argTypes[i] = TypeEnv.getFreshType().id;
+			}
+			subs.push(new Substitution(this.type1, funType.id));
+
+			// I have contributed some information, but the constraint isn't solved yet
+			constraints.push(this);
+			
+
+		} else {
+			// abs <= primitive
+			// no possibilitiy of substructure, so treat this as for regular constraints
+			return Constraint.prototype.solve.call(this);
+		}
+	} else if (!Type.store[this.type2].isConcrete) {
+		if (Type.store[this.type1].type === "object") {
+			// abs => object
+			// without knowing what type1 is yet, I do know it must be an object with these members
+			var objType = new ObjectType({
+				memberTypes: {}
+			});
+			for (var label in Type.store[this.type1].memberTypes) {
+				objType.memberTypes[label] = TypeEnv.getFreshType().id;
+			}
+			subs.push(new Substitution(this.type2, objType.id));
+
+			// I have contributed some information, but the constraint isn't solved yet
+			constraints.push(this);
+
+		} else if (Type.store[this.type1].type === "function") {
+			// abs => function
+			// without knowing what type1 really is yet - I do at least know it must be a function with the same number of parameters
+
+			var retType = TypeEnv.getFreshType();
+
+			var funType = new FunctionType({
+				argTypes: [],
+				returnType: retType.id
+			});
+			for (var i=0; i<Type.store[this.type1].argTypes.length; i++) {
+				funType.argTypes[i] = TypeEnv.getFreshType().id;
+			}
+			subs.push(new Substitution(this.type2, funType.id));
+
+			// I have contributed some information, but the constraint isn't solved yet
+			constraints.push(this);
+			
+
+		} else {
+			// abs => primitive
+			// no possibilitiy of substructure, so treat this as for regular constraints
+			return Constraint.prototype.solve.call(this);
+		}
+		return {
+			substitutions: subs,
+			constraints: constraints
+		};
+	} // both are concrete types
+	else {
+		// if they're the same type, we're okay, else we have a type error
+		// check the structure of the types (not sufficient for complex types)
+		if (this.check()) {
+			// if this is a complex structure, there may also be sub-constraints to solve
+			constraints = this.getSubConstraints();
+		} else {
+			throw new Error(" Failed Unification: " + Type.store[this.type1].toString() + " != " + Type.store[this.type2].toString());
+		}
+	}
+
+	return {
+		constraints: constraints,
+		substitutions: subs
+	};
+};
 
 
 
@@ -490,10 +739,10 @@ function Wrapper(expression, parent, type) {
 	this.type = type;
 }
 Wrapper.prototype.applySubstitution = function(sub) {
-	if (sub.from.id === this.type.id) {
+	if (sub.from === this.type) {
 		this.type = sub.to;
 	}
-	this.type.applySubstitution(sub);
+	Type.store[this.type].applySubstitution(sub);
 };
 
 

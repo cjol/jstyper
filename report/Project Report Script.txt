@@ -1,0 +1,49 @@
+Slide 1
+	My project is an attempt to bring some sanity to the world of JavaScript.
+
+Slide 2
+	I don't know how much JavaScript experience you all have, but it's a language that exhibits a lot of weirdness. It has a very loose notion of types, which is largely rendered useless by countless bizarre examples of coercions from one type to another. An empty array might be coerced either to an empty string, or to the number 0, depending on context, and something similar happens to the empty object. It's very difficult to reason about JavaScript programs. 
+
+Slide 3
+	In this example, we have a function expecting an object with both height and width, and we give it exactly that - an object with both height and width. Hopefully obviously, the output of the program will be the string "Large Area".
+
+Slide 4
+	If we introduce a type error, the JavaScript interpreter won't notice the problem. s.height and s.width will both return "undefined" when accessed, and then `area` will be as well. undefined is neither less than 10 nor greater than or equal to 10 - so nothing gets output at all. It would be useful to introduce error-detection as far forward as possible - ideally to compile-time rather than runtime, but if that's not possible at least as early as possible in the program's execution.
+
+Slide 5
+	What I've done is create a type system similar to the ones we have come across before in the Semantics and Types courses, formally defining type judgements over fragments of JavaScript. It looks slightly different because I'm doing a bit more with it than we looked at in lectures, but the heart is the same. I then created an implementation following the specification, and
+
+Slide 6
+	The result is something like this - a type inference tool which can determine the type of the variables used in the program. In this example, it's clear that the program is not well-typed, because getArea takes an object with height and width, and we try to call it with an object having neither of those properties. The compiler will throw a type error instead.
+
+Slide 7
+	So far that's straightforward type inference, but the utility of the project is hampered by the fact that JavaScript never exists in isolation. Anyone can include my script on a page alongside some type-unsafe code which could violate the safety that I could previously guarantee. Using this other example, I have some perfectly type-safe code - the function uses a boolean, and I give it a boolean, and should always return true. 
+
+Slide 8
+	Unfortunately, I can't trust other programmers to use my function correctly - something like this will behave unpredictably, because 5 or true will return 5 - but we expected it to always return true. Even worse, we've ended up setting x to a number - so now some other unrelated part of my type-safe world isn't type safe anymore.
+
+Slide 9
+	The solution is a technique called "Gradual Typing". We can't guarantee at compile time that it is always safe to use bool, so I tell that to my compiler, and it will inject dynamic type-checks. So we will throw a type error instead of allowing the type unsafeness to propagate further. Basically I'm wrapping every use of bool in an immediately-invoked function containing a type check. We still can't give the traditional guarantee that our well typed-program "won't go wrong", but we can guarantee that if it does go wrong it's because it's been used in the wrong way, with data of the wrong type.
+
+Slide 10
+	That's a fairly simple example, and that's as far as my compiler can currently go, but in practice we'll have data of higher-order types, which we can't just inject type-checks for. Here, for example, we need radius to return a number, but there's no way of checking the actual return type of the given function.
+
+Slide 11
+	Since we can't check, we have to do something else. We create a special wrapper, called a mimic, for the untrusted object, containing a function which is guaranteed to return a number if it returns at all. It might throw an exception instead, if the given object doesn't have the right type. Our type-safe world can now use the mimic object instead of the unsafe one, and we can make the same guarantee that the type-safe world can't be blamed for any type errors.  
+
+Slide 12
+	So a mimic wrapper protects the typed world from an untrusted object. That's only half the story though - sometimes a well-typed object, containing code which must be protected, is passed into the untyped world. 
+
+Slide 13
+	In this case, we'll need a guard wrapper, which protects a well-typed object from an untrusted world.
+
+Slide 14
+	Primitive data is easy - our wrappers can just inject a dynamic type check when it's necessary. A primitive type can't be corrupted by unsafe code, so passing a type-safe primitive into a type-unsafe world doesn't need any checks at all.
+
+Slide 15 
+	When we have higher-order data, we basically need to start the whole wrapping process again. For a mimic, we can't trust the object - so if the context gives us data (which will be type-safe), we need to protect it with a guard before giving it to the object. And the opposite is true for the guard, which trusts the object but not the world around it.
+
+Slide 18
+	So that's a rapid tour of what my project does and is aiming to do. Like all respectable compilers, it's written in the target language - so JavaScript running on node.js. Facebook have recently open-sourced a similar project, but without any of the gradual-typing stuff which is required for our stronger guarantees - but which also clearly adds overhead to the execution of the program.
+
+	Thank you!

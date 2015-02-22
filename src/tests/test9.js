@@ -1,6 +1,8 @@
+// expected result: pass, with z typechecked as number
 function yesIfBiggerThanFive(z) {
 	
-	// jstyper start import z
+	// jstyper start 
+	// jstyper import z
 	var five = 5, test = z - five > 0, returnVal;
 	
 	if (test) {

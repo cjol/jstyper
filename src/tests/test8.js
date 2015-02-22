@@ -1,3 +1,4 @@
+// expected result: pass, but fail if you add "var scopeTest" before the if
 // jstyper start
 	
 if (true) {

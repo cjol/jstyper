@@ -1,3 +1,4 @@
+// expected result: pass
 // jstyper start
 var y = {
 	one:1,
