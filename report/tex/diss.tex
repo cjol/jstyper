@@ -1,0 +1,53 @@
+% Draft #1
+
+\documentclass{article}
+\usepackage[T1]{fontenc}
+\usepackage[super]{nth}
+\usepackage[all]{nowidow}
+\begin{document}
+
+	\vfil 
+	\centerline{\Large Building a Gradual Type System for JavaScript }
+	\vspace{0.4in}
+	\centerline{\large Christopher J.O. Little, Emmanuel College}
+
+	\section{Introduction}\label{introduction}
+		\subsection{Why is type-checking interesting?}
+		\subsection{What's interesting about JavaScript?}
+		\subsection{Others' approaches to type-checking JavaScript}
+	\section{Preparation}\label{preparation}
+		\subsection{Foundations of typing (background reading) --- Milner, Pierce}
+		\subsection{Separation of tasks --- splitting language features and development phases}
+		\subsection{Selection of dev tools (why JavaScript, which AST generator)}
+	\section{Implementation}\label{implementation}
+
+		For each of these sections, I will discuss a few relevant/interesting
+		cases. Some of the problems may have had implications in several
+		phases of the the implementation, so I'll have to decide where to talk
+		about those. 
+
+	
+		\subsection{Formal Definition of Type System}
+		\subsection{Constraint Generation}
+		\subsection{Constraint solving}
+		\subsection{Gradual typing}
+		Some problems to discuss: \\
+			Object Property addition \\
+			Recursive `this' \\
+			Solving constraints iteratively (rather than in one pass at the end) \\
+			Solving substructure constraints (several times\ldots) \\
+			distinction between `dynamic' and `import' \\
+	\section{Evaluation}\label{evaluation}
+		\subsection{Proof of Safety}
+		\subsection{`Sanity Check': visual inspection of my test cases}
+		\subsection{Correctness tests comparing output of code with and without gradual typing}
+		\subsection{Speed Overhead}
+		\subsection{Memory overhead}
+	\section{Conclusions}
+		\subsection{Things still to do for maximum usefulness}
+			Arrays, Prototypal Inheritance, Strings as objects, functions as objects \\
+			Auto-detect imported vars by scope analysis \\
+			Fine-grained object modification by control flow analysis
+
+
+\end{document}
