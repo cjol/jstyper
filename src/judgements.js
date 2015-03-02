@@ -291,7 +291,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 			if (! (this.left instanceof UglifyJS.AST_Dot)) {
 				// AssignType (if it's not a dot, it must be a variable)
 				
-				if (!dynamicWrite) C.push(new Classes.Constraint(j2.T.id, j1.T.id));
+				if (!dynamicWrite) C.push(new Classes.LEqConstraint(j2.T.id, j1.T.id));
 				// if (!dynamicWrite) C.push(new Classes.LEqCheckConstraint(j2.T, j1.T, this.right));
 
 				returnType = j1.T;
@@ -313,7 +313,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 				W = j1.W.concat(j2.W);
 				var constraint = new Classes.LEqConstraint(T.id, j2.T.id);
 				C.push(constraint);
-				C.push(new Classes.Constraint(T3.id, j1.T.id));
+				C.push(new Classes.LEqConstraint(T3.id, j1.T.id));
 				// C.push(new Classes.LEqCheckConstraint(T3, j1.T, this.left.expression));
 			}
 		break;
@@ -588,7 +588,7 @@ UglifyJS.AST_VarDef.prototype.check = function(gamma, dynamics) {
 		// LEqCheck is required for the constraint to actually have any effect
 
 		// C = judgement.C.concat([new Classes.LEqCheckConstraint(T, judgement.T, this.value)]);
-		C = judgement.C.concat([new Classes.Constraint(T.id, judgement.T.id)]);
+		C = judgement.C.concat([new Classes.LEqConstraint(T.id, judgement.T.id)]);
 		W = judgement.W;
 	}
 
