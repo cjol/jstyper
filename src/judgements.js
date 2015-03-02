@@ -6,6 +6,7 @@
 
 var Classes = require("./classes.js");
 var UglifyJS = require("uglify-js2");
+var solveConstraints = require("./solveConstraints");
 
 UglifyJS.AST_Node.prototype.check = function() {
 	throw new Error("Unhandled node type");
@@ -104,6 +105,7 @@ UglifyJS.AST_Lambda.prototype.check = function(gamma, dynamics) {
 		argTypes: [],
 		returnType: retType.id
 	});
+	var argumentTypeEnvEntries = [];
 
 	// generate a fresh type for each of the arguments (including 'this')
 	// Also create a new Gamma to check the function body
@@ -115,8 +117,10 @@ UglifyJS.AST_Lambda.prototype.check = function(gamma, dynamics) {
 		Ts[i] = gamma.getFreshType(undefined, {detail:'arg' + i + ' type of fun ', node: this});
 		var name = (i===0)?'this':this.argnames[i-1].name ;
 		
-		gamma1.push(new Classes.TypeEnvEntry(name, null, Ts[i].id));
-		funType.argTypes.push(Ts[i].id);
+		var tee = new Classes.TypeEnvEntry(name, null, Ts[i].id);
+		argumentTypeEnvEntries.push(tee);
+		gamma1.push(tee);
+
 	}
 
 	// V_Fun2
@@ -126,6 +130,13 @@ UglifyJS.AST_Lambda.prototype.check = function(gamma, dynamics) {
 
 	// type the body using the new gamma (treat it as a block statement)
 	var j1 = UglifyJS.AST_Block.prototype.check.call(this, gamma1, dynamics);
+	
+	// TODO?: the check may result in substitutions affecting gamma which will not be reflected (because gamma1 was subbed, not gamma)
+	// the call to block.check will have substituted the types out of the typeenventry pushed to gamma (I hope)
+	for (i=0; i<argumentTypeEnvEntries.length; i++) {
+		funType.argTypes.push(argumentTypeEnvEntries[i].type);
+	}
+
 
 	var C;
 	var W = j1.W;
@@ -496,13 +507,29 @@ UglifyJS.AST_Return.prototype.check = function(gamma, dynamics) {
 // Rule SeqTypable
 UglifyJS.AST_Block.prototype.check = function(gamma, dynamics) {
 	var judgement = new Classes.Judgement(null, [], gamma, []);
+	
 	for (var i=0; i<this.body.length; i++) {
-
 		this.body[i].parent = parent(this);
 		var j = this.body[i].check(gamma, dynamics);
-		judgement.C = judgement.C.concat(j.C);
 		judgement.W = judgement.W.concat(j.W);
 		judgement.gamma = gamma = j.gamma;
+
+		// solve the generated constraints, or throw an error if this isn't possible
+		// NB Type.store will be modified by this, and all constraints are used up
+		var substitutions = solveConstraints(j.C);
+
+		// apply the solution substitutions to the type environment
+		for (var l=0; l<substitutions.length; l++) {
+
+			judgement.gamma.applySubstitution(substitutions[l]);
+
+			for (var k = 0; k<judgement.W.length; k++) {
+				judgement.W[k].applySubstitution(substitutions[l]);
+			}
+		}
+
+		// reset the constraints for the next statement
+		judgement.C = []; // judgement.C.concat(j.C);
 	}
 
 	// Implementation detail: Attach gamma to new scopes so we can retrieve

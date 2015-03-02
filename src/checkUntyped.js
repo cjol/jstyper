@@ -10,7 +10,8 @@
 
 */
 
-var Classes = require("./classes.js");
+var Classes = require("./classes");
+var solveConstraints = require("./solveConstraints");
 var UglifyJS = require("uglify-js2");
 
 UglifyJS.AST_Node.prototype.checkUntyped = function() {
@@ -128,8 +129,24 @@ function seq(statements, par) {
 			
 			// carry the new judgement into the next statement
 			judgement.gamma = newJudgement.gamma;
-			judgement.C = judgement.C.concat(newJudgement.C);
 			judgement.W = judgement.W.concat(newJudgement.W);
+			
+			// solve the generated constraints, or throw an error if this isn't possible
+			// NB Type.store will be modified by this, and all constraints are used up
+			var substitutions = solveConstraints(newJudgement.C);
+
+			// apply the solution substitutions to the type environment
+			for (var j=0; j<substitutions.length; j++) {
+
+				judgement.gamma.applySubstitution(substitutions[j]);
+
+				for (var k = 0; k<judgement.W.length; k++) {
+					judgement.W[k].applySubstitution(substitutions[j]);
+				}
+			}
+
+			// reset the constraints for the next statement
+			judgement.C = []; // judgement.C.concat(newJudgement.C);
 		}
 	}
 
