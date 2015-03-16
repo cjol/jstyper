@@ -528,11 +528,12 @@ UglifyJS.AST_Block.prototype.check = function(gamma, dynamics) {
 		this.body[i].parent = parent(this);
 		var j = this.body[i].check(gamma, dynamics);
 		judgement.W = judgement.W.concat(j.W);
+		judgement.C = judgement.C.concat(j.C);
 		judgement.gamma = gamma = j.gamma;
 
 		// solve the generated constraints, or throw an error if this isn't possible
 		// NB Type.store will be modified by this, and NOT all constraints are used up
-		var result = solveConstraints(j.C);
+		var result = solveConstraints(judgement.C);
 		var substitutions = result.substitutions;
 		
 		// reset the constraints for the next statement

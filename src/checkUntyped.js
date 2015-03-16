@@ -130,10 +130,11 @@ function seq(statements, par) {
 			// carry the new judgement into the next statement
 			judgement.gamma = newJudgement.gamma;
 			judgement.W = judgement.W.concat(newJudgement.W);
+			judgement.C = judgement.C.concat(newJudgement.C);
 			
 			// solve the generated constraints, or throw an error if this isn't possible
 			// NB Type.store will be modified by this, and NOT all constraints are used up
-			var result = solveConstraints(newJudgement.C);
+			var result = solveConstraints(judgement.C);
 			var substitutions = result.substitutions;
 			
 			// reset the constraints for the next statement
