@@ -49,8 +49,20 @@ module.exports = function(src) {
 	for (var i = 0; i< chunks.length; i++) {
 
 		// solve the generated constraints, or throw an error if this isn't possible
-		var substitutions = solveConstraints(chunks[i].C, chunks[i].gamma);
-
+		var result = solveConstraints(chunks[i].C);
+		var substitutions = result.substitutions;
+		// var constraints = result.constraints;
+		// // if (constraints.length > 0) {
+		// // 	// we have no further opportunities to solve the constraints which is a problem...
+		// // 	throw new Error("Couldn't solve all constraints");
+		// // }
+		// // for (var ci = 0; ci<constraints.length; ci++) {
+		// // 	if (  !Classes.Type.store[constraints[ci].type1].isConcrete &&
+		// // 		!Classes.Type.store[constraints[ci].type2].isConcrete) {
+		// // 		// it's fine to have abstract types at the end
+		// // 		continue;
+		// // 	}
+		// // }
 
 		// apply the solution substitutions to the type environment
 		for (var j=0; j<substitutions.length; j++) {

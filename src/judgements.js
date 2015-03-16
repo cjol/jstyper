@@ -94,6 +94,17 @@ UglifyJS.AST_Object.prototype.check = function(gamma, dynamics) {
 	return new Classes.Judgement(T, C, gamma, W);
 };
 
+// Add function definitions names to the type environments
+// TODO: Represent this in the spec
+UglifyJS.AST_Defun.prototype.check = function(gamma, dynamics) {
+	var j = UglifyJS.AST_Lambda.prototype.check.call(this, gamma, dynamics);
+	if (this.name !== null && this.name.name !== null && this.name.name.length > 0) {
+		j.gamma.push(new Classes.TypeEnvEntry(this.name.name, this,  j.T.id));
+		
+	}
+	return new Classes.Judgement(null, j.C, j.gamma, j.W);
+};
+
 // TODO: V_Fun1 / V_Fun2
 UglifyJS.AST_Lambda.prototype.check = function(gamma, dynamics) {
 
@@ -119,23 +130,28 @@ UglifyJS.AST_Lambda.prototype.check = function(gamma, dynamics) {
 		
 		var tee = new Classes.TypeEnvEntry(name, null, Ts[i].id);
 		argumentTypeEnvEntries.push(tee);
+		funType.argTypes.push(argumentTypeEnvEntries[i].type);
 		gamma1.push(tee);
-
 	}
 
 	// V_Fun2
 	if (this.name !== undefined && this.name !== null) {
 		gamma1.push(new Classes.TypeEnvEntry(this.name.name, this, funType.id));
 	}
-
+	
+	// gamma1 contains funType (and this is necessary for recursion to work)
+	// so we needed to initialise funType with abstract parameter types
+	// BUT
+	// the substitutions to funType's argument types (contained here in argumentTypeEnvEntries)
+	// will not be reflected here (they're only made within gamma1).
+	// So we'll need to overwrite funType's argument types after we type the body
 	// type the body using the new gamma (treat it as a block statement)
 	var j1 = UglifyJS.AST_Block.prototype.check.call(this, gamma1, dynamics);
-	
-	// TODO?: the check may result in substitutions affecting gamma which will not be reflected (because gamma1 was subbed, not gamma)
-	// the call to block.check will have substituted the types out of the typeenventry pushed to gamma (I hope)
+	funType.argTypes = [];
 	for (i=0; i<argumentTypeEnvEntries.length; i++) {
 		funType.argTypes.push(argumentTypeEnvEntries[i].type);
 	}
+
 
 
 	var C;
@@ -291,7 +307,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 			if (! (this.left instanceof UglifyJS.AST_Dot)) {
 				// AssignType (if it's not a dot, it must be a variable)
 				
-				if (!dynamicWrite) C.push(new Classes.LEqConstraint(j2.T.id, j1.T.id));
+				if (!dynamicWrite) C.push(new Classes.LEqCheckConstraint(j2.T.id, j1.T.id));
 				// if (!dynamicWrite) C.push(new Classes.LEqCheckConstraint(j2.T, j1.T, this.right));
 
 				returnType = j1.T;
@@ -515,8 +531,12 @@ UglifyJS.AST_Block.prototype.check = function(gamma, dynamics) {
 		judgement.gamma = gamma = j.gamma;
 
 		// solve the generated constraints, or throw an error if this isn't possible
-		// NB Type.store will be modified by this, and all constraints are used up
-		var substitutions = solveConstraints(j.C);
+		// NB Type.store will be modified by this, and NOT all constraints are used up
+		var result = solveConstraints(j.C);
+		var substitutions = result.substitutions;
+		
+		// reset the constraints for the next statement
+		judgement.C = result.constraints;
 
 		// apply the solution substitutions to the type environment
 		for (var l=0; l<substitutions.length; l++) {
@@ -528,8 +548,6 @@ UglifyJS.AST_Block.prototype.check = function(gamma, dynamics) {
 			}
 		}
 
-		// reset the constraints for the next statement
-		judgement.C = []; // judgement.C.concat(j.C);
 	}
 
 	// Implementation detail: Attach gamma to new scopes so we can retrieve

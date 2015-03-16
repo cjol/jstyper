@@ -132,8 +132,12 @@ function seq(statements, par) {
 			judgement.W = judgement.W.concat(newJudgement.W);
 			
 			// solve the generated constraints, or throw an error if this isn't possible
-			// NB Type.store will be modified by this, and all constraints are used up
-			var substitutions = solveConstraints(newJudgement.C);
+			// NB Type.store will be modified by this, and NOT all constraints are used up
+			var result = solveConstraints(newJudgement.C);
+			var substitutions = result.substitutions;
+			
+			// reset the constraints for the next statement
+			judgement.C = result.constraints;
 
 			// apply the solution substitutions to the type environment
 			for (var j=0; j<substitutions.length; j++) {
@@ -145,8 +149,6 @@ function seq(statements, par) {
 				}
 			}
 
-			// reset the constraints for the next statement
-			judgement.C = []; // judgement.C.concat(newJudgement.C);
 		}
 	}
 

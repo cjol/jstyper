@@ -19,7 +19,17 @@ module.exports = {
 	TypeEnv: TypeEnv,
 	Wrapper: Wrapper,
 	Judgement: Judgement,
+	Exceptions: undefined
 };
+
+
+module.exports.Exceptions = {
+	TwoAbstractsException: function TwoAbstractsException(msg) {
+		this.name = "TwoAbstractsException";
+    	this.message = (msg || "Tried to solve a constraint between two abstract types");
+	}
+};
+module.exports.Exceptions.TwoAbstractsException.prototype = new Error();
 
 var tmp = function() {};
 Type.resetStore = function() {
@@ -546,15 +556,20 @@ LEqConstraint.prototype.solve = function() {
 	if (!Type.store[this.type1].isConcrete) {
 		if (!Type.store[this.type2].isConcrete) {
 			// abs <= abs
-			throw new Error("I don't know how to deal with this");
+			throw new module.exports.Exceptions.TwoAbstractsException("I don't know how to deal with this");
 		}
 
 		if (Type.store[this.type2].type === "object") {
 			// abs <= object
 			// without knowing what type1 is yet, I do know it must be an object
+			// AND I assume it will have the same members
 			var objType = new ObjectType({
 				memberTypes: {}
 			});
+
+			for (var label in Type.store[this.type2].memberTypes) {
+				objType.memberTypes[label] = TypeEnv.getFreshType().id;
+			}
 
 			subs.push(new Substitution(this.type1, objType.id));
 
