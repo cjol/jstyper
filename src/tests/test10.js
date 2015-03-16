@@ -1,11 +1,12 @@
 // expected result: pass - the extra data doesn't make a difference
-// NB should this work if x has extra, but not y? Probably not...
 // jstyper start
 var x = {
 	"hello": "world",
 	myValue: {
 		i:true
 	}
+	// NB Putting extra: 5 here instead of in y causes fail
+	// also causes a failure to put extra: true here
 };
 var y = {
 	"hello": "jupiter",

@@ -1,10 +1,10 @@
 TODOS
 
-Test 10 allows extra data on x (growing y to match)
-Test 16 fails because we are generating a LEq on LEq constraint and don't know how to solve that.
-Test 18a has the same problem as test 16
 Function definitions should add something to the surrounding environment (implemented, but not in spec)
 Test 21
 Something about type stores merging after e.g. an if/else
 Loops
 Prototypes
+Wrappers generated at end (see test 22)
+
+fix by monday

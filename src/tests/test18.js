@@ -1,3 +1,7 @@
+// expected result: failure, can fix by removing the parameter from
+// rectangleArea, and replacing circleArea with rectangleArea in the rectangle
+// definition
+
 // jstyper start
 var areaCalculators = {};
 function rectangleArea(rectangle) {
