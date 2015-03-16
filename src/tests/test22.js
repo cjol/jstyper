@@ -15,11 +15,15 @@ var weird = function(arg) {
 
 var fun = weird({foo:5});
 
-// Note that it is NOT type-safe to use the result of weird as defined above.
-// fun(true) will return false, on which + is not defined
+/*
+	Note that it is NOT type-safe to use the result of 'weird' as defined
+	above. fun(true) will return false, on which '+' is not allowed.
 
-// without jstyper, x would have the value 2
-// with type checking, executing the next line will throw an error
+	without jstyper, x would have the value 2. With jstyper's gradual typing
+	executing the next line will throw an error
+
+*/
+
 var x = fun(true) + 1;
 
 // jstyper end
