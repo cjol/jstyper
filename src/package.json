@@ -4,7 +4,9 @@
   "description": "Gradual Typing for JavaScript",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"We haven't got any tests yet...\" && exit 0"
+    "test": "echo \"We haven't got any tests yet...\" && exit 0",
+    "start": "node main.js",
+    "debug": "node-inspector && nodemon --debug main.js"
   },
   "author": "Christopher Little",
   "license": "BSD-2-Clause",

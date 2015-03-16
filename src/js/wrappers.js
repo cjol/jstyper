@@ -58,6 +58,7 @@ function mimic(t, obj) {
 		if (typeof obj !== t.type) throw new Error("obj is not " + t.type);
 		return obj;
 	} else if (t.kind === "abstract") {
+		// maybe dynamic?
 		return obj;
 	} else {
 		console.error(t);
@@ -129,6 +130,7 @@ function guard(t, obj) {
 	} else if (t.kind === "primitive") {
 		return obj;
 	} else if (t.kind === "abstract") {
+		// again maybe dynamic (which I can know at compiletime)
 		return obj;
 	} else {
 		console.error(t);
