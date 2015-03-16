@@ -21,7 +21,6 @@ var fun = weird({foo:5});
 
 	without jstyper, x would have the value 2. With jstyper's gradual typing
 	executing the next line will throw an error
-
 */
 
 var x = fun(true) + 1;
