@@ -150,13 +150,13 @@ C :: 'C_' ::= 					                {{ com Constraint }}
 	| U setIndex = n1 - n2 C :: :: BigUnion 						{{ com BigUnion }}
 																	{{ tex \bigcup \limits_{[[setIndex]]=[[n1]]}^[[n2]] [[C]] }}
 	| { T1 < T2 } ::  :: ConstLeq 										{{ com ConstLeq }}
-																	{{ tex \{ \textcolor{red}{ [[T1]] \preceq [[T2]] } \} }}
+																	{{ tex \{ [[T1]] \preceq [[T2]] \} }}
 	| { T1 > T2 } ::  :: ConstGeq				 						{{ com ConstGeq }}
-																	{{ tex \{ \textcolor{red}{ [[T1]] \succeq [[T2]] } \} }}
+																	{{ tex \{ [[T1]] \succeq [[T2]] \} }}
 	| { T1 <c T2 } :: :: ConstCheckLeq									{{ com ConstCheckLeq }}
-																	{{ tex \{ \textcolor{red}{ [[T1]] \preceq_c [[T2]] } \} }}
+																	{{ tex \{ [[T1]] \preceq_c [[T2]] \} }}
 	| { T1 >c T2 } :: :: ConstCheckGeq		 						    {{ com ConstCheckGeq }}
-																	{{ tex \{ \textcolor{red}{ [[T1]] \succeq_c [[T2]] } \} }}
+																	{{ tex \{ [[T1]] \succeq_c [[T2]] \} }}
 	| { T1 = T2 } ::  :: ConstEq				 						{{ com ConstEq }}
 																	{{ tex \{ [[T1]] = [[T2]] \} }}
 	| ( C )		 ::  :: BracketedConstraint  					{{ com BracketedConstraint }}
@@ -406,7 +406,7 @@ Jop :: '' ::=
 		----------------------------------------------------------------------- :: V_Fun2
 		G |- function id(x1, .., xi) { m1; ..; mj } : T0, T1, .., Ti -> T |C u {G'["return"] = T} G
 
-
+		
 		% Variable retrieval
 
 		G(id) = T
@@ -528,6 +528,10 @@ Jop :: '' ::=
 	 {{ tex [[G]] [[|-]] [[m]] \hspace{5pt}| _{ [[C]] } \hspace{5pt} [[G']]}}
 	 by
 		% We say that a statement m is typable if all expressions contained within it are well typed by the definition above.
+
+		G |- function id(x1, .., xi) { m1; ..; mj } : T |C G'
+		----------------------------------------------------------------------- :: V_FunDef
+		G |- @def function id(x1, .., xi) { m1; ..; mj } |C G' u {id: T}
 
 		G |- e : T |C G'
 		-------------------                                		    :: ExpTypable
