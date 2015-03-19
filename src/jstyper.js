@@ -44,6 +44,7 @@ module.exports = function(src) {
 	// generate a judgement for (each annotated section of) the entire tree
 	// it's checkUntyped because, at the time of calling, we're not in the typed world yet
 	var chunks = ast.checkUntyped();
+	var js = [];
 
 	// check the judgement is valid and do gradual typing for each chunk
 	for (var i = 0; i< chunks.length; i++) {
@@ -123,7 +124,13 @@ module.exports = function(src) {
 		walker = new UglifyJS.TreeWalker(getWrapper(chunks[i].W));
 		ast.walk(walker);
 
-
+		js[i] = [];
+		for (var l=0; l<chunks[i].gamma.length; l++) {
+			js[i][l] = {
+				name: chunks[i].gamma[l].name,
+				type: Classes.Type.store[chunks[i].gamma[l].type]
+			};
+		}
 		// TODO: append a notice indicating the end of the typed section (not easy without a trailing comments property!)
 		
 		// for (var l = 0; l<solution.checks.length; l++) {
@@ -146,7 +153,6 @@ module.exports = function(src) {
 		// }
 	}
 
-	var checkRes = chunks;
 	var stream = UglifyJS.OutputStream({
 		beautify: true,
 		comments: true,
@@ -156,6 +162,6 @@ module.exports = function(src) {
 
 	return {
 		src: stream.toString(),
-		check: checkRes
+		judgements: js
 	};
 };

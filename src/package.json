@@ -4,7 +4,7 @@
   "description": "Gradual Typing for JavaScript",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"We haven't got any tests yet...\" && exit 0",
+    "test": "node test.js",
     "start": "node main.js",
     "debug": "node-inspector && nodemon --debug main.js"
   },
@@ -19,5 +19,12 @@
     "json-stringify-safe": "^5.0.0",
     "node-syntaxhighlighter": "^0.8.1",
     "uglify-js2": "^2.1.11"
+  },
+  "devDependencies": {
+    "jasmine": "~2.2.1",
+    "mocha": "~2.2.1",
+    "karma": "~0.12.31",
+    "karma-chrome-launcher": "~0.1.7",
+    "karma-jasmine": "~0.2.2"
   }
 }
