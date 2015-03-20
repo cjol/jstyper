@@ -1,7 +1,9 @@
 {
 	"success": true,
-	"types": [[
-		["x","boolean"],
-		["x","string"]
-	]]
+	"types": {
+		"3": {
+			"4": "boolean",
+			"18": "string"
+		}
+	}
 }

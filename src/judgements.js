@@ -96,10 +96,13 @@ UglifyJS.AST_Object.prototype.check = function(gamma, dynamics) {
 
 // Add function definitions names to the type environments
 // TODO: Represent this in the spec
+// TODO: What if this is dynamic?
 UglifyJS.AST_Defun.prototype.check = function(gamma, dynamics) {
 	var j = UglifyJS.AST_Lambda.prototype.check.call(this, gamma, dynamics);
 	if (this.name !== null && this.name.name !== null && this.name.name.length > 0) {
-		j.gamma.push(new Classes.TypeEnvEntry(this.name.name, this,  j.T.id));
+		var tee = new Classes.TypeEnvEntry(this.name.name, this,  j.T.id);
+		this.name.tee = tee;
+		j.gamma.push(tee);
 		
 	}
 	return new Classes.Judgement(null, j.C, j.gamma, j.W);
@@ -184,10 +187,18 @@ UglifyJS.AST_Symbol.prototype.check = function(gamma, dynamics, doNotWrap) {
 		// need to select a new type, but create a new env for it
 		T = gamma.getFreshType(undefined, {detail:'symbol type for ' + this.name, node: this});
 		gamma = new Classes.TypeEnv(gamma);
-		if (!dynamic) gamma.push(new Classes.TypeEnvEntry(this.name, this, T.id));
+
+		if (!dynamic) {
+			var tee = new Classes.TypeEnvEntry(this.name, this, T.id);
+			this.tee = tee;
+			gamma.push(tee);
+		}
 	}
 
 	if (dynamic && !doNotWrap) {
+		this.tee = {
+			type: "wrapped"
+		};
 		W.push(new Classes.Wrapper(this, this.parent(), T.id));
 	}
 
@@ -612,7 +623,9 @@ UglifyJS.AST_VarDef.prototype.check = function(gamma, dynamics) {
 	}
 
 	gamma = new Classes.TypeEnv(gamma);
-	gamma.push(new Classes.TypeEnvEntry(this.name.name, this.name, T.id));
+	var tee = new Classes.TypeEnvEntry(this.name.name, this.name, T.id);
+	gamma.push(tee);
+	this.name.tee = tee;
 	var j = new Classes.Judgement(null, C, gamma, W);
 	j.nodes.push(this);
 

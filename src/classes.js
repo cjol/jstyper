@@ -716,9 +716,7 @@ TypeEnv.prototype.get = function(varName) {
 			return Type.store[this[i].type];
 		}
 	}
-	// if (this.parentScope !== undefined) {
-	// 	return this.parentScope.get(varName);
-	// }
+	
 	return null;
 };
 TypeEnv.getFreshType = function(opts, node) {

@@ -1,7 +1,19 @@
 {
 	"success": true,
-	"types": [[
-		["x","boolean"],
-		["y","boolean"]
-	]]
+	"types": {
+		"5": {
+			"4": "boolean"
+		},
+		"6": {
+			"4": "boolean",
+			"8": "boolean"
+		},
+		"7": {
+			"0": "boolean",
+			"4": {
+				"type": "wrapper",
+				"innerType": "boolean"
+			}
+		}
+	}
 }

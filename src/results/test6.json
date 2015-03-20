@@ -1,6 +1,8 @@
 {
 	"success": true,
-	"types": [[
-		["x","number"]
-	]]
+	"types": {
+		"5": {
+			"0": "number"
+		}
+	}
 }
