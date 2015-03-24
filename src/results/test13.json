@@ -1,0 +1,15 @@
+{
+	"success": true,
+	"types": {
+		"3": {
+			"4": {
+				"type": "function",
+				"argTypes": [
+					"abstract", 
+					"number"
+				],
+				"returnType": "number"
+			}
+		}
+	}
+}
