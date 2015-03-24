@@ -1,4 +1,4 @@
-// expected result: fail, y.result is used as bool and number
+// expected result: success, but the y defined on line 3 has a different type to the one on line 8
 // jstyper start
 var y = {
 	one:1,

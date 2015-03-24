@@ -217,7 +217,7 @@ UglifyJS.AST_Symbol.prototype.check = function(gamma, dynamics, doNotWrap) {
 };
 
 // Rule PropType
-
+// NB This is not called for assigning to a dotexpression. (see AssignType for that)
 UglifyJS.AST_Dot.prototype.check = function(gamma, dynamics) {
 	this.expression.parent = parent(this);
 	this.property.parent = parent(this);
@@ -335,7 +335,31 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 			} else {
 				// PropAssignType
 
+
 				j2 = this.left.expression.check(j1.gamma, dynamics);
+
+				var objType;
+				if (this.left.expression instanceof UglifyJS.AST_Symbol) {
+					// if this is literally of the format x.p = ..., then x must be in gamma. 
+					// the x we've used so far may not contain the property p
+					// the x from this point onwards must contain the property p
+					
+					// We're effectively going to SSA this. Create a new type identical to the
+					// one we previously assigned, and add it to gamma to use from now on.
+					var mt = {};
+					for (var i in j2.T.memberTypes) {
+						mt[i] = j2.T.memberTypes[i];
+					}
+
+					objType = new Classes.ObjectType({
+						memberTypes: mt
+					});
+
+					j2.gamma.push(new Classes.TypeEnvEntry(this.left.expression.name, this, objType.id));
+				} else {
+					// if there's a more complicated expression, just use the expression's type directly
+					objType = j2.T;
+				}
 
 				var T3 = gamma.getFreshType();
 				var memberType = {};
@@ -347,7 +371,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 
 				C = j1.C.concat(j2.C);
 				W = j1.W.concat(j2.W);
-				var constraint = new Classes.LEqConstraint(T.id, j2.T.id);
+				var constraint = new Classes.LEqConstraint(T.id, objType.id);
 				C.push(constraint);
 				C.push(new Classes.LEqConstraint(T3.id, j1.T.id));
 				// C.push(new Classes.LEqCheckConstraint(T3, j1.T, this.left.expression));
@@ -589,9 +613,10 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 	var C = j1.C;
 	var W = j1.W;
 
-	// TODO: Check order of constraint
 	C.push(new Classes.Constraint(Classes.Type.boolType.id, j1.T.id));
 	
+	// TODO: Join gammas
+
 	this.body.parent = parent(this);
 	var j2 = this.body.check(j1.gamma, dynamics);
 	C = C.concat(j2.C);

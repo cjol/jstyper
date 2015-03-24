@@ -5,7 +5,7 @@ var fs = require("fs");
 var jstyper = require("../jstyper");
 
 var ignored;
-ignored = ["10b", "12a"];
+ignored = ["10b"];
 // ignored = [1,2,3,4,5,6,7,8,9];
 
 function compareTypes(actual, expected) {
