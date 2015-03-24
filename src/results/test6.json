@@ -2,7 +2,15 @@
 	"success": true,
 	"types": {
 		"5": {
-			"0": "number"
+			"4": "number"
+		},
+		"6": {
+			"0": "number",
+			"4": "abstract",
+			"8": {
+				"type": "wrapper",
+				"innerType": "number"
+			}
 		}
 	}
 }

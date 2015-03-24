@@ -6,10 +6,14 @@ var jstyper = require("../jstyper");
 
 
 function compareTypes(actual, expected) {
-	console.log(actual, expected);
 	if (typeof expected === "string") {
-		// we're expecting a primitive type
-		expect(actual.type).toEqual(expected);
+		if (expected === "abstract") {
+			expect(actual.isConcrete).toEqual(false);
+		} else {
+			// we're expecting a primitive type
+			expect(actual.type).toEqual(expected);
+			
+		}
 	} else {
 		// more complex type
 		switch(expected.type) {
@@ -64,34 +68,6 @@ describe("Custom test", function() {
 								assertCorrect(line, col));
 						}
 					}
-
-					// result.judgements.forEach(function(chunk, i) {
-					// 	describe('section ' + i, function() {
-
-					// 		it('should type the right number of variables', function() {
-					// 			expect(chunk.length).toEqual(expected.types[i].length);
-					// 		});
-
-					// 		// types are in reverse order in the output
-					// 		// TODO: fix this in the output rather than the test?
-					// 		// chunk.reverse();
-					// 		console.log(chunk);
-					// 		console.log(expected.types[i]);
-					// 		console.log();
-					// 		chunk.forEach(function(tee, j) {
-					// 			describe('variable ' + j, function() {
-
-
-					// 				var eName = expected.types[i][j][0];
-					// 				it('should correctly type \'' + eName + '\'', function() {
-					// 					expect(tee.name).toEqual(eName);
-					// 					expect(tee.type.type).toEqual(expected.types[i][j][1]);
-					// 				});
-					// 			});
-
-					// 		});
-					// 	});
-					// });
 
 					// TODO: Further tests to check gradual typing is correct
 

@@ -1,7 +1,7 @@
-// Expected result: pass, with only z being type-checked as number (y is ignored)
-var i = 10;
+// Expected result: pass, with only z being type-checked as number (y (and i) are ignored)
+var y, z, i;
 // jstyper start 
 // jstyper import y, z, i
-x = 5;
+var x = 5;
 x = y = z;
 // jstyper end
