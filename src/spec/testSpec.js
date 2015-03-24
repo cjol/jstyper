@@ -5,7 +5,7 @@ var fs = require("fs");
 var jstyper = require("../jstyper");
 
 var ignored;
-ignored = [];
+ignored = ["10b"];
 // ignored = [1,2,3,4,5,6,7,8,9];
 
 function compareTypes(actual, expected) {
@@ -29,6 +29,14 @@ function compareTypes(actual, expected) {
 				for (var key in expected.memberTypes) {
 					compareTypes(actual.memberTypes[key], expected.memberTypes[key]);
 				}
+				break;
+			case "function": 
+				expect(actual.type).toEqual("function");
+				expect(actual.argTypes.length).toEqual(expected.argTypes.length);
+				for (var i = 0; i<expected.argTypes.length; i++) {
+					compareTypes(actual.argTypes[i], expected.argTypes[i]);
+				}
+				compareTypes(actual.returnType, expected.returnType);
 				break;
 			default:
 				throw new Error("Unexpected expectation type");

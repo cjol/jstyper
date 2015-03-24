@@ -100,15 +100,26 @@ module.exports = function(src) {
 
 
 		var attachSubtypes = function (tee, k, source) {
+			var key;
 			if (source instanceof Classes.ObjectType) {
 				tee[k] = {
 					type: "object",
 					memberTypes: {}
 				};
-				for (var key in source.memberTypes) {
+				for (key in source.memberTypes) {
 					attachSubtypes(tee[k].memberTypes, key, Classes.Type.store[source.memberTypes[key]]);
 				}
+			} else if (source instanceof Classes.FunctionType) {
+				tee[k] = {
+					type: "function",
+					argTypes: []
+				};
+				for (key =0; key<source.argTypes.length; key++) {
+					attachSubtypes(tee[k].argTypes, key, Classes.Type.store[source.argTypes[key]]);
+				}
+				attachSubtypes(tee[k], "returnType", Classes.Type.store[source.returnType]);
 			} else if (source instanceof Classes.PrimitiveType) {
+
 				tee[k] = source.type;
 			} else if (source instanceof Classes.AbstractType) {
 				tee[k] = "abstract";
