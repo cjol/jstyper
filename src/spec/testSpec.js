@@ -4,16 +4,19 @@ var fs = require("fs");
 // for type-checking and compilation
 var jstyper = require("../jstyper");
 
+var ignored;
+ignored = [];
+// ignored = [1,2,3,4,5,6,7,8,9];
 
 function compareTypes(actual, expected) {
+	// console.log("Comparing \n");
+	// console.log(actual); 
+	// console.log(expected);
+	// console.log("\n\n\n");
+
 	if (typeof expected === "string") {
-		if (expected === "abstract") {
-			expect(actual.isConcrete).toEqual(false);
-		} else {
-			// we're expecting a primitive type
-			expect(actual.type).toEqual(expected);
-			
-		}
+		// we're expecting a primitive or abstract type
+		expect(actual).toEqual(expected);
 	} else {
 		// more complex type
 		switch(expected.type) {
@@ -24,7 +27,7 @@ function compareTypes(actual, expected) {
 				expect(actual.type).toEqual("object");
 				expect(actual.memberTypes.length).toEqual(expected.memberTypes.length);
 				for (var key in expected.memberTypes) {
-					compareTypes(expect(actual.memberTypes[key]), expected.memberTypes[key]);
+					compareTypes(actual.memberTypes[key], expected.memberTypes[key]);
 				}
 				break;
 			default:
@@ -39,6 +42,10 @@ describe("Custom test", function() {
 	files.forEach(function(file) {
 
 		var stem = file.slice(0, -3);
+
+		for (var i=0; i<ignored.length; i++) {
+			if (stem === "test" + ignored[i]) return;
+		}
 
 		try {
 			var expected = JSON.parse(fs.readFileSync("./results/" + stem + ".json", "utf8"));
@@ -65,6 +72,7 @@ describe("Custom test", function() {
 						return function() {
 							expect(result.judgements[line]).toBeDefined();
 							expect(result.judgements[line][col]).toBeDefined();
+
 							compareTypes(result.judgements[line][col], expected.types[line][col]);
 						};
 					};

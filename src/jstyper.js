@@ -98,12 +98,31 @@ module.exports = function(src) {
 		var walker = new UglifyJS.TreeWalker(annotate);
 		ast.walk(walker);
 
+
+		var attachSubtypes = function (tee, k, source) {
+			if (source instanceof Classes.ObjectType) {
+				tee[k] = {
+					type: "object",
+					memberTypes: {}
+				};
+				for (var key in source.memberTypes) {
+					attachSubtypes(tee[k].memberTypes, key, Classes.Type.store[source.memberTypes[key]]);
+				}
+			} else if (source instanceof Classes.PrimitiveType) {
+				tee[k] = source.type;
+			} else if (source instanceof Classes.AbstractType) {
+				tee[k] = "abstract";
+			}
+		};
+
 		var typeSymbols = function(node) {
 			if (node instanceof UglifyJS.AST_Symbol) {
 				if (node.tee !== undefined) {
 					if (types[node.start.line] === undefined) 
 						types[node.start.line] = {};
-					types[node.start.line][node.start.col] = Classes.Type.store[node.tee.type];
+
+					attachSubtypes(types[node.start.line], node.start.col, Classes.Type.store[node.tee.type]);
+				
 				}
 			}
 		};
@@ -123,9 +142,11 @@ module.exports = function(src) {
 				if (wrapper === undefined) return;
 
 				types[wrapper.expression.start.line][wrapper.expression.start.col] = {
-					type: "wrapper",
-					innerType: Classes.Type.store[wrapper.type]
+					type: "wrapper"
 				};
+
+				attachSubtypes(types[wrapper.expression.start.line][wrapper.expression.start.col], "innerType",
+					Classes.Type.store[wrapper.type]);
 
 				// node is the parent of something which needs wrapping
 				// TODO: assign parents correctly within here
