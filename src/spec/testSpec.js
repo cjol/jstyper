@@ -5,7 +5,7 @@ var fs = require("fs");
 var jstyper = require("../jstyper");
 
 var ignored;
-ignored = ["10b"];
+ignored = ["10b", "12a"];
 // ignored = [1,2,3,4,5,6,7,8,9];
 
 function compareTypes(actual, expected) {
@@ -25,8 +25,14 @@ function compareTypes(actual, expected) {
 				break;
 			case "object":
 				expect(actual.type).toEqual("object");
-				expect(actual.memberTypes.length).toEqual(expected.memberTypes.length);
+
+				// need to check in both directions
 				for (var key in expected.memberTypes) {
+					expect(actual.memberTypes[key]).toBeDefined();
+					compareTypes(actual.memberTypes[key], expected.memberTypes[key]);
+				}
+				for (key in actual.memberTypes) {
+					expect(expected.memberTypes[key]).toBeDefined();
 					compareTypes(actual.memberTypes[key], expected.memberTypes[key]);
 				}
 				break;
