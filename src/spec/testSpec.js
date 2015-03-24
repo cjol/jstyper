@@ -20,6 +20,13 @@ function compareTypes(actual, expected) {
 			case "wrapper": 
 				compareTypes(actual.innerType, expected.innerType);
 				break;
+			case "object":
+				expect(actual.type).toEqual("object");
+				expect(actual.memberTypes.length).toEqual(expected.memberTypes.length);
+				for (var key in expected.memberTypes) {
+					compareTypes(expect(actual.memberTypes[key]), expected.memberTypes[key]);
+				}
+				break;
 			default:
 				throw new Error("Unexpected expectation type");
 		}

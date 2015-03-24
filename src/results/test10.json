@@ -1,0 +1,19 @@
+{
+	"success": true,
+	"types": {
+		"3": {
+			"4": {
+				"type": "object",
+				"memberTypes": {
+					"hello": "string",
+					"myValue": {
+						"type": "object",
+						"memberTypes": {
+							"i": "boolean"
+						}
+					}
+				}
+			}
+		}
+	}
+}

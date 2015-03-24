@@ -14,7 +14,13 @@
             "name": "Ott to PDF",
             "working_dir": "$project_path",
             "cmd": ["ott src/formal/jstyper.ott -o report/tex/spec.tex && pdflatex -output-directory=report/pdf/ report/tex/spec.tex 2>&1 >/dev/null && xdg-open report/pdf/spec.pdf"
-            		],
+                    ],
+            "shell": true
+        },
+        {
+            "name": "Jasmine",
+            "working_dir": "$project_path/src",
+            "cmd": ["jasmine"],
             "shell": true
         },
         {

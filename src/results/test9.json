@@ -1,0 +1,14 @@
+{
+	"success": true,
+	"types": {
+		"6": {
+			"5": "number",
+			"15": "boolean",
+			"22": {
+				"type": "wrapper",
+				"innerType": "number"
+			},
+			"36": "string"
+		}
+	}
+}
