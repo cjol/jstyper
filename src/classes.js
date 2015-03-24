@@ -719,6 +719,17 @@ TypeEnv.prototype.get = function(varName) {
 	
 	return null;
 };
+TypeEnv.prototype.getTypeEnvEntry = function(varName) {
+
+	// search backwards through entries to find the most recent defn
+	for (var i = this.length - 1; i >= 0; i--) {
+		if (this[i].name === varName) {
+			return this[i];
+		}
+	}
+	
+	return null;
+};
 TypeEnv.getFreshType = function(opts, node) {
 	return new AbstractType("T" + (TypeEnv.nextType++), opts, node);
 };

@@ -193,14 +193,23 @@ UglifyJS.AST_Symbol.prototype.check = function(gamma, dynamics, doNotWrap) {
 			this.tee = tee;
 			gamma.push(tee);
 		}
+	} else {
+		// we already have a type env entry for this type
+		this.tee = gamma.getTypeEnvEntry(this.name);
 	}
 
-	if (dynamic && !doNotWrap) {
-		this.tee = {
-			type: "wrapped"
-		};
-		W.push(new Classes.Wrapper(this, this.parent(), T.id));
-	}
+	if (dynamic) {
+		if (doNotWrap) {
+			// this was an assignment to a dynamic var
+
+			this.tee = new Classes.TypeEnvEntry(this.name, this, (new Classes.AbstractType()).id);
+		} else {
+			this.tee = {
+				type: "wrapped" // will be replaced once the wrapper is generated
+			};
+			W.push(new Classes.Wrapper(this, this.parent(), T.id));
+		}
+	} 
 
 	var j = new Classes.Judgement(T, C, gamma, W);
 	j.nodes.push(this);

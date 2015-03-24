@@ -2,7 +2,7 @@
 var str = "hey";
 // jstyper start 
 // jstyper import str
-var x = true;
+var x = false;
 var y = x;
 y = str;
 // jstyper end
