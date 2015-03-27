@@ -1,0 +1,20 @@
+{
+	"success": true,
+	"types": {
+		"7": {
+			"0": {
+				"type": "object", 
+				"memberTypes": {
+					"foo": {
+						"type": "function", 
+						"paramTypes": [
+							"undefined", 
+							"boolean"
+						],
+						"returnType": "boolean"
+					}
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,28 @@
+{
+	"success": true,
+	"types": {
+		"8": {
+			"0": {
+				"type": "object",
+				"memberTypes": {
+					"getHeight": {
+						"type": "function",
+						"argTypes": [{
+							"type": "object",
+							"donotrecurse": true,
+							"memberTypes": {
+
+							}
+						}, {
+							"type": "object",
+							"memberTypes": {
+								"height": "number"
+							}
+						}],
+						"returnType": "number"
+					}
+				}
+			}
+		}
+	}
+}

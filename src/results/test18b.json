@@ -1,0 +1,30 @@
+{
+	"success": true,
+	"types": {
+		"4": {
+			"9": {
+				"type": "function",
+				"argTypes": [{
+					"type": "object",
+					"memberTypes": {
+						"height": "number",
+						"width": "number"
+					}
+				}],
+				"returnType": "number"
+			}
+		},
+		"7": {
+			"9": {
+				"type": "function",
+				"argTypes": [{
+					"type": "object",
+					"memberTypes": {
+						"radius": "number"
+					}
+				}],
+				"returnType": "number"
+			}
+		}
+	}
+}

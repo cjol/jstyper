@@ -1,21 +1,16 @@
 {
 	"success": true,
 	"types": {
-		"7": {
-			"0": "number"
-		},
-		"5": {
-			"9": {
+		"2": {
+			"4": "number",
+			"21": {
 				"type": "function",
 				"argTypes": [
-					"abstract",
-					"boolean"
+					"undefined", 
+					"number"
 				],
 				"returnType": "number"
 			}
-		},
-		"6": {
-			"5": "boolean"
 		}
 	}
 }
