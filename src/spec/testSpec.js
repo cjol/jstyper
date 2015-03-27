@@ -67,7 +67,7 @@ describe("Custom test", function() {
 			}
 
 			if (expected.incomplete) {
-				xit("can't be run until the test framework is upgraded.");
+				xit("can't be useful until the test framework is upgraded.");
 				return;
 			}
 
