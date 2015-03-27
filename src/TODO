@@ -18,3 +18,4 @@ Do both occurences of 'x' have the same type (viz {foo:number})? Like the 'real'
 Conclusion, clearly they should have different types. How?..
 
 Polymorphism (I have none?) See test 20.
+
