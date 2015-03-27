@@ -1,4 +1,4 @@
-// expected result: pass, but fail if you add "var scopeTest" before the if
+// expected result: fail -- NB Is this contentious? Discussions of scope.
 // jstyper start
 	
 if (true) {

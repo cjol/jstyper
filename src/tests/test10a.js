@@ -1,4 +1,4 @@
-// expected result: fail - {} does not have foo 
+// expected result: fail - {} does not have foo on line 7
 // jstyper start
 var x = {};
 

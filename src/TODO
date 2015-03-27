@@ -1,7 +1,6 @@
-TODOS
+#TODOS
 
 Test 21
-Something about type stores merging after e.g. an if/else (Test 8?)
 aliased mutation not handled - e.g.  `var y = {}; x=y; y.foo=0;` x should have a foo property at the end but doesn't
 Loops
 Prototypes
@@ -17,3 +16,5 @@ Mutation: In the example code:
 Do both occurences of 'x' have the same type (viz {foo:number})? Like the 'real' type of x is {foo:number}, and on line 1 it is given an incomplete initialisation. This is easy but not type-safe (reading x.foo before foo is initialised would give 'number' in our system, but in reality the type is 'undefined'). 
 
 Conclusion, clearly they should have different types. How?..
+
+Polymorphism (I have none?) See test 20.

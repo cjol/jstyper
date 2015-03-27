@@ -1,0 +1,35 @@
+{
+	"incomplete": true,
+	"reason": "This types functions without polymorphism",
+	"success": true,
+	"types": {
+		"2": {
+			"4": {
+				"type": "function",
+				"argTypes": [
+					"undefined",
+					"number"
+				],
+				"returnType": "number"
+			}
+		},
+		"7": {
+			"4": {
+				"type": "function",
+				"argTypes": [
+					"undefined", 
+					{
+						"type": "function",
+						"argTypes": [
+							"undefined",
+							"number"
+						], 
+						"returnType": "number"
+					},
+					"number"
+				],
+				"returnType": "number"
+			}
+		}
+	}
+}

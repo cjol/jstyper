@@ -547,7 +547,7 @@ LEqConstraint.prototype.check = function() {
 	return this.checkStructure();
 };
 LEqConstraint.prototype.regenDesc = function() {
-	this.desc = Type.store[this.type1].toString() + " <= " + Type.store[this.type2].toString();
+	this.desc = Type.store[this.type1].toString() + " has less structure than " + Type.store[this.type2].toString();
 };
 LEqConstraint.prototype.solve = function() {
 	// straight equality - easy

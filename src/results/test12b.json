@@ -1,0 +1,46 @@
+{
+	"success": true,
+	"types": {
+		"9": {
+			"1": {
+				"type": "object",
+				"memberTypes": {
+					"foobar": {
+						"type": "object",
+						"memberTypes": {
+							"member": "number"
+						}
+					}
+				}
+			}
+		},
+		"19": {
+			"1": {
+				"type": "object",
+				"memberTypes": {
+					"foo": "boolean",
+					"foobar": {
+						"type": "object",
+						"memberTypes": {
+							"mymem": "number",
+							"member": "number"
+						}
+					}
+				}
+			}
+		},
+		"21": {
+			"0": {
+				"type": "object",
+				"memberTypes": {
+					"foobar": {
+						"type": "object",
+						"memberTypes": {
+							"member": "number"
+						}
+					}
+				}
+			}
+		}
+	}
+}
