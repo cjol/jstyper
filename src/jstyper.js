@@ -48,7 +48,7 @@ module.exports = function(src) {
 	var types = {};
 
 	// check the judgement is valid and do gradual typing for each chunk
-	for (var i = 0; i< chunks.length; i++) {
+	for (var i = 0; i < chunks.length; i++) {
 
 		// solve the generated constraints, or throw an error if this isn't possible
 		var result = solveConstraints(chunks[i].C);
@@ -67,11 +67,11 @@ module.exports = function(src) {
 		// // }
 
 		// apply the solution substitutions to the type environment
-		for (var j=0; j<substitutions.length; j++) {
+		for (var j = 0; j < substitutions.length; j++) {
 
 			chunks[i].gamma.applySubstitution(substitutions[j]);
 
-			for (var k = 0; k<chunks[i].W.length; k++) {
+			for (var k = 0; k < chunks[i].W.length; k++) {
 				chunks[i].W[k].applySubstitution(substitutions[j]);
 			}
 		}
@@ -80,7 +80,7 @@ module.exports = function(src) {
 		var annotate = function(node) {
 			if (node instanceof UglifyJS.AST_Scope) {
 				if (node.gamma !== undefined) {
-					for (var j=0; j<substitutions.length; j++) {
+					for (var j = 0; j < substitutions.length; j++) {
 						node.gamma.applySubstitution(substitutions[j]);
 					}
 					var typeComment = "\n\tjstyper types: \n" + node.gamma.toString(2);
@@ -99,7 +99,15 @@ module.exports = function(src) {
 		ast.walk(walker);
 
 
-		var attachSubtypes = function (tee, k, source) {
+		var attachSubtypes = function(tee, k, sourceId, donotrecurse) {
+
+			if (donotrecurse.indexOf(sourceId) >= 0) {
+				tee[k] = {
+					"type": "recursive"
+				};
+				return;
+			}	
+			var source = Classes.Type.store[sourceId];
 			var key;
 			if (source instanceof Classes.ObjectType) {
 				tee[k] = {
@@ -107,17 +115,17 @@ module.exports = function(src) {
 					memberTypes: {}
 				};
 				for (key in source.memberTypes) {
-					attachSubtypes(tee[k].memberTypes, key, Classes.Type.store[source.memberTypes[key]]);
+					attachSubtypes(tee[k].memberTypes, key, source.memberTypes[key], donotrecurse.concat([sourceId]));
 				}
 			} else if (source instanceof Classes.FunctionType) {
 				tee[k] = {
 					type: "function",
 					argTypes: []
 				};
-				for (key =0; key<source.argTypes.length; key++) {
-					attachSubtypes(tee[k].argTypes, key, Classes.Type.store[source.argTypes[key]]);
+				for (key = 0; key < source.argTypes.length; key++) {
+					attachSubtypes(tee[k].argTypes, key, source.argTypes[key], donotrecurse.concat([sourceId]));
 				}
-				attachSubtypes(tee[k], "returnType", Classes.Type.store[source.returnType]);
+				attachSubtypes(tee[k], "returnType", source.returnType, donotrecurse.concat([sourceId]));
 			} else if (source instanceof Classes.PrimitiveType) {
 
 				tee[k] = source.type;
@@ -129,22 +137,22 @@ module.exports = function(src) {
 		var typeSymbols = function(node) {
 			if (node instanceof UglifyJS.AST_Symbol) {
 				if (node.tee !== undefined) {
-					if (types[node.start.line] === undefined) 
+					if (types[node.start.line] === undefined)
 						types[node.start.line] = {};
 
-					attachSubtypes(types[node.start.line], node.start.col, Classes.Type.store[node.tee.type]);
-				
+					attachSubtypes(types[node.start.line], node.start.col, node.tee.type, []);
+
 				}
 			}
 		};
 		walker = new UglifyJS.TreeWalker(typeSymbols);
 		ast.walk(walker);
-		
+
 
 		function getWrapper(wrappers) {
 			return function(node) {
 				var wrapper;
-				for (var j=0; j<wrappers.length; j++) {
+				for (var j = 0; j < wrappers.length; j++) {
 					if (node === wrappers[j].parent) {
 						wrapper = wrappers[j];
 						break;
@@ -156,8 +164,7 @@ module.exports = function(src) {
 					type: "wrapper"
 				};
 
-				attachSubtypes(types[wrapper.expression.start.line][wrapper.expression.start.col], "innerType",
-					Classes.Type.store[wrapper.type]);
+				attachSubtypes(types[wrapper.expression.start.line][wrapper.expression.start.col], "innerType", wrapper.type, []);
 
 				// node is the parent of something which needs wrapping
 				// TODO: assign parents correctly within here
@@ -177,7 +184,7 @@ module.exports = function(src) {
 		ast.walk(walker);
 
 		// TODO: append a notice indicating the end of the typed section (not easy without a trailing comments property!)
-		
+
 		// for (var l = 0; l<solution.checks.length; l++) {
 		// 	// insert the checks as appropriate
 		// 	// unfortunately we're replacing nodes as we go, so we'll also need to substitute nodes as we go along
@@ -192,7 +199,7 @@ module.exports = function(src) {
 		// 					}
 		// 				}
 		// 			}
-					
+
 		// 		}
 		// 	}
 		// }

@@ -9,9 +9,19 @@
 						"type": "function",
 						"argTypes": [{
 							"type": "object",
-							"donotrecurse": true,
 							"memberTypes": {
-
+								"getHeight": {
+									"type": "function",
+									"argTypes": [{
+										"type": "recursive"
+									}, {
+										"type": "object",
+										"memberTypes": {
+											"height": "number"
+										}
+									}],
+									"returnType": "number"
+								}
 							}
 						}, {
 							"type": "object",

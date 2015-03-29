@@ -150,7 +150,9 @@ UglifyJS.AST_Lambda.prototype.check = function(gamma, dynamics) {
 
 	// V_Fun2
 	if (this.name !== undefined && this.name !== null) {
-		gamma1.push(new Classes.TypeEnvEntry(this.name.name, this, funType.id));
+		var funtee = new Classes.TypeEnvEntry(this.name.name, this, funType.id);
+		gamma1.push(funtee);
+		this.name.tee = funtee;
 	}
 
 	// gamma1 contains funType (and this is necessary for recursion to work)
@@ -357,9 +359,9 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 			if (!(this.left instanceof UglifyJS.AST_Dot)) {
 				// AssignType (if it's not a dot, it must be a variable)
 
+				// important justification of LEqCheck v. LEq in WWT pad, bottom of page 1.
 				if (!dynamicWrite) C.push(new Classes.LEqCheckConstraint(j2.T.id, j1.T.id));
-				// if (!dynamicWrite) C.push(new Classes.LEqCheckConstraint(j2.T, j1.T, this.right));
-
+				
 				returnType = j1.T;
 				break;
 			} else {
@@ -405,8 +407,9 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 				W = j1.W.concat(j2.W);
 				var constraint = new Classes.LEqConstraint(T.id, objType.id);
 				C.push(constraint);
-				C.push(new Classes.LEqConstraint(T3.id, j1.T.id));
-				// C.push(new Classes.LEqCheckConstraint(T3, j1.T, this.left.expression));
+
+				// important justification of LEqCheck v. LEq in WWT pad, bottom of page 1.
+				C.push(new Classes.LEqCheckConstraint(T3.id, j1.T.id));
 			}
 			break;
 		case ("+="):
@@ -705,7 +708,7 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 				// this entry is identical in both branches anyway
 				outGamma.push(T1);
 			} else {
-				
+
 				var outType = typeIntersect(Classes.Type.store[T1.type],
 												Classes.Type.store[T2.type]);
 

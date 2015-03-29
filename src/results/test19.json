@@ -3,7 +3,7 @@
 	"types": {
 		"2": {
 			"4": "number",
-			"21": {
+			"20": {
 				"type": "function",
 				"argTypes": [
 					"undefined", 

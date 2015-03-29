@@ -40,8 +40,11 @@ function compareTypes(actual, expected) {
 				}
 				compareTypes(actual.returnType, expected.returnType);
 				break;
+			case "recursive": 
+				expect(actual.type).toEqual("recursive");
+				break;
 			default:
-				throw new Error("Unexpected expectation type");
+				throw new Error("Unexpected expectation type: " + expected.type);
 		}
 	}
 }
