@@ -1,5 +1,6 @@
 {
 	"success": false,
+	"reason": "AST_Dot either uses LEqCheck or LEq, either of which has problems. See jugements.js line 260.",
 	"types": {
 	}
 }

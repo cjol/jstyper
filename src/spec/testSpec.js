@@ -28,8 +28,11 @@ function compareTypes(actual, expected) {
 					compareTypes(actual.memberTypes[key], expected.memberTypes[key]);
 				}
 				for (key in actual.memberTypes) {
-					expect(expected.memberTypes[key]).toBeDefined();
-					compareTypes(actual.memberTypes[key], expected.memberTypes[key]);
+					if (expected.memberTypes[key] === undefined) {
+						expect(actual.memberTypes[key]).not.toBeDefined();
+					} else {
+						compareTypes(actual.memberTypes[key], expected.memberTypes[key]);
+					}
 				}
 				break;
 			case "function": 

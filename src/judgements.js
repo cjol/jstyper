@@ -140,6 +140,7 @@ UglifyJS.AST_Lambda.prototype.check = function(gamma, dynamics) {
 			detail: 'arg' + i + ' type of fun ',
 			node: this
 		});
+		Ts[i].shouldInfer = true;
 		var name = (i === 0) ? 'this' : this.argnames[i - 1].name;
 
 		var tee = new Classes.TypeEnvEntry(name, null, Ts[i].id);
@@ -256,7 +257,15 @@ UglifyJS.AST_Dot.prototype.check = function(gamma, dynamics) {
 	var containerType = new Classes.ObjectType({
 		memberTypes: memberType
 	});
-	C.push(new Classes.LEqConstraint(containerType.id, j1.T.id));
+
+	// using LEqCheck rejects access to undefined members
+	// using LEq infers the required members for an object
+	if (j1.T.shouldInfer === true) {
+		C.push(new Classes.LEqConstraint(containerType.id, j1.T.id));
+	} else {
+		C.push(new Classes.LEqCheckConstraint(containerType.id, j1.T.id));
+	}
+	
 	var judgement = new Classes.Judgement(T, C, j1.gamma, W);
 	judgement.nodes.push(this);
 	return judgement;
@@ -371,29 +380,30 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 				j2 = this.left.expression.check(j1.gamma, dynamics);
 
 				var objType;
-				if (this.left.expression instanceof UglifyJS.AST_Symbol) {
-					// if this is literally of the format x.p = ..., then x must be in gamma. 
-					// the x we've used so far may not contain the property p
-					// the x from this point onwards must contain the property p
+				// if (this.left.expression instanceof UglifyJS.AST_Symbol) {
+				// 	// if this is literally of the format x.p = ..., then x must be in gamma. 
+				// 	// the x we've used so far may not contain the property p
+				// 	// the x from this point onwards must contain the property p
 
-					// We're effectively going to SSA this. Create a new type identical to the
-					// one we previously assigned, and add it to gamma to use from now on.
-					var mt = {};
-					for (var i in j2.T.memberTypes) {
-						mt[i] = j2.T.memberTypes[i];
-					}
+				// 	// We're effectively going to SSA this. Create a new type identical to the
+				// 	// one we previously assigned, and add it to gamma to use from now on.
+				// 	var mt = {};
+				// 	for (var i in j2.T.memberTypes) {
+				// 		mt[i] = j2.T.memberTypes[i];
+				// 	}
 
-					objType = new Classes.ObjectType({
-						memberTypes: mt
-					});
+				// 	objType = new Classes.ObjectType({
+				// 		memberTypes: mt
+				// 	});
 
-					j2.gamma = new Classes.TypeEnv(j2.gamma);
+				// 	j2.gamma = new Classes.TypeEnv(j2.gamma);
 
-					j2.gamma.push(new Classes.TypeEnvEntry(this.left.expression.name, this, objType.id));
-				} else {
+				// 	j2.gamma.push(new Classes.TypeEnvEntry(this.left.expression.name, this, objType.id));
+
+				// } else {
 					// if there's a more complicated expression, just use the expression's type directly
 					objType = j2.T;
-				}
+				// }
 
 				var T3 = gamma.getFreshType();
 				var memberType = {};
