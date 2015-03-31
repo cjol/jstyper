@@ -98,6 +98,7 @@ function AbstractType(type, options, node) {
 		isConcrete: false,
 		isDynamic: options !== undefined && options.isDynamic === true
 	}, node);
+	this.type = "T" + this.id;
 }
 tmp.prototype = Type.prototype;
 AbstractType.prototype = new tmp();
@@ -651,7 +652,7 @@ LEqConstraint.prototype.solve = function() {
 			// if this is a complex structure, there may also be sub-constraints to solve
 			constraints = this.getSubConstraints();
 		} else {
-			throw new Error(" Failed Unification: " + Type.store[this.type1].toString() + " != " + Type.store[this.type2].toString());
+			throw new Error(" Failed Unification: " + Type.store[this.type1].toString() + " !<= " + Type.store[this.type2].toString());
 		}
 	}
 
@@ -731,7 +732,7 @@ TypeEnv.prototype.getTypeEnvEntry = function(varName) {
 	return null;
 };
 TypeEnv.getFreshType = function(opts, node) {
-	return new AbstractType("T" + (TypeEnv.nextType++), opts, node);
+	return new AbstractType("", opts, node);
 };
 TypeEnv.prototype.getFreshType = TypeEnv.getFreshType;
 TypeEnv.prototype.applySubstitution = function(sub) {

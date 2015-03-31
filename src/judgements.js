@@ -265,7 +265,7 @@ UglifyJS.AST_Dot.prototype.check = function(gamma, dynamics) {
 	} else {
 		C.push(new Classes.LEqCheckConstraint(containerType.id, j1.T.id));
 	}
-	
+
 	var judgement = new Classes.Judgement(T, C, j1.gamma, W);
 	judgement.nodes.push(this);
 	return judgement;
@@ -370,40 +370,12 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 
 				// important justification of LEqCheck v. LEq in WWT pad, bottom of page 1.
 				if (!dynamicWrite) C.push(new Classes.LEqCheckConstraint(j2.T.id, j1.T.id));
-				
+
 				returnType = j1.T;
 				break;
 			} else {
 				// PropAssignType
-
-
 				j2 = this.left.expression.check(j1.gamma, dynamics);
-
-				var objType;
-				// if (this.left.expression instanceof UglifyJS.AST_Symbol) {
-				// 	// if this is literally of the format x.p = ..., then x must be in gamma. 
-				// 	// the x we've used so far may not contain the property p
-				// 	// the x from this point onwards must contain the property p
-
-				// 	// We're effectively going to SSA this. Create a new type identical to the
-				// 	// one we previously assigned, and add it to gamma to use from now on.
-				// 	var mt = {};
-				// 	for (var i in j2.T.memberTypes) {
-				// 		mt[i] = j2.T.memberTypes[i];
-				// 	}
-
-				// 	objType = new Classes.ObjectType({
-				// 		memberTypes: mt
-				// 	});
-
-				// 	j2.gamma = new Classes.TypeEnv(j2.gamma);
-
-				// 	j2.gamma.push(new Classes.TypeEnvEntry(this.left.expression.name, this, objType.id));
-
-				// } else {
-					// if there's a more complicated expression, just use the expression's type directly
-					objType = j2.T;
-				// }
 
 				var T3 = gamma.getFreshType();
 				var memberType = {};
@@ -415,7 +387,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 
 				C = j1.C.concat(j2.C);
 				W = j1.W.concat(j2.W);
-				var constraint = new Classes.LEqConstraint(T.id, objType.id);
+				var constraint = new Classes.LEqConstraint(T.id, j2.T.id);
 				C.push(constraint);
 
 				// important justification of LEqCheck v. LEq in WWT pad, bottom of page 1.
@@ -664,82 +636,85 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 
 	C.push(new Classes.Constraint(Classes.Type.boolType.id, j1.T.id));
 
+	// create a cloned (SEPARATE!) environment for the two branches
+	// we will then have to merge changes back into the original
+	function getClone(original) {
+		var clone = [];
+		var map = {};
+		for (var i = 0; i < original.length; i++) {
+			clone[i] = new Classes.TypeEnvEntry(
+				original[i].name,
+				original[i].node,
+				original[i].type
+			);
+			map[i] = clone[i];
+		}
+		return {
+			gamma: new Classes.TypeEnv(clone),
+			map: map
+		};
+	}
+
+	function mergeTypes(T1, T2) {
+		if (T1 instanceof Classes.ObjectType) {
+			if (T2 instanceof Classes.ObjectType) {
+				var memberTypes = [];
+				// find the intersection of members
+				for (var member in T1.memberTypes) {
+					if (member in T2.memberTypes) {
+						memberTypes[member] = mergeTypes(
+							Classes.Type.store[T1.memberTypes[member]],
+							Classes.Type.store[T2.memberTypes[member]]
+						).id;
+					}
+				}
+
+				var newObject = new Classes.ObjectType({
+					memberTypes: memberTypes
+				});
+				return newObject;
+			}
+		}
+
+		// if these aren't two conrete objects, just add a constraint
+		// between them to ensure they're of the same type
+		C.push(new Classes.Constraint(T1.id, T2.id));
+		return T1;
+	}
+
+	function mergeEnv(original, map1, map2) {
+		for (var i = 0; i < original.length; i++) {
+			// optimisation - don't add constraints if the types are the same!
+			if (original[i].type !== map1[i].type || original[i].type !== map2[i].type) {
+				var T1 = Classes.Type.store[map1[i].type];
+				var T2 = Classes.Type.store[map2[i].type];
+				var newType = mergeTypes(T1, T2);
+				original[i].type = newType.id;
+			}
+		}
+	}
+
 	this.body.parent = parent(this);
-	var j2 = this.body.check(j1.gamma, dynamics);
+	var clone1 = getClone(j1.gamma);
+	var j2 = this.body.check(clone1.gamma, dynamics);
 	C = C.concat(j2.C);
 	W = W.concat(j2.W);
 
-	var outGamma;
 
 	// IfTypable2
 	if (this.alternative !== undefined && this.alternative !== null) {
 		this.alternative.parent = parent(this);
-		var j3 = this.alternative.check(j1.gamma, dynamics);
+		var clone2 = getClone(j1.gamma);
+		var j3 = this.alternative.check(clone2.gamma, dynamics);
 		C = C.concat(j3.C);
 		W = W.concat(j3.W);
 
-		// create a merged gamma
-		outGamma = new Classes.TypeEnv();
-		// use j2 to obtain a list of symbols
-		var symbols = {};
-		for (var i = 0; i < j2.gamma.length; i++) {
-			symbols[j2.gamma[i].name] = true;
-		}
-
-		var typeIntersect = function typeIntersect(type1, type2) {
-			if (type1.type === "object") {
-				var mt = {};
-				for (var member in type1.memberTypes) {
-					if (member in type2.memberTypes) {
-						mt[member] = typeIntersect(Classes.Type.store[type1.memberTypes[member]],
-						 						Classes.Type.store[type2.memberTypes[member]]);
-					}
-				}
-				return new Classes.ObjectType({
-					memberTypes: mt
-				}).id;
-			} else {
-				// if these are not objects, can just return either type. 
-				// A higher level will enforce constraints between this result
-				// and the two original types
-				return type1.id;
-			}
-		};
-
-		// TODO: This should maybe be reflected in formal system?
-		for (var symbol in symbols) {
-			var T1 = j2.gamma.getTypeEnvEntry(symbol);
-			var T2 = j3.gamma.getTypeEnvEntry(symbol);
-
-			if (T1 === undefined || T2 === undefined) {
-				// some type wasn't mentioned in both worlds
-				// don't put it in outGamma
-			} else if (T1 === T2) {
-				// this entry is identical in both branches anyway
-				outGamma.push(T1);
-			} else {
-
-				var outType = typeIntersect(Classes.Type.store[T1.type],
-												Classes.Type.store[T2.type]);
-
-				// NB We might have problems with old type env entries being
-				// attached to nodes, but being replaced here by new ones
-				// (hence the old ones are unaffected by substitutions)
-				outGamma.push(new Classes.TypeEnvEntry(symbol, T1.node, outType));
-
-				// the type after the If statement must be a supertype of both branches'
-				C.push(new Classes.LEqCheckConstraint(outType, T1.type));
-				C.push(new Classes.LEqCheckConstraint(outType, T2.type));
-			}
-		}
-
+		mergeEnv(j1.gamma, clone1.map, clone2.map);
 	} else {
-		// there was no 'else', so the outgoing gamma will be the same as the
-		// incoming gamma. Effectively add intersection with empty j3.gamma
-		outGamma = j1.gamma;
+		// TODO: merge env without clone2
 	}
 
-	var j = new Classes.Judgement(null, C, outGamma, W);
+	var j = new Classes.Judgement(null, C, j1.gamma, W);
 	j.nodes.push(this);
 	return j;
 };

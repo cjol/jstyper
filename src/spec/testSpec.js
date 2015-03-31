@@ -4,6 +4,24 @@ var fs = require("fs");
 // for type-checking and compilation
 var jstyper = require("../jstyper");
 
+var extraMatchers = {
+	toHaveProperty: function() {
+		return {
+			compare: function(actual, expected) {
+				if (expected === undefined) {
+					throw new Error("Can't check for empty property");
+				}
+				return {
+					pass: actual[expected] !== undefined,
+					message: (actual[expected] !== undefined)?
+								"Expected " + actual + " to have property '" + expected + "'":
+								"Expected " + actual + " not to have property '" + expected + "'"
+				};
+			}
+		};
+	}
+};
+
 function compareTypes(actual, expected) {
 	// console.log("Comparing \n");
 	// console.log(actual); 
@@ -24,12 +42,12 @@ function compareTypes(actual, expected) {
 
 				// need to check in both directions
 				for (var key in expected.memberTypes) {
-					expect(actual.memberTypes[key]).toBeDefined();
+					expect(actual.memberTypes).toHaveProperty(key);
 					compareTypes(actual.memberTypes[key], expected.memberTypes[key]);
 				}
 				for (key in actual.memberTypes) {
 					if (expected.memberTypes[key] === undefined) {
-						expect(actual.memberTypes[key]).not.toBeDefined();
+						expect(actual.memberTypes).not.toHaveProperty(key);
 					} else {
 						compareTypes(actual.memberTypes[key], expected.memberTypes[key]);
 					}
@@ -53,6 +71,11 @@ function compareTypes(actual, expected) {
 }
 
 describe("Custom test", function() {
+
+	beforeEach(function() {
+		jasmine.addMatchers(extraMatchers);
+	});
+
 	var files = fs.readdirSync(process.cwd() + '/tests/');
 
 	files.forEach(function(file) {

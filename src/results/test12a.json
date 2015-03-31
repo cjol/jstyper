@@ -1,16 +1,17 @@
 {
 	"success": true,
 	"types": {
-		"7": {
+		"8": {
 			"0": {
 				"type": "object",
 				"memberTypes": {
 					"one": "number",
-					"two": "number"
+					"two": "number",
+					"result": "number"
 				}
 			}
 		},
-		"8": {
+		"9": {
 			"8": {
 				"type": "object",
 				"memberTypes": {
