@@ -1,6 +1,7 @@
 {
 	"incomplete": true,
 	"success": true,
+	"reason": "Tests object wrapping which we can't currently test for.",
 	"types": {
 	}
 }

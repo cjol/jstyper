@@ -1,5 +1,6 @@
 {
 	"incomplete": true,
+	"reason": "JSTyper doesn't support variable hoisting.",
 	"success": true,
 	"types": {
 

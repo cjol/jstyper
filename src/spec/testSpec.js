@@ -64,13 +64,21 @@ describe("Custom test", function() {
 				expected = JSON.parse(fs.readFileSync("./results/" + stem + ".json", "utf8"));
 				
 			} catch (e) {
-				// test hasn't been written yet
-				xit("should have a test");
+
+				it("should have a test", function() {
+					pending("Test hasn't been written yet");
+				});
 				return;
 			}
 
 			if (expected.incomplete) {
-				xit("can't be useful until the test framework is upgraded.");
+				it("can't be useful until the test framework is upgraded.", function() {
+					if (expected.reason === undefined) {
+						pending();
+					} else {
+						pending(expected.reason);
+					}
+				});
 				return;
 			}
 
