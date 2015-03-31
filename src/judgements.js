@@ -142,6 +142,7 @@ UglifyJS.AST_Lambda.prototype.check = function(gamma, dynamics) {
 		});
 		var name = (i === 0) ? 'this' : this.argnames[i - 1].name;
 
+		Ts[i].shouldInfer = true;
 		var tee = new Classes.TypeEnvEntry(name, null, Ts[i].id);
 		argumentTypeEnvEntries.push(tee);
 		funType.argTypes.push(argumentTypeEnvEntries[i].type);
@@ -256,7 +257,17 @@ UglifyJS.AST_Dot.prototype.check = function(gamma, dynamics) {
 	var containerType = new Classes.ObjectType({
 		memberTypes: memberType
 	});
-	C.push(new Classes.LEqConstraint(containerType.id, j1.T.id));
+
+	// using LEqCheck rejects access to undefined members
+	// using LEq infers the required members for an object
+	if (j1.T.shouldInfer === true) {
+		C.push(new Classes.LEqConstraint(containerType.id, j1.T.id));
+	} else {
+		var nc = new Classes.LEqCheckConstraint(containerType.id, j1.T.id);
+		nc.interesting = true;
+		C.push(nc);
+	}
+
 	var judgement = new Classes.Judgement(T, C, j1.gamma, W);
 	judgement.nodes.push(this);
 	return judgement;

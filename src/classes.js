@@ -443,10 +443,14 @@ Constraint.prototype.getSubConstraints = function() {
 	// NB: We know by now that type1 and type2 have identical structure
 
 	var newConstraints = [];
+	var nc;
 	if (type1.type === "object")	{
 
 		for (var label in type1.memberTypes) {
-			newConstraints.push(new this.constructor(type1.memberTypes[label], type2.memberTypes[label]));
+			
+			nc = new this.constructor(type1.memberTypes[label], type2.memberTypes[label]);
+			if (this.interesting) nc.interesting = true;
+			newConstraints.push(nc);
 		}
 
 		return newConstraints;	
@@ -455,9 +459,14 @@ Constraint.prototype.getSubConstraints = function() {
 		// generate new constraints asserting that the arguments and
 		// return type of type1 and of type2 have the same type
 		for (var i=0; i<type1.argTypes.length; i++) {
-			newConstraints.push(new Constraint(type1.argTypes[i], type2.argTypes[i]));
+			nc = new Constraint(type1.argTypes[i], type2.argTypes[i]);
+			if (this.interesting) nc.interesting = true;
+			newConstraints.push(nc);
 		}
-		newConstraints.push(new Constraint(type1.returnType, type2.returnType));
+
+		nc = new Constraint(type1.returnType, type2.returnType);
+		if (this.interesting) nc.interesting = true;
+		newConstraints.push(nc);
 		return newConstraints;	
 		
 	} else {
@@ -477,19 +486,29 @@ Constraint.prototype.applySubstitution = function(sub) {
 
 Constraint.compare = function(a, b) {
 	var score = function(c) {
+		var score;
+
 		// LEq between two abstracts should be last
-		if (c instanceof LEqCheckConstraint && (!Type.store[c.type1].isConcrete && !Type.store[c.type2].isConcrete)) {
-			return 4;
-		} else if (c instanceof LEqConstraint && (!Type.store[c.type1].isConcrete && !Type.store[c.type2].isConcrete)) {
-			return 3;
-		} else if (c instanceof LEqCheckConstraint) {
-			return 2;
-		} else if (c instanceof LEqConstraint) {
-			return 1;
+		// LEq involving functions should be first (will immediately give straight constraints)
+		if (! (Type.store[c.type1].isConcrete || Type.store[c.type2].isConcrete)) {
+			score = 3;
+		} else if (Type.store[c.type1] instanceof FunctionType || Type.store[c.type2] instanceof FunctionType) {
+			score = 1;
 		} else {
-			return 0;
+			score = 2;
 		}
+
+		if (c instanceof LEqCheckConstraint) {
+			score = score * 2;
+		} else if (c instanceof LEqConstraint) {
+			score = score * 2 - 1;
+		} else {
+			score = 0;
+		}
+
+		return score;
 	};
+	Constraint.compare.score = score;
 
 	a.regenDesc();
 	b.regenDesc();
