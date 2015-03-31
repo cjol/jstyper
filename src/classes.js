@@ -26,7 +26,7 @@ module.exports = {
 module.exports.Exceptions = {
 	TwoAbstractsException: function TwoAbstractsException(msg) {
 		this.name = "TwoAbstractsException";
-    	this.message = (msg || "Tried to solve a constraint between two abstract types");
+		this.message = (msg || "Tried to solve a constraint between two abstract types");
 	}
 };
 module.exports.Exceptions.TwoAbstractsException.prototype = new Error();
@@ -63,6 +63,12 @@ function Type(type, options, node) {
 Type.prototype.toString = function() {
 	return this.type;
 };
+Type.prototype.addContainers = function(container) {
+	this.containers.push(container);
+};
+Type.prototype.isContainedBy = function(container) {
+	return this.containers.indexOf(container)>=0;
+};
 
 function PrimitiveType(type, options, node) {
 	Type.call(this, type, {
@@ -83,11 +89,15 @@ PrimitiveType.prototype.toAST = function() {
 		properties: [
 			new UglifyJS.AST_ObjectKeyVal({
 				key: "kind",
-				value: new UglifyJS.AST_String({value:"primitive"})
+				value: new UglifyJS.AST_String({
+					value: "primitive"
+				})
 			}),
 			new UglifyJS.AST_ObjectKeyVal({
 				key: "type",
-				value: new UglifyJS.AST_String({value:this.type})
+				value: new UglifyJS.AST_String({
+					value: this.type
+				})
 			})
 		]
 	});
@@ -113,7 +123,9 @@ AbstractType.prototype.toAST = function() {
 		properties: [
 			new UglifyJS.AST_ObjectKeyVal({
 				key: "kind",
-				value: new UglifyJS.AST_String({value:"abstract"})
+				value: new UglifyJS.AST_String({
+					value: "abstract"
+				})
 			})
 		]
 	});
@@ -127,6 +139,7 @@ function ObjectType(options, node) {
 
 	for (var i in options.memberTypes) {
 		this.memberTypes[i] = options.memberTypes[i];
+		Type.store[this.memberTypes[i]].addContainers(this.id);
 	}
 }
 tmp.prototype = PrimitiveType.prototype;
@@ -152,10 +165,11 @@ ObjectType.prototype.applySubstitution = function(sub, donotrecurse) {
 		// if one of my membertypes is the substitution target, then we will replace it
 		if (this.memberTypes[j] === sub.from) {
 			this.memberTypes[j] = sub.to;
+			Type.store[sub.to].addContainers(this.id);
 		}
 
 		// now recursively apply substitution to children
-		for (var i =0; i<donotrecurse.length; i++) {
+		for (var i = 0; i < donotrecurse.length; i++) {
 			if (this.memberTypes[j] === donotrecurse[i]) continue outerLoop;
 		}
 
@@ -170,13 +184,13 @@ ObjectType.prototype.toString = function(donotrecurse) {
 
 	var types = [];
 	outerLoop: for (var lab in this.memberTypes) {
-		for (var i=0; i<donotrecurse.length; i++) {
+		for (var i = 0; i < donotrecurse.length; i++) {
 			if (donotrecurse[i] === this.memberTypes[lab]) {
 				types.push(lab + ": [" + Type.store[this.memberTypes[lab]].type + "]");
 				continue outerLoop;
 			}
 		}
-		types.push(lab + ":" + Type.store[this.memberTypes[lab]].toString(donotrecurse.slice(0)) );
+		types.push(lab + ":" + Type.store[this.memberTypes[lab]].toString(donotrecurse.slice(0)));
 	}
 	return "{" + types.join(", ") + "}";
 };
@@ -186,7 +200,7 @@ ObjectType.prototype.toAST = function(donotrecurse) {
 
 	var types = [];
 	outerLoop: for (var lab in this.memberTypes) {
-		for (var i=0; i<donotrecurse.length; i++) {
+		for (var i = 0; i < donotrecurse.length; i++) {
 			if (donotrecurse[i] === this.memberTypes[lab]) {
 				// TODO: Relative link to parent?
 				types.push(new UglifyJS.AST_ObjectKeyVal({
@@ -208,7 +222,9 @@ ObjectType.prototype.toAST = function(donotrecurse) {
 		properties: [
 			new UglifyJS.AST_ObjectKeyVal({
 				key: "kind",
-				value: new UglifyJS.AST_String({value:"object"})
+				value: new UglifyJS.AST_String({
+					value: "object"
+				})
 			}),
 			new UglifyJS.AST_ObjectKeyVal({
 				key: "memberTypes",
@@ -219,16 +235,27 @@ ObjectType.prototype.toAST = function(donotrecurse) {
 		]
 	});
 };
+ObjectType.prototype.addContainers = function(container) {
+	if (this.isContainedBy(container)) return;
+	Type.prototype.addContainers.call(this, container);
+
+	for (var member in this.memberTypes) {
+		Type.store[this.memberTypes[member]].addContainers(container);
+	}
+};
 
 function FunctionType(options, node) {
 	PrimitiveType.call(this, "function", options, node);
 
 	this.argTypes = [];
 
-	for (var i =0; i<options.argTypes.length; i++) {
+	for (var i = 0; i < options.argTypes.length; i++) {
 		this.argTypes[i] = options.argTypes[i];
+		Type.store[this.argTypes[i]].addContainers(this.id);
 	}
+
 	this.returnType = options.returnType;
+	Type.store[this.returnType].addContainers(this.id);
 }
 tmp.prototype = PrimitiveType.prototype;
 FunctionType.prototype = new tmp();
@@ -253,10 +280,13 @@ FunctionType.prototype.applySubstitution = function(sub, donotrecurse) {
 
 	// A function itself cannot be substituted, but arg or return types might be abstract
 	var i;
-	outerLoop: for (var j=0; j<this.argTypes.length; j++) {
-		if (this.argTypes[j] === sub.from) this.argTypes[j] = sub.to;
+	outerLoop: for (var j = 0; j < this.argTypes.length; j++) {
+		if (this.argTypes[j] === sub.from) {
+			this.argTypes[j] = sub.to;
+			Type.store[sub.to].addContainers(this.id);
+		}
 
-		for (i =0; i<donotrecurse.length; i++) {
+		for (i = 0; i < donotrecurse.length; i++) {
 			if (this.argTypes[j] === donotrecurse[i]) continue outerLoop;
 		}
 
@@ -264,8 +294,11 @@ FunctionType.prototype.applySubstitution = function(sub, donotrecurse) {
 		Type.store[this.argTypes[j]].applySubstitution(sub, donotrecurse.slice(0));
 	}
 
-	if (this.returnType === sub.from) this.returnType = sub.to;
-	for (i =0; i<donotrecurse.length; i++) {
+	if (this.returnType === sub.from) {
+		this.returnType = sub.to;
+		Type.store[sub.to].addContainers(this.id);
+	}
+	for (i = 0; i < donotrecurse.length; i++) {
 		if (this.returnType === donotrecurse[i]) return;
 	}
 	Type.store[this.returnType].applySubstitution(sub, donotrecurse.slice(0));
@@ -275,12 +308,12 @@ FunctionType.prototype.toString = function(donotrecurse) {
 	var j;
 	if (donotrecurse === undefined) donotrecurse = [];
 	donotrecurse.push(this.id);
-	
+
 	// argument types
 	var args = [];
-	outerLoop: for (var i = 0; i<this.argTypes.length; i++) {
-		
-		for (j=0; j<donotrecurse.length; j++) {
+	outerLoop: for (var i = 0; i < this.argTypes.length; i++) {
+
+		for (j = 0; j < donotrecurse.length; j++) {
 			if (donotrecurse[j] === this.argTypes[i]) {
 				args.push("[" + Type.store[this.argTypes[i]].type + "]");
 				continue outerLoop;
@@ -292,7 +325,7 @@ FunctionType.prototype.toString = function(donotrecurse) {
 	// return type
 	var ret;
 	var safe = true;
-	for (j=0; j<donotrecurse.length; j++) {
+	for (j = 0; j < donotrecurse.length; j++) {
 		if (donotrecurse[j] === this.returnType) {
 			ret = "[" + Type.store[this.returnType].type + "]";
 			safe = false;
@@ -311,12 +344,12 @@ FunctionType.prototype.toAST = function(donotrecurse) {
 	var j;
 	if (donotrecurse === undefined) donotrecurse = [];
 	donotrecurse.push(this.id);
-	
+
 	// argument types
 	var args = [];
-	outerLoop: for (var i = 0; i<this.argTypes.length; i++) {
-		
-		for (j=0; j<donotrecurse.length; j++) {
+	outerLoop: for (var i = 0; i < this.argTypes.length; i++) {
+
+		for (j = 0; j < donotrecurse.length; j++) {
 			if (donotrecurse[j] === this.argTypes[i]) {
 				args.push(new UglifyJS.AST_String({
 					value: "[" + Type.store[this.argTypes[i]].type + "]"
@@ -330,7 +363,7 @@ FunctionType.prototype.toAST = function(donotrecurse) {
 	// return type
 	var ret;
 	var safe = true;
-	for (j=0; j<donotrecurse.length; j++) {
+	for (j = 0; j < donotrecurse.length; j++) {
 		if (donotrecurse[j] === this.returnType) {
 			ret = new UglifyJS.AST_String({
 				value: "[" + Type.store[this.returnType].type + "]"
@@ -347,7 +380,9 @@ FunctionType.prototype.toAST = function(donotrecurse) {
 		properties: [
 			new UglifyJS.AST_ObjectKeyVal({
 				key: "kind",
-				value: new UglifyJS.AST_String({value:"function"})
+				value: new UglifyJS.AST_String({
+					value: "function"
+				})
 			}),
 			new UglifyJS.AST_ObjectKeyVal({
 				key: "argTypes",
@@ -361,6 +396,16 @@ FunctionType.prototype.toAST = function(donotrecurse) {
 			})
 		]
 	});
+};
+FunctionType.prototype.addContainers = function(container) {
+
+	if (this.isContainedBy(container)) return;
+	Type.prototype.addContainers.call(this, container);
+
+	for (var i = 0; i < this.argTypes.length; i++) {
+		Type.store[this.argTypes[i]].addContainers(container);
+	}
+	Type.store[this.returnType].addContainers(container);
 };
 
 
@@ -377,12 +422,18 @@ Substitution.prototype.apply = function(element) {
 function Constraint(leftType, rightType) {
 	this.type1 = leftType;
 	this.type2 = rightType;
-	
+
 	this.regenDesc();
 }
 Constraint.prototype.solve = function() {
+
+	if (this.type1 === this.type2) return {
+		constraints: [],
+		substitutions: []
+	};
 	// straight equality - easy
-	var subs = [], constraints = [];
+	var subs = [],
+		constraints = [];
 
 	// if one is concrete and the other abstract, sub from abs to conc
 	if (!Type.store[this.type1].isConcrete) {
@@ -414,7 +465,7 @@ Constraint.prototype.check = function() {
 
 	// NB Since all types are created fresh, we only get this far if both types are concrete
 	if (type2.type !== type1.type) return false;
-	
+
 	if (type1.type === "object") {
 
 		// check inclusion in both directions
@@ -439,26 +490,26 @@ Constraint.prototype.getSubConstraints = function() {
 
 	var type1 = Type.store[this.type1];
 	var type2 = Type.store[this.type2];
-	
+
 	// NB: We know by now that type1 and type2 have identical structure
 
 	var newConstraints = [];
 	var nc;
-	if (type1.type === "object")	{
+	if (type1.type === "object") {
 
 		for (var label in type1.memberTypes) {
-			
+
 			nc = new this.constructor(type1.memberTypes[label], type2.memberTypes[label]);
 			if (this.interesting) nc.interesting = true;
 			newConstraints.push(nc);
 		}
 
-		return newConstraints;	
+		return newConstraints;
 	} else if (type1.type === "function") {
 
 		// generate new constraints asserting that the arguments and
 		// return type of type1 and of type2 have the same type
-		for (var i=0; i<type1.argTypes.length; i++) {
+		for (var i = 0; i < type1.argTypes.length; i++) {
 			nc = new Constraint(type1.argTypes[i], type2.argTypes[i]);
 			if (this.interesting) nc.interesting = true;
 			newConstraints.push(nc);
@@ -467,10 +518,10 @@ Constraint.prototype.getSubConstraints = function() {
 		nc = new Constraint(type1.returnType, type2.returnType);
 		if (this.interesting) nc.interesting = true;
 		newConstraints.push(nc);
-		return newConstraints;	
-		
+		return newConstraints;
+
 	} else {
-		return newConstraints;	
+		return newConstraints;
 	}
 };
 Constraint.prototype.regenDesc = function() {
@@ -489,8 +540,11 @@ Constraint.compare = function(a, b) {
 		var score;
 
 		// LEq between two abstracts should be last
+		// LEq involving one abstract should be almost last (involves a potentially info-losing substitution)
 		// LEq involving functions should be first (will immediately give straight constraints)
-		if (! (Type.store[c.type1].isConcrete || Type.store[c.type2].isConcrete)) {
+		if (!(Type.store[c.type1].isConcrete || Type.store[c.type2].isConcrete)) {
+			score = 4;
+		} else if (!Type.store[c.type1].isConcrete || !Type.store[c.type2].isConcrete) {
 			score = 3;
 		} else if (Type.store[c.type1] instanceof FunctionType || Type.store[c.type2] instanceof FunctionType) {
 			score = 1;
@@ -569,8 +623,15 @@ LEqConstraint.prototype.regenDesc = function() {
 	this.desc = Type.store[this.type1].toString() + " has less structure than " + Type.store[this.type2].toString();
 };
 LEqConstraint.prototype.solve = function() {
+	
+	if (this.type1 === this.type2) return {
+		constraints: [],
+		substitutions: []
+	};
+
 	// straight equality - easy
-	var subs = [], constraints = [];
+	var subs = [],
+		constraints = [];
 
 	if (!Type.store[this.type1].isConcrete) {
 		if (!Type.store[this.type2].isConcrete) {
@@ -605,14 +666,14 @@ LEqConstraint.prototype.solve = function() {
 				argTypes: [],
 				returnType: retType.id
 			});
-			for (var i=0; i<Type.store[this.type2].argTypes.length; i++) {
+			for (var i = 0; i < Type.store[this.type2].argTypes.length; i++) {
 				funType.argTypes[i] = TypeEnv.getFreshType().id;
 			}
 			subs.push(new Substitution(this.type1, funType.id));
 
 			// I have contributed some information, but the constraint isn't solved yet
 			constraints.push(this);
-			
+
 
 		} else {
 			// abs <= primitive
@@ -644,14 +705,14 @@ LEqConstraint.prototype.solve = function() {
 				argTypes: [],
 				returnType: retType.id
 			});
-			for (var i=0; i<Type.store[this.type1].argTypes.length; i++) {
+			for (var i = 0; i < Type.store[this.type1].argTypes.length; i++) {
 				funType.argTypes[i] = TypeEnv.getFreshType().id;
 			}
 			subs.push(new Substitution(this.type2, funType.id));
 
 			// I have contributed some information, but the constraint isn't solved yet
 			constraints.push(this);
-			
+
 
 		} else {
 			// abs => primitive
@@ -720,7 +781,7 @@ TypeEnvEntry.prototype.toString = function() {
 
 function TypeEnv(cloneFrom) {
 	if (cloneFrom !== undefined) {
-		for (var i=0; i<cloneFrom.length; i++) {
+		for (var i = 0; i < cloneFrom.length; i++) {
 			this.push(cloneFrom[i]);
 		}
 	}
@@ -735,7 +796,7 @@ TypeEnv.prototype.get = function(varName) {
 			return Type.store[this[i].type];
 		}
 	}
-	
+
 	return null;
 };
 TypeEnv.prototype.getTypeEnvEntry = function(varName) {
@@ -746,7 +807,7 @@ TypeEnv.prototype.getTypeEnvEntry = function(varName) {
 			return this[i];
 		}
 	}
-	
+
 	return null;
 };
 TypeEnv.getFreshType = function(opts, node) {
@@ -761,7 +822,7 @@ TypeEnv.prototype.applySubstitution = function(sub) {
 TypeEnv.prototype.toString = function(indentation) {
 	var ind = "";
 	if (indentation !== undefined) {
-		for (var j=0; j<indentation; j++) {
+		for (var j = 0; j < indentation; j++) {
 			ind += "\t";
 		}
 	}

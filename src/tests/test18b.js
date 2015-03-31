@@ -12,6 +12,7 @@ var circle = {radius:3, area: circleArea};
 
 var rectangle = {height:2, width:3, area:rectangleArea};
 
-var totalArea = circle.area() + rectangle.area();
+// var totalArea = circle.area() + 3;
+var totalArea = circle.area() + circle.area() ;
 
 // jstyper end
