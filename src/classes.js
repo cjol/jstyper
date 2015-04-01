@@ -795,7 +795,6 @@ LEqConstraint.prototype.solve = function() {
 	else {
 		// if they're the same type, we're okay, else we have a type error
 		// check the structure of the types (not sufficient for complex types)
-<<<<<<< HEAD
 		try {
 			if (Type.store[this.type1].type === "object" && Type.store[this.type2].type === "object" &&
 				Type.store[this.type1].originalObj === null && Type.store[this.type2].originalObj === null) {
@@ -806,13 +805,6 @@ LEqConstraint.prototype.solve = function() {
 			constraints = this.check();
 		} catch (e) {
 			throw new Error(" Failed Unification: " + Type.store[this.type1].toString() + " != " + Type.store[this.type2].toString());
-=======
-		if (this.check()) {
-			// if this is a complex structure, there may also be sub-constraints to solve
-			constraints = this.getSubConstraints();
-		} else {
-			throw new Error(" Failed Unification: " + Type.store[this.type1].toString() + " !<= " + Type.store[this.type2].toString());
->>>>>>> 1006c5d58010605f5d7c50f60d767a56fd2a9798
 		}
 	}
 

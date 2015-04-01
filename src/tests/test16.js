@@ -1,8 +1,9 @@
 // jstyper start
 var x = {
-	f: function(p) {
-		return p.a;
+	getHeight: function(x) {
+		return x.height;
 	}
 };
-x.f({a:3, b:2});
+var one = {height:3, width:2};
+x.getHeight(one);
 // jstyper end
