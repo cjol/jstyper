@@ -12,7 +12,13 @@
 						}
 					}
 				],
-				"returnType": "undefined"
+				"returnType": {
+					"type": "object",
+					"memberTypes": {
+						"member": "number",
+						"foo": "number"
+					}
+				}
 			}
 		}
 	}

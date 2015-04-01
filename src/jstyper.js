@@ -50,31 +50,58 @@ module.exports = function(src) {
 	// check the judgement is valid and do gradual typing for each chunk
 	for (var i = 0; i < chunks.length; i++) {
 
-		// solve the generated constraints, or throw an error if this isn't possible
-		var result = solveConstraints(chunks[i].C);
-		var substitutions = result.substitutions;
-		// var constraints = result.constraints;
-		// // if (constraints.length > 0) {
-		// // 	// we have no further opportunities to solve the constraints which is a problem...
-		// // 	throw new Error("Couldn't solve all constraints");
-		// // }
-		// // for (var ci = 0; ci<constraints.length; ci++) {
-		// // 	if (  !Classes.Type.store[constraints[ci].type1].isConcrete &&
-		// // 		!Classes.Type.store[constraints[ci].type2].isConcrete) {
-		// // 		// it's fine to have abstract types at the end
-		// // 		continue;
-		// // 	}
-		// // }
+		var consistConstraints = chunks[i].C;
 
-		// apply the solution substitutions to the type environment
-		for (var j = 0; j < substitutions.length; j++) {
+		var getConsistencyConstraints = function(type, existingMembers) {
+			var C = [];
+			if (type instanceof Classes.ObjectType) {
+				for (var member in type.memberTypes) {
+					if (member in existingMembers) {
+						C.push(new Classes.Constraint(type.memberTypes[member], existingMembers[member]));
+					} else {
+						existingMembers[member] = type.memberTypes[member];
+					}
+					C = C.concat(
+						getConsistencyConstraints(
+							Classes.Type.store[type.memberTypes[member]], {}));
+				}
 
-			chunks[i].gamma.applySubstitution(substitutions[j]);
+				if (type.originalObj !== null) {
+					var orig = Classes.Type.store[type.originalObj];
 
-			for (var k = 0; k < chunks[i].W.length; k++) {
-				chunks[i].W[k].applySubstitution(substitutions[j]);
+					C = C.concat(
+						getConsistencyConstraints(
+							orig, existingMembers));
+				}
 			}
-		}
+			return C;
+		};
+
+		do {
+			// solve the generated constraints, or throw an error if this isn't possible
+			var result = solveConstraints(consistConstraints);
+			var substitutions = result.substitutions;
+
+			// apply the solution substitutions to the type environment
+			for (var j = 0; j < substitutions.length; j++) {
+
+				chunks[i].gamma.applySubstitution(substitutions[j]);
+
+				for (var k = 0; k < chunks[i].W.length; k++) {
+					chunks[i].W[k].applySubstitution(substitutions[j]);
+				}
+			}
+
+			// // check gamma for consistency:
+			// consistConstraints = [];
+			// for (var tee in chunks[i].gamma) {
+			// 	consistConstraints = consistConstraints.concat(
+			// 		getConsistencyConstraints(
+			// 			Classes.Type.store[chunks[i].gamma[tee].type], {})
+			// 	);
+			// }
+		} while (consistConstraints.length > 0);
+
 
 		// Prepare a helpful message for each typed chunk
 		var annotate = function(node) {
@@ -106,7 +133,7 @@ module.exports = function(src) {
 					"type": "recursive"
 				};
 				return;
-			}	
+			}
 			var source = Classes.Type.store[sourceId];
 			var key;
 			if (source instanceof Classes.ObjectType) {
@@ -114,6 +141,18 @@ module.exports = function(src) {
 					type: "object",
 					memberTypes: {}
 				};
+
+				// attach original object members first, then these will be
+				// overwritten by the direct object. No conflict because an
+				// OptionalConstraint will have already shown that
+				// 		origObj[member] <= source[member]
+				if (source.originalObj !== null) {
+					// var originalObject = Classes.Type.store[source.originalObj];
+					// for (key in originalObject.memberTypes) {
+					// 	attachSubtypes(tee[k].memberTypes, key, originalObject.memberTypes[key], donotrecurse.concat([sourceId]));
+					// }
+					attachSubtypes(tee, k, source.originalObj, donotrecurse.concat([sourceId]));
+				}
 				for (key in source.memberTypes) {
 					attachSubtypes(tee[k].memberTypes, key, source.memberTypes[key], donotrecurse.concat([sourceId]));
 				}

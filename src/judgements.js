@@ -262,6 +262,7 @@ UglifyJS.AST_Dot.prototype.check = function(gamma, dynamics) {
 	// using LEq infers the required members for an object
 	if (j1.T.shouldInfer === true) {
 		C.push(new Classes.LEqConstraint(containerType.id, j1.T.id));
+		T.shouldInfer = true;
 	} else {
 		var nc = new Classes.LEqCheckConstraint(containerType.id, j1.T.id);
 		nc.interesting = true;
@@ -372,52 +373,91 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 
 				// important justification of LEqCheck v. LEq in WWT pad, bottom of page 1.
 				if (!dynamicWrite) C.push(new Classes.LEqCheckConstraint(j2.T.id, j1.T.id));
-				
+
 				returnType = j1.T;
 				break;
 			} else {
 				// PropAssignType
-
-
 				j2 = this.left.expression.check(j1.gamma, dynamics);
+				C = C.concat(j2.C);
 
-				var objType;
-				if (this.left.expression instanceof UglifyJS.AST_Symbol) {
-					// if this is literally of the format x.p = ..., then x must be in gamma. 
-					// the x we've used so far may not contain the property p
-					// the x from this point onwards must contain the property p
-
-					// We're effectively going to SSA this. Create a new type identical to the
-					// one we previously assigned, and add it to gamma to use from now on.
-					var mt = {};
-					for (var i in j2.T.memberTypes) {
-						mt[i] = j2.T.memberTypes[i];
-					}
-
-					objType = new Classes.ObjectType({
-						memberTypes: mt
-					});
-
-					j2.gamma = new Classes.TypeEnv(j2.gamma);
-
-					j2.gamma.push(new Classes.TypeEnvEntry(this.left.expression.name, this, objType.id));
-				} else {
-					// if there's a more complicated expression, just use the expression's type directly
-					objType = j2.T;
-				}
 
 				var T3 = gamma.getFreshType();
-				var memberType = {};
-				memberType[this.left.property] = T3.id;
+				var memberTypes = {};
+				memberTypes[this.left.property] = T3.id;
 
 				var T = new Classes.ObjectType({
-					memberTypes: memberType
+					memberTypes: memberTypes
 				});
 
+				var expNode = this.left.expression;
+				var path = [];
+
+				// create a minimal type definition for the object and its new property
+				while (expNode instanceof UglifyJS.AST_Dot) {
+					// JSTyper assumes everything until the symbol is a dot expression
+					path.unshift(expNode.property);
+
+					memberTypes = {};
+					memberTypes[expNode.property] = T.id;
+					T = new Classes.ObjectType({
+						memberTypes: memberTypes
+					});
+					expNode = expNode.expression;
+				}
+				// expNode is now the leftmost expression - and for JSTyper,
+				// must be an AST_Symbol
+				if (!expNode instanceof UglifyJS.AST_Symbol) {
+					throw new Error("JSTyper only supports assignment to straight dot chains");
+				}
+
+				// obtain the original base type, so we can attach originalObjs to our defn
+				j2 = expNode.check(j1.gamma, dynamics);
+				var expType = j2.T;
 				C = j1.C.concat(j2.C);
 				W = j1.W.concat(j2.W);
-				var constraint = new Classes.LEqConstraint(T.id, objType.id);
-				C.push(constraint);
+
+				function attachOriginalObjs(baseType, newType, path) {
+					if (baseType.shouldInfer) {
+						newType.shouldInfer = true;
+					}
+					newType.originalObj = baseType.id;
+
+					if (path.length<1) return;
+					var nextBase;
+					if (baseType.memberTypes !== undefined && path[0] in baseType.memberTypes) {
+						nextBase = Classes.Type.store[baseType.memberTypes[path[0]]];
+						
+					} else {
+						// baseType hasn't been identified as an object yet
+						// make a constraint with a fresh obj and we'll use that
+						nextBase = new Classes.ObjectType({
+							memberTypes: {}
+						});
+						nextBase.memberTypes[path[0]] = gamma.getFreshType().id;
+						if (baseType.shouldInfer) {
+							nextBase.shouldInfer = true;
+						}
+						C.push(new Classes.LEqConstraint(nextBase.id, baseType.id));
+						nextBase = Classes.Type.store[nextBase.memberTypes[path[0]]];
+					}
+					attachOriginalObjs(
+						nextBase,
+						Classes.Type.store[newType.memberTypes[path[0]]],
+						path.slice(1)
+					);
+				}
+				attachOriginalObjs(expType, T, path);
+				
+				// make sure there are no conflicting members between these types
+				C.push(new Classes.OptionalConstraint(expType.id, T.id));
+				
+
+				j2.gamma = new Classes.TypeEnv(j2.gamma);
+				j2.gamma.push(new Classes.TypeEnvEntry(expNode.name, this, T.id));
+
+				// var constraint = new Classes.LEqConstraint(T.id, objType.id);
+				// C.push(constraint);
 
 				// important justification of LEqCheck v. LEq in WWT pad, bottom of page 1.
 				C.push(new Classes.LEqCheckConstraint(T3.id, j1.T.id));
@@ -693,7 +733,7 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 				for (var member in type1.memberTypes) {
 					if (member in type2.memberTypes) {
 						mt[member] = typeIntersect(Classes.Type.store[type1.memberTypes[member]],
-						 						Classes.Type.store[type2.memberTypes[member]]);
+							Classes.Type.store[type2.memberTypes[member]]);
 					}
 				}
 				return new Classes.ObjectType({
@@ -721,7 +761,7 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 			} else {
 
 				var outType = typeIntersect(Classes.Type.store[T1.type],
-												Classes.Type.store[T2.type]);
+					Classes.Type.store[T2.type]);
 
 				// NB We might have problems with old type env entries being
 				// attached to nodes, but being replaced here by new ones

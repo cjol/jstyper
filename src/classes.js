@@ -15,6 +15,7 @@ module.exports = {
 	Constraint: Constraint,
 	LEqConstraint: LEqConstraint,
 	LEqCheckConstraint: LEqCheckConstraint,
+	OptionalConstraint: OptionalConstraint,
 	TypeEnvEntry: TypeEnvEntry,
 	TypeEnv: TypeEnv,
 	Wrapper: Wrapper,
@@ -67,7 +68,7 @@ Type.prototype.addContainers = function(container) {
 	this.containers.push(container);
 };
 Type.prototype.isContainedBy = function(container) {
-	return this.containers.indexOf(container)>=0;
+	return this.containers.indexOf(container) >= 0;
 };
 
 function PrimitiveType(type, options, node) {
@@ -141,22 +142,13 @@ function ObjectType(options, node) {
 		this.memberTypes[i] = options.memberTypes[i];
 		Type.store[this.memberTypes[i]].addContainers(this.id);
 	}
+	this.originalObj = options.originalObj === undefined ? null : options.originalObj;
+	this.proto = null;
 }
 tmp.prototype = PrimitiveType.prototype;
 ObjectType.prototype = new tmp();
 ObjectType.prototype.constructor = ObjectType;
 
-// ObjectType.prototype.cloneTo = function(obj) {
-// 	PrimitiveType.prototype.cloneTo.call(this, obj);
-// 	obj.memberTypes = {};
-
-// 	for (var i in this.memberTypes) {
-// 		obj.memberTypes[i] = this.memberTypes[i];
-// 	}
-// 	obj.applySubstitution = ObjectType.prototype.applySubstitution;
-// 	obj.toString = ObjectType.prototype.toString;
-// 	obj.cloneTo = ObjectType.prototype.cloneTo;
-// };
 ObjectType.prototype.applySubstitution = function(sub, donotrecurse) {
 	if (donotrecurse === undefined) donotrecurse = [];
 	donotrecurse.push(this.id);
@@ -176,6 +168,13 @@ ObjectType.prototype.applySubstitution = function(sub, donotrecurse) {
 		// nb I don't want subcalls to modify my donotrecurse so I'm cloning with slice(0)
 		Type.store[this.memberTypes[j]].applySubstitution(sub, donotrecurse.slice(0));
 	}
+	if (this.originalObj !== null) {
+		if (this.originalObj === sub.from) {
+			this.originalObj = sub.to;
+		}
+		// Type.store[this.originalObj].applySubstitution(sub, donotrecurse.slice(0));
+	}
+	// if (this.protoObj !== null) Type.store[this.protoObj].applySubstitution(sub, donotrecurse.slice(0));
 };
 ObjectType.prototype.toString = function(donotrecurse) {
 
@@ -192,7 +191,14 @@ ObjectType.prototype.toString = function(donotrecurse) {
 		}
 		types.push(lab + ":" + Type.store[this.memberTypes[lab]].toString(donotrecurse.slice(0)));
 	}
-	return "{" + types.join(", ") + "}";
+	var origString = "";
+	if (this.originalObj !== null) {
+		origString = Type.store[this.originalObj].toString(donotrecurse.slice(0));
+		origString = origString.slice(1,-1);
+		origString = "[, " + origString + "]";
+	}
+	// TODO: Add proto and originalObj members
+	return "{" + types.join(", ") + origString + "}";
 };
 ObjectType.prototype.toAST = function(donotrecurse) {
 	if (donotrecurse === undefined) donotrecurse = [];
@@ -212,6 +218,7 @@ ObjectType.prototype.toAST = function(donotrecurse) {
 				continue outerLoop;
 			}
 		}
+		// TODO: Add proto and originalObj members
 		types.push(new UglifyJS.AST_ObjectKeyVal({
 			key: lab,
 			value: Type.store[this.memberTypes[lab]].toAST(donotrecurse.slice(0))
@@ -242,6 +249,8 @@ ObjectType.prototype.addContainers = function(container) {
 	for (var member in this.memberTypes) {
 		Type.store[this.memberTypes[member]].addContainers(container);
 	}
+
+	// TODO?: Add proto and originalObj members
 };
 
 function FunctionType(options, node) {
@@ -445,10 +454,10 @@ Constraint.prototype.solve = function() {
 	else {
 		// if they're the same type, we're okay, else we have a type error
 		// check the structure of the types (not sufficient for complex types)
-		if (this.check()) {
-			// if this is a complex structure, there may also be sub-constraints to solve
-			constraints = this.getSubConstraints();
-		} else {
+		// if this is a complex structure, there may also be sub-constraints to solve
+		try {
+			constraints = this.check();
+		} catch (e) {
 			throw new Error(" Failed Unification: " + Type.store[this.type1].toString() + " != " + Type.store[this.type2].toString());
 		}
 	}
@@ -464,65 +473,109 @@ Constraint.prototype.check = function() {
 	var type2 = Type.store[this.type2];
 
 	// NB Since all types are created fresh, we only get this far if both types are concrete
-	if (type2.type !== type1.type) return false;
+	if (type2.type !== type1.type) throw new Error();
 
 	if (type1.type === "object") {
 
-		// check inclusion in both directions
-		// NB: Not recursive (ok because we recurse in caller)
-		for (var i in type1.memberTypes) {
-			if (type2.memberTypes[i] === undefined) return false;
-		}
-		for (var j in type2.memberTypes) {
-			if (type1.memberTypes[j] === undefined) return false;
-		}
-		return true;
+		return this.getObjectConstraints();
 	} else if (type1.type === "function") {
 
 		// check arity
-		return type1.argTypes.length === type2.argTypes.length;
+		if (type1.argTypes.length === type2.argTypes.length) {
+			return this.getFunctionConstraints();
+		} else {
+			throw new Error();
+		}
 	} else {
 		// these are primitive types so they're fine
-		return true;
+		return [];
 	}
 };
-Constraint.prototype.getSubConstraints = function() {
+Constraint.prototype.getObjectConstraints = function() {
+	// called when one of the objects is a derived object
+	var type1 = Type.store[this.type1];
+	var type2 = Type.store[this.type2];
+	var C = [];
+
+	// tick off as many elements here as possible before going deeper
+
+	// Type2 direct is contained in either Type1 direct, or Type1 original (so t2.d<t1)
+	var typesMissingFrom1 = {};
+	var nc;
+	var keepLooking = false;
+	for (var j in type2.memberTypes) {
+		if (type1.memberTypes[j] === undefined) {
+			keepLooking = true;
+			typesMissingFrom1[j] = type2.memberTypes[j];
+		} else {
+			nc = new Constraint(type1.memberTypes[j], type2.memberTypes[j]);
+			C.push(nc);
+		}
+	}
+	if (keepLooking) {
+		if (type1.originalObj !== undefined && type1.originalObj !== null) {
+			C.push(new LEqCheckConstraint(new ObjectType({
+				memberTypes: typesMissingFrom1
+			}).id, type1.originalObj));
+		} else {
+			// TODO: better error message
+			throw new Error("derived objects not equal 1");
+		}
+	}
+
+	// Type1 direct is contained in either Type2 direct, or Type2 original (so t1.d<t2)
+	var typesMissingFrom2 = {};
+	keepLooking = false;
+	for (var i in type1.memberTypes) {
+		if (type2.memberTypes[i] === undefined) {
+			keepLooking = true;
+			typesMissingFrom2[i] = type1.memberTypes[i];
+		} else {
+			nc = new Constraint(type1.memberTypes[i], type2.memberTypes[i]);
+			C.push(nc);
+		}
+	}
+
+	if (keepLooking) {
+		if (type2.originalObj !== undefined && type2.originalObj !== null) {
+			C.push(new LEqCheckConstraint(new ObjectType({
+				memberTypes: typesMissingFrom2
+			}).id, type2.originalObj));
+		} else {
+			// TODO: better error message
+			throw new Error("derived objects not equal 2");
+		}
+	}
+
+	// now show t1.o<t2 and t2.o<t1
+	if (type1.originalObj !== undefined && type1.originalObj !== null)
+		C.push(new LEqCheckConstraint(type1.originalObj, this.type2));
+	if (type2.originalObj !== undefined && type2.originalObj !== null)
+		C.push(new LEqCheckConstraint(type2.originalObj, this.type1));
+
+	// hence, since t1.o U t1.d = t1, t1<t2 (and t2<t1 similarly) => t1=t2
+
+	return C;
+};
+Constraint.prototype.getFunctionConstraints = function() {
 
 	var type1 = Type.store[this.type1];
 	var type2 = Type.store[this.type2];
 
-	// NB: We know by now that type1 and type2 have identical structure
-
 	var newConstraints = [];
 	var nc;
-	if (type1.type === "object") {
-
-		for (var label in type1.memberTypes) {
-
-			nc = new this.constructor(type1.memberTypes[label], type2.memberTypes[label]);
-			if (this.interesting) nc.interesting = true;
-			newConstraints.push(nc);
-		}
-
-		return newConstraints;
-	} else if (type1.type === "function") {
-
-		// generate new constraints asserting that the arguments and
-		// return type of type1 and of type2 have the same type
-		for (var i = 0; i < type1.argTypes.length; i++) {
-			nc = new Constraint(type1.argTypes[i], type2.argTypes[i]);
-			if (this.interesting) nc.interesting = true;
-			newConstraints.push(nc);
-		}
-
-		nc = new Constraint(type1.returnType, type2.returnType);
+	// generate new constraints asserting that the arguments and
+	// return type of type1 and of type2 have the same type
+	for (var i = 0; i < type1.argTypes.length; i++) {
+		nc = new Constraint(type1.argTypes[i], type2.argTypes[i]);
 		if (this.interesting) nc.interesting = true;
 		newConstraints.push(nc);
-		return newConstraints;
-
-	} else {
-		return newConstraints;
 	}
+
+	nc = new Constraint(type1.returnType, type2.returnType);
+	if (this.interesting) nc.interesting = true;
+	newConstraints.push(nc);
+	return newConstraints;
 };
 Constraint.prototype.regenDesc = function() {
 	this.description = Type.store[this.type1].toString() + " = " + Type.store[this.type2].toString();
@@ -583,47 +636,58 @@ LEqConstraint.prototype.enforce = function() {
 	for (var l in Type.store[this.type1].memberTypes) {
 		if (Type.store[this.type2].memberTypes[l] === undefined) {
 
-			// TODO: Can I avoid generating fresh types during solution?
 			var T = TypeEnv.getFreshType();
 			Type.store[this.type2].memberTypes[l] = T.id;
 		}
 	}
 	this.regenDesc();
 };
-LEqConstraint.prototype.checkStructure = function() {
+LEqConstraint.prototype.getObjectConstraints = function() {
+	// called when one of the objects is a derived object
 	var type1 = Type.store[this.type1];
 	var type2 = Type.store[this.type2];
-	// NB This only differs from Constraint for objects
-	if (type1.type !== type2.type) return false;
-	if (type1.type === "object") {
-		// only check that everything in smallType (type1) is included in bigType (type2)
-		// NB Still not recursive 
-		for (var i in type1.memberTypes) {
-			if (type2.memberTypes[i] === undefined) return false;
-		}
-	} else if (type1.type === "function") {
+	var C = [];
 
-		// check arity
-		return type1.argTypes.length === type2.argTypes.length;
+	// tick off as many elements here as possible before going deeper
+
+	// Type1 direct is contained in either Type2 direct, or Type2 original (so t1.d<t2)
+	var typesMissingFrom2 = {};
+	var nc, keepLooking = false;
+	for (var i in type1.memberTypes) {
+		if (type2.memberTypes[i] === undefined) {
+			keepLooking = true;
+			typesMissingFrom2[i] = type1.memberTypes[i];
+		} else {
+			nc = new this.constructor(type1.memberTypes[i], type2.memberTypes[i]);
+			C.push(nc);
+		}
 	}
-	return true;
-};
-LEqConstraint.prototype.check = function() {
-	// if rightType has a field missing, we add it here. Adding these
-	// will make the equals check below return true, and then
-	// constraints will be generated to assert that each of rightType's
-	// members are the same type as leftType's members
-	// we only want to enforce for concrete types
-	if (Type.store[this.type1].type === "object" && Type.store[this.type2].type === "object") {
-		this.enforce();
+
+	if (keepLooking) {
+		if (type2.originalObj !== undefined && type2.originalObj !== null) {
+			C.push(new this.constructor(new ObjectType({
+				memberTypes: typesMissingFrom2
+			}).id, type2.originalObj));
+		} else {
+			// TODO: better error message
+			throw new Error("derived objects not equal 2");
+		}
 	}
-	return this.checkStructure();
+
+	// now show t1.o<t2
+	if (type1.originalObj !== undefined && type1.originalObj !== null)
+		C.push(new this.constructor(type1.originalObj, this.type2));
+
+	// hence, since t1.o U t1.d = t1, t1<t2
+
+	return C;
 };
 LEqConstraint.prototype.regenDesc = function() {
 	this.desc = Type.store[this.type1].toString() + " has less structure than " + Type.store[this.type2].toString();
 };
 LEqConstraint.prototype.solve = function() {
-	
+
+	// shortcut
 	if (this.type1 === this.type2) return {
 		constraints: [],
 		substitutions: []
@@ -647,8 +711,11 @@ LEqConstraint.prototype.solve = function() {
 				memberTypes: {}
 			});
 
-			for (var label in Type.store[this.type2].memberTypes) {
-				objType.memberTypes[label] = TypeEnv.getFreshType().id;
+			// for an optionalconstraint, an abstract effectively = emptyobj
+			if (! (this instanceof OptionalConstraint)) {
+				for (var label in Type.store[this.type2].memberTypes) {
+					objType.memberTypes[label] = TypeEnv.getFreshType().id;
+				}
 			}
 
 			subs.push(new Substitution(this.type1, objType.id));
@@ -727,10 +794,15 @@ LEqConstraint.prototype.solve = function() {
 	else {
 		// if they're the same type, we're okay, else we have a type error
 		// check the structure of the types (not sufficient for complex types)
-		if (this.check()) {
-			// if this is a complex structure, there may also be sub-constraints to solve
-			constraints = this.getSubConstraints();
-		} else {
+		try {
+			if (Type.store[this.type1].type === "object" && Type.store[this.type2].type === "object" &&
+				Type.store[this.type1].originalObj === null && Type.store[this.type2].originalObj === null) {
+				if (! (this instanceof LEqCheckConstraint)) {
+					this.enforce();
+				}
+			}
+			constraints = this.check();
+		} catch (e) {
 			throw new Error(" Failed Unification: " + Type.store[this.type1].toString() + " != " + Type.store[this.type2].toString());
 		}
 	}
@@ -750,12 +822,67 @@ tmp = function() {};
 tmp.prototype = LEqConstraint.prototype;
 LEqCheckConstraint.prototype = new tmp();
 LEqCheckConstraint.prototype.constructor = LEqCheckConstraint;
-LEqCheckConstraint.prototype.check = function() {
-	// NB No enforce
-	return this.checkStructure();
-};
+// LEqCheckConstraint.prototype.check = function() {
+// 	// NB No enforce
+// 	return this.checkStructure();
+// };
 LEqCheckConstraint.prototype.regenDesc = function() {
 	this.desc = Type.store[this.type1].toString() + " <=c " + Type.store[this.type2].toString();
+};
+
+
+
+// if a member of smallType is included in bigType, the two member types must be the same
+function OptionalConstraint(smallType, bigType) {
+	LEqCheckConstraint.call(this, smallType, bigType);
+}
+tmp = function() {};
+tmp.prototype = LEqCheckConstraint.prototype;
+OptionalConstraint.prototype = new tmp();
+OptionalConstraint.prototype.constructor = OptionalConstraint;
+OptionalConstraint.prototype.regenDesc = function() {
+	this.desc = Type.store[this.type1].toString() + " <=o " + Type.store[this.type2].toString();
+};
+
+OptionalConstraint.prototype.getObjectConstraints = function() {
+	var type1 = Type.store[this.type1];
+	var type2 = Type.store[this.type2];
+	var C = [];
+
+	if (type1 === type2) return C;
+
+	// tick off as many elements here as possible before going deeper
+
+	// Type1 direct is contained in either Type2 direct, or Type2 original (so t1.d<t2)
+	var typesMissingFrom2 = {};
+	var nc, keepLooking = false;
+	for (var i in type1.memberTypes) {
+		if (type2.memberTypes[i] === undefined) {
+			keepLooking = true;
+			typesMissingFrom2[i] = type1.memberTypes[i];
+		} else {
+			nc = new LEqCheckConstraint(type1.memberTypes[i], type2.memberTypes[i]);
+			C.push(nc);
+		}
+	}
+
+	if (keepLooking) {
+		if (type2.originalObj !== undefined && type2.originalObj !== null) {
+			C.push(new this.constructor(new ObjectType({
+				memberTypes: typesMissingFrom2
+			}).id, type2.originalObj));
+		} else {
+			// can't find the member, but not a problem here
+		}
+	}
+
+	// now show t1.o<t2
+	if (type1.originalObj !== undefined && type1.originalObj !== null)
+		C.push(new this.constructor(type1.originalObj, this.type2));
+
+	// hence, since t1.o U t1.d = t1, t1<t2
+
+	return C;
 };
 
 

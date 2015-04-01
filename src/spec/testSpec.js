@@ -15,8 +15,8 @@ var extraMatchers = {
 				return {
 					pass: actual[expected] !== undefined,
 					message: (actual[expected] !== undefined)?
-								"Expected " + actual + " to have property '" + expected + "'":
-								"Expected " + actual + " not to have property '" + expected + "'"
+								"Expected " + actual + " not to have property '" + expected + "'":
+								"Expected " + actual + " to have property '" + expected + "'"
 				};
 			}
 		};
