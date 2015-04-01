@@ -1,0 +1,22 @@
+{
+	"success": true,
+	"types": {
+		"4": {
+			"0": {
+				"type": "object", 
+				"memberTypes": {
+					"foo": "number"
+				}
+			}
+		},
+		"7": {
+			"0": {
+				"type": "object", 
+				"memberTypes": {
+					"foo": "number",
+					"member": "string"
+				}
+			}
+		}
+	}
+}

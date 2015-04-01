@@ -1,6 +1,4 @@
 {
-	"incomplete": true,
-	"reason": "This types functions without polymorphism",
 	"success": true,
 	"types": {
 		"2": {

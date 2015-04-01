@@ -4,7 +4,6 @@ var fs = require("fs");
 // for type-checking and compilation
 var jstyper = require("../jstyper");
 
- 
 var extraMatchers = {
 	toHaveProperty: function() {
 		return {
@@ -75,6 +74,7 @@ describe("Custom test", function() {
 	beforeEach(function() {
 		jasmine.addMatchers(extraMatchers);
 	});
+
 	var files = fs.readdirSync(process.cwd() + '/tests/');
 
 	files.forEach(function(file) {

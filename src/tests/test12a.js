@@ -2,7 +2,8 @@
 // jstyper start
 var y = {
 	one:1,
-	two:2
+	two:2,
+	result: 0
 };
 y.result = y.one + y.two;
 var x = y;

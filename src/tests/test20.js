@@ -8,6 +8,6 @@ var a = function apply(foo, x) {
 	return foo(x);	
 };
 
-var x =a(f, 6);
+var x = a(f, 6);
 // jstyper end
 
