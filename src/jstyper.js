@@ -77,7 +77,7 @@ module.exports = function(src) {
 			return C;
 		};
 
-		do {
+		// do {
 			// solve the generated constraints, or throw an error if this isn't possible
 			var result = solveConstraints(consistConstraints);
 			var substitutions = result.substitutions;
@@ -100,30 +100,30 @@ module.exports = function(src) {
 			// 			Classes.Type.store[chunks[i].gamma[tee].type], {})
 			// 	);
 			// }
-		} while (consistConstraints.length > 0);
+		// } while (consistConstraints.length > 0);
 
 
 		// Prepare a helpful message for each typed chunk
-		var annotate = function(node) {
-			if (node instanceof UglifyJS.AST_Scope) {
-				if (node.gamma !== undefined) {
-					for (var j = 0; j < substitutions.length; j++) {
-						node.gamma.applySubstitution(substitutions[j]);
-					}
-					var typeComment = "\n\tjstyper types: \n" + node.gamma.toString(2);
-					if (node.body.length > 0) {
-						node.body[0].start.comments_before.push(
-							new UglifyJS.AST_Token({
-								type: 'comment2',
-								value: typeComment
-							})
-						);
-					}
-				}
-			}
-		};
-		var walker = new UglifyJS.TreeWalker(annotate);
-		ast.walk(walker);
+		// var annotate = function(node) {
+		// 	if (node instanceof UglifyJS.AST_Scope) {
+		// 		if (node.gamma !== undefined) {
+		// 			for (var j = 0; j < substitutions.length; j++) {
+		// 				node.gamma.applySubstitution(substitutions[j]);
+		// 			}
+		// 			var typeComment = "\n\tjstyper types: \n" + node.gamma.toString(2);
+		// 			if (node.body.length > 0) {
+		// 				node.body[0].start.comments_before.push(
+		// 					new UglifyJS.AST_Token({
+		// 						type: 'comment2',
+		// 						value: typeComment
+		// 					})
+		// 				);
+		// 			}
+		// 		}
+		// 	}
+		// };
+		// var walker = new UglifyJS.TreeWalker(annotate);
+		// ast.walk(walker);
 
 
 		var attachSubtypes = function(tee, k, sourceId, donotrecurse) {
@@ -173,14 +173,30 @@ module.exports = function(src) {
 			}
 		};
 
+		var currentStatementNode = ast.start;
 		var typeSymbols = function(node) {
+			if (node instanceof UglifyJS.AST_Statement) {
+				currentStatementNode = node.start;
+			}
 			if (node instanceof UglifyJS.AST_Symbol) {
 				if (node.tee !== undefined) {
 					if (types[node.start.line] === undefined)
 						types[node.start.line] = {};
 
 					attachSubtypes(types[node.start.line], node.start.col, node.tee.type, []);
+					if (typeof types[node.start.line][node.start.col] === "object")
+						types[node.start.line][node.start.col].name = node.name;
 
+					// add a comment
+					if (currentStatementNode.comments_before === undefined) 
+						currentStatementNode.comments_before = [];
+					currentStatementNode.comments_before.push(
+						new UglifyJS.AST_Token({
+							type:"comment1",
+							nlb: true,
+							value: " " + node.name + ": " + Classes.Type.store[node.tee.type]
+						})
+					);
 				}
 			}
 		};

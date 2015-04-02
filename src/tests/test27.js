@@ -1,4 +1,5 @@
-// testing 'inference mode'
+// testing 'inference mode' within a function
+// expect success
 // jstyper start
 
 function applyToBigCircle(f,x) {
@@ -6,12 +7,6 @@ function applyToBigCircle(f,x) {
 		return f(x);
 	}
 	return x;
-}
-
-var y = {};
-// function f(a,b){}
-if (y.radius> 5) {
-	// f(x)
 }
 
 // jstyper end

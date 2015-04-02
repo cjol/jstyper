@@ -374,6 +374,8 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 				// important justification of LEqCheck v. LEq in WWT pad, bottom of page 1.
 				if (!dynamicWrite) C.push(new Classes.LEqCheckConstraint(j2.T.id, j1.T.id));
 
+				// if (j2.T.shouldInfer) j1.T.shouldInfer = true;
+
 				returnType = j1.T;
 				break;
 			} else {
@@ -423,11 +425,11 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 					}
 					newType.originalObj = baseType.id;
 
-					if (path.length<1) return;
+					if (path.length < 1) return;
 					var nextBase;
 					if (baseType.memberTypes !== undefined && path[0] in baseType.memberTypes) {
 						nextBase = Classes.Type.store[baseType.memberTypes[path[0]]];
-						
+
 					} else {
 						// baseType hasn't been identified as an object yet
 						// make a constraint with a fresh obj and we'll use that
@@ -448,10 +450,10 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 					);
 				}
 				attachOriginalObjs(expType, T, path);
-				
+
 				// make sure there are no conflicting members between these types
 				C.push(new Classes.OptionalConstraint(expType.id, T.id));
-				
+
 
 				j2.gamma = new Classes.TypeEnv(j2.gamma);
 				j2.gamma.push(new Classes.TypeEnvEntry(expNode.name, this, T.id));
@@ -705,78 +707,129 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 
 	C.push(new Classes.Constraint(Classes.Type.boolType.id, j1.T.id));
 
+	// create a cloned (SEPARATE!) environment for the two branches
+	// we will then have to merge changes back into the original
+	function getClone(original) {
+		var clone = [];
+		var map = {};
+		for (var i = 0; i < original.length; i++) {
+			clone[i] = new Classes.TypeEnvEntry(
+				original[i].name,
+				original[i].node,
+				original[i].type
+			);
+			map[i] = clone[i];
+		}
+		return {
+			gamma: new Classes.TypeEnv(clone),
+			map: map
+		};
+	}
+
+	function prune(T1, T2, limit1, limit2) {
+		var T;
+		if (T1 instanceof Classes.ObjectType && T2 instanceof Classes.ObjectType) {	
+			var debug = true;
+			if (debug) console.log();
+			if (debug) console.log(T1.toString());
+			if (debug) console.log(T2.toString());
+			var memberTypes = {};
+
+			var nextT2 = T2;
+
+			do {
+				if (debug) console.log(nextT2.toString());
+				for (var member in nextT2.memberTypes) {
+					if (member in T1.memberTypes &&
+						// we want to keep only the uppermost member
+						! (member in memberTypes)
+						) {
+						memberTypes[member] = prune(
+							Classes.Type.store[T1.memberTypes[member]],
+							Classes.Type.store[nextT2.memberTypes[member]]
+							// No limits because we want to continue until null
+						).id;
+					}
+				}
+
+				nextT2 = Classes.Type.store[nextT2.originalObj];
+			} while (nextT2 !== undefined && nextT2 !== null && nextT2.id !== limit2);
+
+			var originalObj;
+			if (T1.originalObj !== null && T1.originalObj !== limit1) {
+				originalObj = prune(Classes.Type.store[T1.originalObj], T2, limit1, limit2).id;
+			} else if (T1.originalObj === limit1) {
+				originalObj = limit1;
+			} else {
+				originalObj = null;
+			}
+
+			T = new Classes.ObjectType({
+				memberTypes: memberTypes,
+				originalObj: originalObj
+			});
+		} else if (T1 instanceof Classes.ObjectType || T2 instanceof Classes.ObjectType) {
+			// if one but not both are concrete objects, the other must be abstract
+			// treat it like an empty object, so the intersection will be empty
+			T = new Classes.ObjectType({
+				memberTypes:{}
+			});
+		} else {
+			// if these aren't two conrete objects, just add a constraint
+			// between them to ensure they're of the same type
+			// TODO: I think abs with obj should give {}
+			C.push(new Classes.Constraint(T1.id, T2.id));
+			T = T1;
+		}
+		if (T1.shouldInfer || T2.shouldInfer) T.shouldInfer = true;
+		return T;
+	}
+
+	function mergeEnv(original, map1, map2, gamma1, gamma2) {
+		var newTees = [];
+		for (var i = 0; i < original.length; i++) {
+			var T1 = gamma1.get(original[i].name);
+			var T2 = gamma2.get(original[i].name);
+			// optimisation - don't make constraints if the types are the same!
+			if (original[i].type !== T1.type || original[i].type !== T2.type) {
+
+
+				var newType = prune(T1, T2, map1[i].type, map2[i].type);
+				newTees.push(new Classes.TypeEnvEntry(
+					original[i].name,
+					original[i].node,
+					newType.id
+				));
+			} else {
+				newTees.push(new Classes.TypeEnvEntry(
+					original[i].name,
+					original[i].node,
+					original[i].type
+				));
+			}
+		}
+		return new Classes.TypeEnv(newTees);
+	}
+
+
 	this.body.parent = parent(this);
-	var j2 = this.body.check(j1.gamma, dynamics);
+	var clone1 = getClone(j1.gamma);
+	var j2 = this.body.check(clone1.gamma, dynamics);
 	C = C.concat(j2.C);
 	W = W.concat(j2.W);
 
 	var outGamma;
-
 	// IfTypable2
 	if (this.alternative !== undefined && this.alternative !== null) {
 		this.alternative.parent = parent(this);
-		var j3 = this.alternative.check(j1.gamma, dynamics);
+		var clone2 = getClone(j1.gamma);
+		var j3 = this.alternative.check(clone2.gamma, dynamics);
 		C = C.concat(j3.C);
 		W = W.concat(j3.W);
 
-		// create a merged gamma
-		outGamma = new Classes.TypeEnv();
-		// use j2 to obtain a list of symbols
-		var symbols = {};
-		for (var i = 0; i < j2.gamma.length; i++) {
-			symbols[j2.gamma[i].name] = true;
-		}
-
-		var typeIntersect = function typeIntersect(type1, type2) {
-			if (type1.type === "object") {
-				var mt = {};
-				for (var member in type1.memberTypes) {
-					if (member in type2.memberTypes) {
-						mt[member] = typeIntersect(Classes.Type.store[type1.memberTypes[member]],
-							Classes.Type.store[type2.memberTypes[member]]);
-					}
-				}
-				return new Classes.ObjectType({
-					memberTypes: mt
-				}).id;
-			} else {
-				// if these are not objects, can just return either type. 
-				// A higher level will enforce constraints between this result
-				// and the two original types
-				return type1.id;
-			}
-		};
-
-		// TODO: This should maybe be reflected in formal system?
-		for (var symbol in symbols) {
-			var T1 = j2.gamma.getTypeEnvEntry(symbol);
-			var T2 = j3.gamma.getTypeEnvEntry(symbol);
-
-			if (T1 === undefined || T2 === undefined) {
-				// some type wasn't mentioned in both worlds
-				// don't put it in outGamma
-			} else if (T1 === T2) {
-				// this entry is identical in both branches anyway
-				outGamma.push(T1);
-			} else {
-
-				var outType = typeIntersect(Classes.Type.store[T1.type],
-					Classes.Type.store[T2.type]);
-
-				// NB We might have problems with old type env entries being
-				// attached to nodes, but being replaced here by new ones
-				// (hence the old ones are unaffected by substitutions)
-				outGamma.push(new Classes.TypeEnvEntry(symbol, T1.node, outType));
-
-				// the type after the If statement must be a supertype of both branches'
-				C.push(new Classes.LEqCheckConstraint(outType, T1.type));
-				C.push(new Classes.LEqCheckConstraint(outType, T2.type));
-			}
-		}
-
+		outGamma = mergeEnv(j1.gamma, clone1.map, clone2.map, j2.gamma, j3.gamma);
 	} else {
-		// there was no 'else', so the outgoing gamma will be the same as the
-		// incoming gamma. Effectively add intersection with empty j3.gamma
+		// TODO: merge env without clone2
 		outGamma = j1.gamma;
 	}
 

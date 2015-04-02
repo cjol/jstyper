@@ -1,9 +1,8 @@
 // expected result: failure, can fix by removing the parameter from
 // rectangleArea, and replacing circleArea with rectangleArea in the rectangle
-// definition
+// definition (test18a)
 
 // jstyper start
-var areaCalculators = {};
 function rectangleArea(rectangle) {
 	return this.height * this.width;
 }

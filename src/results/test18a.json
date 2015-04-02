@@ -1,20 +1,9 @@
 {
 	"success": true,
 	"types": {
-		"3": {
-			"9": {
-				"type": "function",
-				"argTypes": [{
-					"type": "object",
-					"memberTypes": {
-						"radius": "number"
-					}
-				}],
-				"returnType": "number"
-			}
-		},
-		"7": {
-			"4": {
+		"15": {
+			"4": "number",
+			"16": {
 				"type": "object",
 				"memberTypes": {
 					"radius": "number",
@@ -24,6 +13,24 @@
 							"type": "object",
 							"memberTypes": {
 								"radius": "number"
+							}
+						}],
+						"returnType": "number"
+					}
+				}
+			},
+			"32": {
+				"type": "object",
+				"memberTypes": {
+					"height": "number",
+					"width": "number",
+					"area": {
+						"type": "function",
+						"argTypes": [{
+							"type": "object",
+							"memberTypes": {
+								"height": "number",
+								"width": "number"
 							}
 						}],
 						"returnType": "number"

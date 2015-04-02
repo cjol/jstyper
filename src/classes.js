@@ -697,7 +697,7 @@ LEqConstraint.prototype.solve = function() {
 	// straight equality - easy
 	var subs = [],
 		constraints = [];
-
+	var objType, label, retType, funType, i;
 	if (!Type.store[this.type1].isConcrete) {
 		if (!Type.store[this.type2].isConcrete) {
 			// abs <= abs
@@ -708,17 +708,18 @@ LEqConstraint.prototype.solve = function() {
 			// abs <= object
 			// without knowing what type1 is yet, I do know it must be an object
 			// AND I assume it will have the same members
-			var objType = new ObjectType({
+			objType = new ObjectType({
 				memberTypes: {}
 			});
 
 			// for an optionalconstraint, an abstract effectively = emptyobj
 			if (! (this instanceof OptionalConstraint)) {
-				for (var label in Type.store[this.type2].memberTypes) {
+				for (label in Type.store[this.type2].memberTypes) {
 					objType.memberTypes[label] = TypeEnv.getFreshType().id;
 				}
 			}
 
+			if (Type.store[this.type1].shouldInfer) objType.shouldInfer = true;
 			subs.push(new Substitution(this.type1, objType.id));
 
 			// I have contributed some information, but the constraint isn't solved yet
@@ -728,15 +729,17 @@ LEqConstraint.prototype.solve = function() {
 			// abs <= function
 			// without knowing what type1 really is yet - I do at least know it must be a function with the same number of parameters
 
-			var retType = TypeEnv.getFreshType();
+			retType = TypeEnv.getFreshType();
 
-			var funType = new FunctionType({
+			funType = new FunctionType({
 				argTypes: [],
 				returnType: retType.id
 			});
-			for (var i = 0; i < Type.store[this.type2].argTypes.length; i++) {
+			for (i = 0; i < Type.store[this.type2].argTypes.length; i++) {
 				funType.argTypes[i] = TypeEnv.getFreshType().id;
 			}
+
+			if (Type.store[this.type1].shouldInfer) funType.shouldInfer = true;
 			subs.push(new Substitution(this.type1, funType.id));
 
 			// I have contributed some information, but the constraint isn't solved yet
@@ -752,12 +755,14 @@ LEqConstraint.prototype.solve = function() {
 		if (Type.store[this.type1].type === "object") {
 			// abs => object
 			// without knowing what type1 is yet, I do know it must be an object with these members
-			var objType = new ObjectType({
+			objType = new ObjectType({
 				memberTypes: {}
 			});
-			for (var label in Type.store[this.type1].memberTypes) {
+			for (label in Type.store[this.type1].memberTypes) {
 				objType.memberTypes[label] = TypeEnv.getFreshType().id;
 			}
+			
+			if (Type.store[this.type2].shouldInfer) objType.shouldInfer = true;
 			subs.push(new Substitution(this.type2, objType.id));
 
 			// I have contributed some information, but the constraint isn't solved yet
@@ -767,15 +772,17 @@ LEqConstraint.prototype.solve = function() {
 			// abs => function
 			// without knowing what type1 really is yet - I do at least know it must be a function with the same number of parameters
 
-			var retType = TypeEnv.getFreshType();
+			retType = TypeEnv.getFreshType();
 
-			var funType = new FunctionType({
+			funType = new FunctionType({
 				argTypes: [],
 				returnType: retType.id
 			});
-			for (var i = 0; i < Type.store[this.type1].argTypes.length; i++) {
+			for (i = 0; i < Type.store[this.type1].argTypes.length; i++) {
 				funType.argTypes[i] = TypeEnv.getFreshType().id;
 			}
+
+			if (Type.store[this.type2].shouldInfer) funType.shouldInfer = true;
 			subs.push(new Substitution(this.type2, funType.id));
 
 			// I have contributed some information, but the constraint isn't solved yet
