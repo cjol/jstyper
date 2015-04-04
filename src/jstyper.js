@@ -184,8 +184,11 @@ module.exports = function(src) {
 						types[node.start.line] = {};
 
 					attachSubtypes(types[node.start.line], node.start.col, node.tee.type, []);
-					if (typeof types[node.start.line][node.start.col] === "object")
+					if (typeof types[node.start.line][node.start.col] === "object") {
 						types[node.start.line][node.start.col].name = node.name;
+						if (Classes.Type.store[node.tee.type].shouldInfer)
+							types[node.start.line][node.start.col].shouldInfer = true;
+					}
 
 					// add a comment
 					if (currentStatementNode.comments_before === undefined) 

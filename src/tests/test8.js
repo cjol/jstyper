@@ -1,6 +1,6 @@
-// expected result: fail -- NB Is this contentious? Discussions of scope.
+// expected result: fail
 // jstyper start
-	
+var scopeTest;
 if (true) {
 	// try initialising the scopeTest var outside the if
 	scopeTest = true;

@@ -1,0 +1,71 @@
+{
+	"success": true,
+	"types": {
+		"8": {
+			"0": {
+				"type": "object",
+				"memberTypes": {
+					"getHeight": {
+						"type": "function",
+						"argTypes": [{
+							"type": "object",
+							"memberTypes": {
+								"getHeight": {
+									"type": "function",
+									"argTypes": [{
+										"type": "recursive"
+									}, {
+										"type": "object",
+										"memberTypes": {
+											"height": "number"
+										}
+									}],
+									"returnType": "number"
+								}
+							}
+						}, {
+							"type": "object",
+							"memberTypes": {
+								"height": "number"
+							}
+						}],
+						"returnType": "number"
+					}
+				}
+			}
+		},
+		"9": {
+			"0": {
+				"type": "object",
+				"memberTypes": {
+					"getHeight": {
+						"type": "function",
+						"argTypes": [{
+							"type": "object",
+							"memberTypes": {
+								"getHeight": {
+									"type": "function",
+									"argTypes": [{
+										"type": "recursive"
+									}, {
+										"type": "object",
+										"memberTypes": {
+											"height": "number"
+										}
+									}],
+									"returnType": "number"
+								}
+							}
+						}, {
+							"type": "object",
+							"memberTypes": {
+								"height": "number"
+							}
+						}],
+						"returnType": "number"
+					}
+				}
+			}
+		}
+	}
+}

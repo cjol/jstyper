@@ -1,0 +1,40 @@
+{
+	"success": true,
+	"types": {
+		"9": {
+			"4": "number",
+			"8": {
+				"type": "object",
+				"memberTypes": {
+					"radius": "number",
+					"area": {
+						"type": "function",
+						"argTypes": [{
+							"type": "object",
+							"memberTypes": {
+								"radius": "number"
+							}
+						}],
+						"returnType": "number"
+					}
+				}
+			},
+			"24": {
+				"type": "object",
+				"memberTypes": {
+					"radius": "number",
+					"area": {
+						"type": "function",
+						"argTypes": [{
+							"type": "object",
+							"memberTypes": {
+								"radius": "number"
+							}
+						}],
+						"returnType": "number"
+					}
+				}
+			}
+		}
+	}
+}

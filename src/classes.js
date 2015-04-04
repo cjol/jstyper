@@ -24,6 +24,7 @@ module.exports = {
 };
 
 
+
 module.exports.Exceptions = {
 	TwoAbstractsException: function TwoAbstractsException(msg) {
 		this.name = "TwoAbstractsException";

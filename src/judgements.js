@@ -149,6 +149,9 @@ UglifyJS.AST_Lambda.prototype.check = function(gamma, dynamics) {
 		gamma1.push(tee);
 	}
 
+	// add a placeholder type for return
+	gamma1.push(new Classes.TypeEnvEntry('return', null, gamma1.getFreshType().id));
+
 	// V_Fun2
 	if (this.name !== undefined && this.name !== null) {
 		var funtee = new Classes.TypeEnvEntry(this.name.name, this, funType.id);
@@ -368,62 +371,77 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 	switch (this.operator) {
 		case ("="):
 
-			if (!(this.left instanceof UglifyJS.AST_Dot)) {
-				// AssignType (if it's not a dot, it must be a variable)
+			if (this.left instanceof UglifyJS.AST_Symbol) {
+				// AssignType (must be a straight variable)
 
 				// important justification of LEqCheck v. LEq in WWT pad, bottom of page 1.
 				if (!dynamicWrite) C.push(new Classes.LEqCheckConstraint(j2.T.id, j1.T.id));
+				// j2.T.shouldInfer = false;
+				// if (j2.T.shouldInfer) j1.T.shouldInfer = f;
 
-				// if (j2.T.shouldInfer) j1.T.shouldInfer = true;
+				// update gamma
+				// TODO: Update formal spec to show this
+				j2.gamma.push(
+					new Classes.TypeEnvEntry(
+						this.left.name,
+						this,
+						j1.T.id
+					)
+				);
 
 				returnType = j1.T;
 				break;
-			} else {
+			} else if (this.left instanceof UglifyJS.AST_Dot) {
 				// PropAssignType
-				j2 = this.left.expression.check(j1.gamma, dynamics);
-				C = C.concat(j2.C);
 
+				// T is initially a placeholder for the type of a.b.c - it will be constrained against T_e
+				var T = gamma.getFreshType();
 
-				var T3 = gamma.getFreshType();
-				var memberTypes = {};
-				memberTypes[this.left.property] = T3.id;
+				// (important justification of LEqCheck v. LEq in WWT pad, bottom of page 1.)
+				C = j1.C.concat([new Classes.LEqCheckConstraint(T.id, j1.T.id)]);
 
-				var T = new Classes.ObjectType({
-					memberTypes: memberTypes
-				});
-
-				var expNode = this.left.expression;
+				// T is initially a placeholder type for a.b (i.e. its only member is T3 above)
+				// We will travel up the dot string, reassigning T until we get to the root (i.e. a)
+				var expNode = this.left;
 				var path = [];
 
 				// create a minimal type definition for the object and its new property
+				// JSTyper assumes everything until the symbol is a dot expression
 				while (expNode instanceof UglifyJS.AST_Dot) {
-					// JSTyper assumes everything until the symbol is a dot expression
-					path.unshift(expNode.property);
+					if (expNode !== this.left)
+						path.unshift(expNode.property);
 
-					memberTypes = {};
+					var memberTypes = {};
 					memberTypes[expNode.property] = T.id;
 					T = new Classes.ObjectType({
 						memberTypes: memberTypes
 					});
 					expNode = expNode.expression;
 				}
+
+				// T is now the placeholder (minimal) type of the leftmost symbol (i.e. a)
 				// expNode is now the leftmost expression - and for JSTyper,
 				// must be an AST_Symbol
 				if (!expNode instanceof UglifyJS.AST_Symbol) {
 					throw new Error("JSTyper only supports assignment to straight dot chains");
 				}
 
+				// This check simply creates constraints on a.b.c, asserting
+				// that each symbol must have that minimal member
+				// j2 = this.left.expression.check(j1.gamma, dynamics);
+				// C = C.concat(j2.C);
+
 				// obtain the original base type, so we can attach originalObjs to our defn
 				j2 = expNode.check(j1.gamma, dynamics);
 				var expType = j2.T;
-				C = j1.C.concat(j2.C);
+				C = C.concat(j2.C);
 				W = j1.W.concat(j2.W);
 
 				function attachOriginalObjs(baseType, newType, path) {
+					newType.originalObj = baseType.id;
 					if (baseType.shouldInfer) {
 						newType.shouldInfer = true;
 					}
-					newType.originalObj = baseType.id;
 
 					if (path.length < 1) return;
 					var nextBase;
@@ -437,9 +455,6 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 							memberTypes: {}
 						});
 						nextBase.memberTypes[path[0]] = gamma.getFreshType().id;
-						if (baseType.shouldInfer) {
-							nextBase.shouldInfer = true;
-						}
 						C.push(new Classes.LEqConstraint(nextBase.id, baseType.id));
 						nextBase = Classes.Type.store[nextBase.memberTypes[path[0]]];
 					}
@@ -461,8 +476,8 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 				// var constraint = new Classes.LEqConstraint(T.id, objType.id);
 				// C.push(constraint);
 
-				// important justification of LEqCheck v. LEq in WWT pad, bottom of page 1.
-				C.push(new Classes.LEqCheckConstraint(T3.id, j1.T.id));
+			} else {
+				throw new Error("Unexpected assignment target");
 			}
 			break;
 		case ("+="):
@@ -726,24 +741,24 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 		};
 	}
 
-	function prune(T1, T2, limit1, limit2) {
+	function prune(T1, T2, limit1, limit2, base) {
 		var T;
-		if (T1 instanceof Classes.ObjectType && T2 instanceof Classes.ObjectType) {	
-			var debug = true;
-			if (debug) console.log();
-			if (debug) console.log(T1.toString());
-			if (debug) console.log(T2.toString());
+		if (T1 instanceof Classes.ObjectType && T2 instanceof Classes.ObjectType) {
+			// var debug = true;
+			// if (debug) console.log();
+			// if (debug) console.log(T1.toString());
+			// if (debug) console.log(T2.toString());
 			var memberTypes = {};
 
 			var nextT2 = T2;
 
 			do {
-				if (debug) console.log(nextT2.toString());
+				// if (debug) console.log(nextT2.toString());
 				for (var member in nextT2.memberTypes) {
 					if (member in T1.memberTypes &&
 						// we want to keep only the uppermost member
-						! (member in memberTypes)
-						) {
+						!(member in memberTypes)
+					) {
 						memberTypes[member] = prune(
 							Classes.Type.store[T1.memberTypes[member]],
 							Classes.Type.store[nextT2.memberTypes[member]]
@@ -757,9 +772,16 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 
 			var originalObj;
 			if (T1.originalObj !== null && T1.originalObj !== limit1) {
-				originalObj = prune(Classes.Type.store[T1.originalObj], T2, limit1, limit2).id;
+				originalObj = prune(Classes.Type.store[T1.originalObj], T2, limit1, limit2, base).id;
 			} else if (T1.originalObj === limit1) {
 				originalObj = limit1;
+				// I'm pretty confident that any element of an originalObj
+				// chain must be a legit object, so I think this is safe.
+				// TODO: I didn't think very long about this. (but it seemed to work...)
+				if (base !== undefined) {
+					Classes.Type.store[limit1].originalObj = base;
+				}
+
 			} else {
 				originalObj = null;
 			}
@@ -772,7 +794,7 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 			// if one but not both are concrete objects, the other must be abstract
 			// treat it like an empty object, so the intersection will be empty
 			T = new Classes.ObjectType({
-				memberTypes:{}
+				memberTypes: {}
 			});
 		} else {
 			// if these aren't two conrete objects, just add a constraint
@@ -786,29 +808,32 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 	}
 
 	function mergeEnv(original, map1, map2, gamma1, gamma2) {
-		var newTees = [];
-		for (var i = 0; i < original.length; i++) {
+		var initLen = original.length;
+		for (var i = 0; i < initLen; i++) {
 			var T1 = gamma1.get(original[i].name);
 			var T2 = gamma2.get(original[i].name);
 			// optimisation - don't make constraints if the types are the same!
 			if (original[i].type !== T1.type || original[i].type !== T2.type) {
 
 
-				var newType = prune(T1, T2, map1[i].type, map2[i].type);
-				newTees.push(new Classes.TypeEnvEntry(
+				var newType = prune(T1, T2, map1[i].type, map2[i].type, original[i].type);
+				C.push(new Classes.LEqConstraint(map1[i].type, original[i].type));
+				C.push(new Classes.LEqConstraint(map2[i].type, original[i].type));
+				original.push(new Classes.TypeEnvEntry(
 					original[i].name,
 					original[i].node,
 					newType.id
 				));
-			} else {
-				newTees.push(new Classes.TypeEnvEntry(
-					original[i].name,
-					original[i].node,
-					original[i].type
-				));
 			}
+			// } else {
+			// 	newTees.push(new Classes.TypeEnvEntry(
+			// 		original[i].name,
+			// 		original[i].node,
+			// 		original[i].type
+			// 	));
+			// }
 		}
-		return new Classes.TypeEnv(newTees);
+		return original; // new Classes.TypeEnv(newTees);
 	}
 
 
@@ -829,7 +854,15 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 
 		outGamma = mergeEnv(j1.gamma, clone1.map, clone2.map, j2.gamma, j3.gamma);
 	} else {
-		// TODO: merge env without clone2
+		var initLen = j1.gamma.length;
+		for (var i = 0; i < initLen; i++) {
+			var T1 = j2.gamma.get(j1.gamma[i].name);
+			// optimisation - don't make constraints if the types are the same!
+			if (j1.gamma[i].type !== T1.type) {
+
+				C.push(new Classes.LEqConstraint(clone1.map[i].type, j1.gamma[i].type));
+			}
+		}
 		outGamma = j1.gamma;
 	}
 

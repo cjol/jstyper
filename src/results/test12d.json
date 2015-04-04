@@ -1,21 +1,30 @@
 {
 	"success": true,
 	"types": {
-		"12": {
-			"1": {
+		"5": {
+			"0": {
 				"type": "object",
 				"memberTypes": {
+					"foo": "boolean"
+				}
+			}
+		},
+		"8": {
+			"0": {
+				"type": "object",
+				"memberTypes": {
+					"foo": "boolean",
 					"foobar": {
 						"type": "object",
 						"memberTypes": {
-							"member": "number"
+							"mymem": "number"
 						}
 					}
 				}
 			}
 		},
-		"22": {
-			"1": {
+		"9": {
+			"0": {
 				"type": "object",
 				"memberTypes": {
 					"foo": "boolean",
@@ -23,19 +32,6 @@
 						"type": "object",
 						"memberTypes": {
 							"mymem": "number",
-							"member": "number"
-						}
-					}
-				}
-			}
-		},
-		"24": {
-			"0": {
-				"type": "object",
-				"memberTypes": {
-					"foobar": {
-						"type": "object",
-						"memberTypes": {
 							"member": "number"
 						}
 					}

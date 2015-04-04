@@ -1,4 +1,5 @@
 node_modules
+*.vim
 *.sublime-workspace
 *.log
 *.aux

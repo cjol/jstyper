@@ -1,0 +1,13 @@
+{
+	"success": true,
+	"types": {
+		"13": {
+			"0": {
+				"type": "object",
+				"memberTypes": {
+					"foo": "boolean"
+				}
+			}
+		}
+	}
+}

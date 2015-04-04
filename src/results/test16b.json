@@ -1,0 +1,35 @@
+{
+	"success": true,
+	"types": {
+		"2": {
+			"4": {
+				"type": "function",
+				"argTypes": [
+					"undefined",
+					{
+						"type": "object",
+						"memberTypes": {
+							"a": "number"
+						}
+					}
+				],
+				"returnType": "number"
+			}
+		},
+		"5": {
+			"0": {
+				"type": "function",
+				"argTypes": [
+					"undefined",
+					{
+						"type": "object",
+						"memberTypes": {
+							"a": "number"
+						}
+					}
+				],
+				"returnType": "number"
+			}
+		}
+	}
+}
