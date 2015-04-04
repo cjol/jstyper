@@ -175,7 +175,7 @@ ObjectType.prototype.applySubstitution = function(sub, donotrecurse) {
 		if (this.originalObj === sub.from) {
 			this.originalObj = sub.to;
 		}
-		// Type.store[this.originalObj].applySubstitution(sub, donotrecurse.slice(0));
+		Type.store[this.originalObj].applySubstitution(sub, donotrecurse.slice(0));
 	}
 	// if (this.protoObj !== null) Type.store[this.protoObj].applySubstitution(sub, donotrecurse.slice(0));
 };
@@ -771,8 +771,10 @@ LEqConstraint.prototype.solve = function() {
 			objType = new ObjectType({
 				memberTypes: {}
 			});
-			for (label in Type.store[this.type1].memberTypes) {
-				objType.memberTypes[label] = TypeEnv.getFreshType().id;
+			if (!(this instanceof OptionalConstraint)) {
+				for (label in Type.store[this.type1].memberTypes) {
+					objType.memberTypes[label] = TypeEnv.getFreshType().id;
+				}
 			}
 
 			if (Type.store[this.type2].shouldInfer) objType.shouldInfer = true;

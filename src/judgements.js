@@ -151,6 +151,7 @@ UglifyJS.AST_Lambda.prototype.check = function(gamma, dynamics) {
 
 	// add a placeholder type for return
 	var placeholderReturn = new Classes.TypeEnvEntry('return', null, Classes.Type.undefinedReturnType.id);
+	placeholderReturn.somePathsNoReturn = true;
 	gamma1.push(placeholderReturn);
 
 	// V_Fun2
@@ -177,14 +178,26 @@ UglifyJS.AST_Lambda.prototype.check = function(gamma, dynamics) {
 
 	var C;
 	var W = j1.W;
-	var finalReturn = j1.gamma.get('return');
-	if (finalReturn === Classes.Type.undefinedReturnType) {
-		// there are no return statements in the block (I know this because the placeholder val came back)
-		C = j1.C.concat(new Classes.Constraint(Classes.Type.undefinedType.id, retType.id));
+	var finalReturn = j1.gamma.getTypeEnvEntry('return');
+	if (finalReturn.somePathsNoReturn) {
+		if (finalReturn.type === Classes.Type.undefinedReturnType.id) {
+			// some paths don't return, but there were never any returns anyway
+			C = j1.C.concat(new Classes.Constraint(Classes.Type.undefinedType.id, retType.id));
+		} else {
+			// some paths don't return, but there was at least one return somewhere
+			throw new Error("At least one function path does not return");
+		}
 	} else {
-		// TODO: potentially don't want this to be null...
-		C = j1.C.concat(new Classes.Constraint(finalReturn.id, retType.id));
+		// all paths return, and I trust they are coherent
+		C = j1.C.concat(new Classes.Constraint(finalReturn.type, retType.id));
 	}
+	// if (finalReturn === Classes.Type.undefinedReturnType) {
+	// 	// there are no return statements in the block (I know this because the placeholder val came back)
+	// 	C = j1.C.concat(new Classes.Constraint(Classes.Type.undefinedType.id, retType.id));
+	// } else {
+	// 	// TODO: potentially don't want this to be null...
+	// 	C = j1.C.concat(new Classes.Constraint(finalReturn.id, retType.id));
+	// }
 
 	// return the original gamma
 	var j = new Classes.Judgement(funType, C, gamma, W);
@@ -194,8 +207,7 @@ UglifyJS.AST_Lambda.prototype.check = function(gamma, dynamics) {
 
 // Rule IdType / IdTypeUndef
 UglifyJS.AST_Symbol.prototype.check = function(gamma, dynamics, doNotWrap) {
-	var T, C = [],
-		W = [];
+	var T, W = [];
 	var dynamic = false;
 	if (dynamics.indexOf(this.name) >= 0) {
 		// this is a dynamic variable, so we will be wrapping with a mimic
@@ -234,7 +246,7 @@ UglifyJS.AST_Symbol.prototype.check = function(gamma, dynamics, doNotWrap) {
 		}
 	}
 
-	var j = new Classes.Judgement(T, C, gamma, W);
+	var j = new Classes.Judgement(T, [], gamma, W);
 	j.nodes.push(this);
 	return j;
 };
@@ -365,22 +377,21 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 	var j1 = this.right.check(gamma, dynamics);
 
 	// if this is an assignment to a dynamic variable, we shouldn't wrap with a mimic
-	var j2 = this.left.check(j1.gamma, dynamics, dynamicWrite);
-
-	var C = j1.C.concat(j2.C);
-	var W = j1.W.concat(j2.W);
-	var returnType, j;
+	var returnType, j, j2, C, W;
 	switch (this.operator) {
 		case ("="):
 
 			if (this.left instanceof UglifyJS.AST_Symbol) {
 				// AssignType (must be a straight variable)
 
+				j2 = this.left.check(j1.gamma, dynamics, dynamicWrite);
+
+				C = j1.C.concat(j2.C);
+				W = j1.W.concat(j2.W);
+
 				// important justification of LEqCheck v. LEq in WWT pad, bottom of page 1.
 				if (!dynamicWrite) C.push(new Classes.LEqCheckConstraint(j2.T.id, j1.T.id));
-				// j2.T.shouldInfer = false;
-				// if (j2.T.shouldInfer) j1.T.shouldInfer = f;
-
+				
 				// update gamma
 				// TODO: Update formal spec to show this
 				j2.gamma.push(
@@ -428,15 +439,9 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 					throw new Error("JSTyper only supports assignment to straight dot chains");
 				}
 
-				// This check simply creates constraints on a.b.c, asserting
-				// that each symbol must have that minimal member
-				// j2 = this.left.expression.check(j1.gamma, dynamics);
-				// C = C.concat(j2.C);
-
 				// obtain the original base type, so we can attach originalObjs to our defn
 				j2 = expNode.check(j1.gamma, dynamics);
 				var expType = j2.T;
-				C = C.concat(j2.C);
 				W = j1.W.concat(j2.W);
 
 				function attachOriginalObjs(baseType, newType, path) {
@@ -445,7 +450,10 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 						newType.shouldInfer = true;
 					}
 
-					if (path.length < 1) return;
+					if (path.length < 1) {
+						C.push(new Classes.OptionalConstraint(baseType.id, newType.id));
+						return;
+					}
 					var nextBase;
 					if (baseType.memberTypes !== undefined && path[0] in baseType.memberTypes) {
 						nextBase = Classes.Type.store[baseType.memberTypes[path[0]]];
@@ -457,7 +465,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 							memberTypes: {}
 						});
 						nextBase.memberTypes[path[0]] = gamma.getFreshType().id;
-						C.push(new Classes.LEqConstraint(nextBase.id, baseType.id));
+						C.push(new Classes.Constraint(nextBase.id, baseType.id));
 						nextBase = Classes.Type.store[nextBase.memberTypes[path[0]]];
 					}
 					attachOriginalObjs(
@@ -469,7 +477,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 				attachOriginalObjs(expType, T, path);
 
 				// make sure there are no conflicting members between these types
-				C.push(new Classes.OptionalConstraint(expType.id, T.id));
+				// C.push(new Classes.OptionalConstraint(expType.id, T.id));
 
 
 				j2.gamma = new Classes.TypeEnv(j2.gamma);
@@ -659,15 +667,16 @@ UglifyJS.AST_Return.prototype.check = function(gamma, dynamics) {
 		T = Classes.Type.undefinedType;
 	}
 
-	// check if 'return' has already been defined in this scope
-	// RetTypable 1/3
-	var previousReturn = gamma.get('return');
-	if (previousReturn === Classes.Type.undefinedReturnType) {
+	
+	// check if 'return' is coherent with what has been defined in this scope
+	var previousReturn = gamma.getTypeEnvEntry('return');
+	previousReturn.somePathsNoReturn = false;
+	if (previousReturn.type === Classes.Type.undefinedReturnType.id) {
+		// no constraint needed - this is the first return
 		newGamma.push(new Classes.TypeEnvEntry('return', this, T.id));
 	} else
-	// RetTypable 2/4
 	{
-		C.push(new Classes.Constraint(T.id, previousReturn.id));
+		C.push(new Classes.Constraint(T.id, previousReturn.type));
 	}
 
 	var judgement = new Classes.Judgement(null, C, newGamma, W);
@@ -736,6 +745,7 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 				original[i].node,
 				original[i].type
 			);
+			if (original[i].somePathsNoReturn) clone[i].somePathsNoReturn = true;
 			map[i] = clone[i];
 		}
 		return {
@@ -819,6 +829,9 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 		var initLen = original.length;
 		for (var i = 0; i < initLen; i++) {
 
+			// we deal with return separately
+			if (original[i].name === 'return') continue;
+
 			// T1 and T2 represent the final types at the end of each branch
 			// map1[i] and map2[i] are the original types (at the start of each branch)
 			var T1 = gamma1.get(original[i].name);
@@ -834,6 +847,7 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 				));
 			}
 
+			// Now add constraints on the original type (to allow inference propagation)
 			if (original[i].type !== map1[i].type) {
 				C.push(new Classes.LEqConstraint(map1[i].type, original[i].type));
 			}
@@ -845,6 +859,87 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 		return original; 
 	}
 
+	function mergeReturns(tee1, tee2, reversed) {
+		var lack, type;
+		if (tee1.somePathsNoReturn) {
+			if (tee1.type === Classes.Type.undefinedReturnType.id) {
+				// tee1 is LACK_BLANK
+
+				if (tee2.somePathsNoReturn) {
+					if (tee2.type === Classes.Type.undefinedReturnType.id) {
+						// tee2 is LACK_BLANK
+
+						lack = true;
+						type = tee1.type;
+					} else {
+						// tee2 is LACK_T for T = tee2.type
+
+						lack = true;
+						type = tee2.type; 
+					}
+				} else {
+					// tee2 is T for T = tee2.type
+
+					lack = true;
+					type = tee2.type; 
+				}
+			} else {
+				// tee1 is LACK_T for T = tee1.type
+
+				if (tee2.somePathsNoReturn) {
+					if (tee2.type === Classes.Type.undefinedReturnType.id) {
+						// tee2 is LACK_BLANK
+
+						lack = true;
+						type = tee1.type;
+					} else {
+						// tee2 is LACK_T for T = tee2.type
+
+						C.push(new Classes.Constraint(tee1.type, tee2.type));
+						lack = true;
+						type = tee1.type; // or tee2 would be fine
+					}
+				} else {
+					// tee2 is T for T = tee2.type
+
+					C.push(new Classes.Constraint(tee1.type, tee2.type));
+					lack = true;
+					type = tee1.type; // or tee2 would be fine
+				}
+			}
+		} else {
+			// tee1 is T for T = tee1.type
+
+			if (tee2.somePathsNoReturn) {
+				if (tee2.type === Classes.Type.undefinedReturnType.id) {
+					// tee2 is LACK_BLANK
+
+					lack = true;
+					type = tee1.type;
+				} else {
+					// tee2 is LACK_T for T = tee2.type
+
+					C.push(new Classes.Constraint(tee1.type, tee2.type));
+					lack = true;
+					type = tee1.type; // or tee2 would be fine
+				}
+			} else {
+				// tee2 is T for T = tee2.type
+
+				C.push(new Classes.Constraint(tee1.type, tee2.type));
+				lack = false;
+				type = tee1.type; // or tee2 would be fine
+			}
+		}
+		if (lack === undefined || type === undefined) {
+			throw new Error("Found an unexpected combination of return types (JSTyper error)");
+		} else {
+			var newTee = new Classes.TypeEnvEntry('return', null, type);
+			if (lack) newTee.somePathsNoReturn = true;
+			return newTee;
+		} 
+
+	}
 
 	this.body.parent = parent(this);
 	var clone1 = getClone(j1.gamma);
@@ -852,7 +947,7 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 	C = C.concat(j2.C);
 	W = W.concat(j2.W);
 
-	var outGamma;
+	var outGamma, newReturn;
 	// IfTypable2
 	if (this.alternative !== undefined && this.alternative !== null) {
 		this.alternative.parent = parent(this);
@@ -862,17 +957,30 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 		W = W.concat(j3.W);
 
 		outGamma = mergeEnv(j1.gamma, clone1.map, clone2.map, j2.gamma, j3.gamma);
+		
+		if (j1.gamma.get('return') !== null) {
+			newReturn = mergeReturns(j2.gamma.getTypeEnvEntry('return'),j3.gamma.getTypeEnvEntry('return'));
+			outGamma.push(newReturn);
+		}
 	} else {
 		var initLen = j1.gamma.length;
 		for (var i = 0; i < initLen; i++) {
-			var T1 = j2.gamma.get(j1.gamma[i].name);
+			// normally we would look at the intersection of both branches to
+			// determine what goes in outgamma. Here one branch is empty, so
+			// we just use the prior gamma
+
 			// optimisation - don't make constraints if the types are the same!
-			if (j1.gamma[i].type !== T1.type) {
+			if (j1.gamma[i].type !== clone1.map[i].type) {
 
 				C.push(new Classes.LEqConstraint(clone1.map[i].type, j1.gamma[i].type));
 			}
 		}
 		outGamma = j1.gamma;
+
+		if (j1.gamma.get('return') !== null) {
+			newReturn = mergeReturns(j2.gamma.getTypeEnvEntry('return'),j1.gamma.getTypeEnvEntry('return'));
+			outGamma.push(newReturn);
+		}
 	}
 
 	var j = new Classes.Judgement(null, C, outGamma, W);
