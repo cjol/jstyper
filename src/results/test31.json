@@ -1,0 +1,19 @@
+{
+	"success": true,
+	"types": {
+		"5": {
+			"9": {
+				"type": "function",
+				"argTypes": [
+					"abstract", {
+						"type": "object",
+						"memberTypes": {
+							"foo": "number"
+						}
+					}
+				],
+				"returnType": "undefined"
+			}
+		}
+	}
+}

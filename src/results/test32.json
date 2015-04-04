@@ -1,0 +1,30 @@
+{
+	"success": true,
+	"types": {
+		"2": {
+			"9": {
+				"type": "function",
+				"argTypes": [
+					"abstract", {
+						"type": "object",
+						"memberTypes": {
+							"foo1": "number",
+							"bar1": "number",
+							"count": "number"
+						}
+					}
+				],
+				"returnType": {
+					"type": "object",
+					"memberTypes": {
+						"init": "string",
+						"foo1": "number",
+						"bar1": "number",
+						"count": "number",
+						"foobar": "boolean"
+					}
+				}
+			}
+		}
+	}
+}

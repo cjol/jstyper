@@ -150,7 +150,8 @@ UglifyJS.AST_Lambda.prototype.check = function(gamma, dynamics) {
 	}
 
 	// add a placeholder type for return
-	gamma1.push(new Classes.TypeEnvEntry('return', null, gamma1.getFreshType().id));
+	var placeholderReturn = new Classes.TypeEnvEntry('return', null, Classes.Type.undefinedReturnType.id);
+	gamma1.push(placeholderReturn);
 
 	// V_Fun2
 	if (this.name !== undefined && this.name !== null) {
@@ -176,12 +177,13 @@ UglifyJS.AST_Lambda.prototype.check = function(gamma, dynamics) {
 
 	var C;
 	var W = j1.W;
-	if (j1.gamma.get('return') === null) {
-		// there are no return statements in the block
+	var finalReturn = j1.gamma.get('return');
+	if (finalReturn === Classes.Type.undefinedReturnType) {
+		// there are no return statements in the block (I know this because the placeholder val came back)
 		C = j1.C.concat(new Classes.Constraint(Classes.Type.undefinedType.id, retType.id));
 	} else {
 		// TODO: potentially don't want this to be null...
-		C = j1.C.concat(new Classes.Constraint(j1.gamma.get('return').id, retType.id));
+		C = j1.C.concat(new Classes.Constraint(finalReturn.id, retType.id));
 	}
 
 	// return the original gamma
@@ -659,12 +661,13 @@ UglifyJS.AST_Return.prototype.check = function(gamma, dynamics) {
 
 	// check if 'return' has already been defined in this scope
 	// RetTypable 1/3
-	if (gamma.get('return') === null) {
+	var previousReturn = gamma.get('return');
+	if (previousReturn === Classes.Type.undefinedReturnType) {
 		newGamma.push(new Classes.TypeEnvEntry('return', this, T.id));
 	} else
 	// RetTypable 2/4
 	{
-		C.push(new Classes.Constraint(T.id, gamma.get('return').id));
+		C.push(new Classes.Constraint(T.id, previousReturn.id));
 	}
 
 	var judgement = new Classes.Judgement(null, C, newGamma, W);
@@ -774,11 +777,16 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 			if (T1.originalObj !== null && T1.originalObj !== limit1) {
 				originalObj = prune(Classes.Type.store[T1.originalObj], T2, limit1, limit2, base).id;
 			} else if (T1.originalObj === limit1) {
+				// this code was added to attach the bottom element of some
+				// chain to the original type (before the if) - so that
+				// inference can pass through the if
+				// I didn't think very long OR hard about this and I am very dubious.
+
 				originalObj = limit1;
 				// I'm pretty confident that any element of an originalObj
 				// chain must be a legit object, so I think this is safe.
 				// TODO: I didn't think very long about this. (but it seemed to work...)
-				if (base !== undefined) {
+				if (base !== undefined && base !== limit1) {
 					Classes.Type.store[limit1].originalObj = base;
 				}
 
@@ -810,30 +818,31 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 	function mergeEnv(original, map1, map2, gamma1, gamma2) {
 		var initLen = original.length;
 		for (var i = 0; i < initLen; i++) {
+
+			// T1 and T2 represent the final types at the end of each branch
+			// map1[i] and map2[i] are the original types (at the start of each branch)
 			var T1 = gamma1.get(original[i].name);
 			var T2 = gamma2.get(original[i].name);
+
 			// optimisation - don't make constraints if the types are the same!
 			if (original[i].type !== T1.type || original[i].type !== T2.type) {
-
-
 				var newType = prune(T1, T2, map1[i].type, map2[i].type, original[i].type);
-				C.push(new Classes.LEqConstraint(map1[i].type, original[i].type));
-				C.push(new Classes.LEqConstraint(map2[i].type, original[i].type));
 				original.push(new Classes.TypeEnvEntry(
 					original[i].name,
 					original[i].node,
 					newType.id
 				));
 			}
-			// } else {
-			// 	newTees.push(new Classes.TypeEnvEntry(
-			// 		original[i].name,
-			// 		original[i].node,
-			// 		original[i].type
-			// 	));
-			// }
+
+			if (original[i].type !== map1[i].type) {
+				C.push(new Classes.LEqConstraint(map1[i].type, original[i].type));
+			}
+
+			if (original[i].type !== map2[i].type) {
+				C.push(new Classes.LEqConstraint(map2[i].type, original[i].type));
+			}
 		}
-		return original; // new Classes.TypeEnv(newTees);
+		return original; 
 	}
 
 

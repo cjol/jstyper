@@ -1,0 +1,34 @@
+{
+	"success": true,
+	"types": {
+		"2": {
+			"9": {
+				"type": "function",
+				"argTypes": [
+					"abstract", {
+						"type": "object",
+						"memberTypes": {
+							"infer": "number",
+							"infer2": "number",
+							"comp": "number"
+						}
+					}
+				],
+				"returnType": {
+					"type": "object",
+					"memberTypes": {
+						"infer": "number",
+						"infer2": "number",
+						"comp": "number",
+						"foobar": {
+							"type": "object",
+							"memberTypes": {
+								"inner": "boolean"
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

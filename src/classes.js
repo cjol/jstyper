@@ -41,6 +41,7 @@ Type.resetStore = function() {
 	Type.numType = new PrimitiveType('number');
 	Type.boolType = new PrimitiveType('boolean');
 	Type.stringType = new PrimitiveType('string');
+	Type.undefinedReturnType = new PrimitiveType('undefined');
 	Type.undefinedType = new PrimitiveType('undefined');
 	Type.nullType = new PrimitiveType('null');
 };
@@ -184,8 +185,9 @@ ObjectType.prototype.toString = function(donotrecurse) {
 	donotrecurse.push(this.id);
 
 	var types = [];
+	var i;
 	outerLoop: for (var lab in this.memberTypes) {
-		for (var i = 0; i < donotrecurse.length; i++) {
+		for (i = 0; i < donotrecurse.length; i++) {
 			if (donotrecurse[i] === this.memberTypes[lab]) {
 				types.push(lab + ": [" + Type.store[this.memberTypes[lab]].type + "]");
 				continue outerLoop;
@@ -194,10 +196,20 @@ ObjectType.prototype.toString = function(donotrecurse) {
 		types.push(lab + ":" + Type.store[this.memberTypes[lab]].toString(donotrecurse.slice(0)));
 	}
 	var origString = "";
+	var safe = true;
 	if (this.originalObj !== null) {
-		origString = Type.store[this.originalObj].toString(donotrecurse.slice(0));
-		origString = origString.slice(1,-1);
-		origString = "[, " + origString + "]";
+		for (i = 0; i < donotrecurse.length; i++) {
+			if (donotrecurse[i] === this.originalObj) {
+				// origString = "[" + Type.store[this.originalObj].type + "]";
+				// safe = false;
+				break;
+			}
+		}
+		if (safe) {
+			origString = Type.store[this.originalObj].toString(donotrecurse.slice(0));
+			origString = origString.slice(1, -1);
+			origString = "[, " + origString + "]";
+		}
 	}
 	// TODO: Add proto and originalObj members
 	return "{" + types.join(", ") + origString + "}";
@@ -714,7 +726,7 @@ LEqConstraint.prototype.solve = function() {
 			});
 
 			// for an optionalconstraint, an abstract effectively = emptyobj
-			if (! (this instanceof OptionalConstraint)) {
+			if (!(this instanceof OptionalConstraint)) {
 				for (label in Type.store[this.type2].memberTypes) {
 					objType.memberTypes[label] = TypeEnv.getFreshType().id;
 				}
@@ -762,7 +774,7 @@ LEqConstraint.prototype.solve = function() {
 			for (label in Type.store[this.type1].memberTypes) {
 				objType.memberTypes[label] = TypeEnv.getFreshType().id;
 			}
-			
+
 			if (Type.store[this.type2].shouldInfer) objType.shouldInfer = true;
 			subs.push(new Substitution(this.type2, objType.id));
 
@@ -806,7 +818,7 @@ LEqConstraint.prototype.solve = function() {
 		try {
 			if (Type.store[this.type1].type === "object" && Type.store[this.type2].type === "object" &&
 				Type.store[this.type1].originalObj === null && Type.store[this.type2].originalObj === null) {
-				if (! (this instanceof LEqCheckConstraint)) {
+				if (!(this instanceof LEqCheckConstraint)) {
 					this.enforce();
 				}
 			}

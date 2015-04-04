@@ -1,0 +1,32 @@
+{
+	"success": true,
+	"types": {
+		"5": {
+			"9": {
+				"type": "function",
+				"argTypes": [
+					"abstract"
+				],
+				"returnType": "number"
+			}
+		},
+		"7": {
+			"5": {
+				"type": "function",
+				"argTypes": [
+					"abstract"
+				],
+				"returnType": "undefined"
+			}
+		},
+		"12": {
+			"9": {
+				"type": "function",
+				"argTypes": [
+					"abstract"
+				],
+				"returnType": "undefined"
+			}
+		}
+	}
+}

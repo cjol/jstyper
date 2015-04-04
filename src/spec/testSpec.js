@@ -84,10 +84,9 @@ describe("Custom test", function() {
 		describe("'" + stem + "'", function() {
 
 			var src = fs.readFileSync("./tests/" + file, "utf8");
-			var expected;
+			var resfile;
 			try {
-				expected = JSON.parse(fs.readFileSync("./results/" + stem + ".json", "utf8"));
-				
+				resfile = fs.readFileSync("./results/" + stem + ".json", "utf8");
 			} catch (e) {
 
 				it("should have a test", function() {
@@ -95,7 +94,8 @@ describe("Custom test", function() {
 				});
 				return;
 			}
-
+			var expected = JSON.parse(resfile);
+			
 			if (expected.incomplete) {
 				it("can't be useful until the test framework is upgraded.", function() {
 					if (expected.reason === undefined) {

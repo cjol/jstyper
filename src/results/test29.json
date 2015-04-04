@@ -1,0 +1,36 @@
+{
+	"success": true,
+	"types": {
+		"3": {
+			"9": {
+				"type": "function",
+				"argTypes": [
+					"abstract", {
+						"type": "object",
+						"memberTypes": {
+							"a": {
+								"type": "object",
+								"memberTypes": {
+
+								}
+							}
+						}
+					}
+
+				],
+				"returnType": {
+					"type": "object",
+					"memberTypes": {
+						"a": {
+							"type": "object",
+							"memberTypes": {
+								"e": "number",
+								"b": "number"
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
