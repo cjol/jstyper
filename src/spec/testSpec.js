@@ -25,7 +25,7 @@ var extraMatchers = {
 
 
 testDir('custom', "Custom Test");
-testDir('sunspider', "Sunspider Test");
+// testDir('sunspider', "Sunspider Test");
 
 function testDir(dir, name) {
 		
@@ -115,11 +115,6 @@ function testDir(dir, name) {
 }
 
 function compareTypes(actual, expected) {
-	// console.log("Comparing \n");
-	// console.log(actual); 
-	// console.log(expected);
-	// console.log("\n\n\n");
-
 	if (typeof expected === "string") {
 		// we're expecting a primitive or abstract type
 		expect(actual).toEqual(expected);
