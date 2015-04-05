@@ -569,7 +569,7 @@ Constraint.prototype.check = function() {
 		}
 	} else if (type2.type === "array") {
 
-		var nc = new Constraint(type1.innerType, type2.innerType);
+		var nc = new this.constructor(type1.innerType, type2.innerType);
 		if (this.interesting) nc.interesting = true;
 		return [nc];
 

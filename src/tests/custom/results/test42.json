@@ -1,0 +1,11 @@
+{
+	"success": true,
+	"types": {
+		"3": {
+			"4": {
+				"type": "array",
+				"innerType": "string"
+			}
+		}
+	}
+}

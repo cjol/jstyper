@@ -1,0 +1,17 @@
+{
+	"success": true,
+	"types": {
+		"3": {
+			"4": {
+				"type": "array",
+				"innerType": {
+					"type": "function",
+					"argTypes": [
+						"abstract"
+					],
+					"returnType": "undefined"
+				}
+			}
+		}
+	}
+}

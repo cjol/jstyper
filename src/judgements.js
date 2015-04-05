@@ -546,6 +546,26 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 				// var constraint = new Classes.LEqConstraint(T.id, objType.id);
 				// C.push(constraint);
 
+			} else if (this.left instanceof UglifyJS.AST_Sub) {
+				// ArrayAssignType
+
+				j2 = this.left.expression.check(j1.gamma, dynamics, dynamicWrite);
+				C = C.concat(j2.C);
+				W = W.concat(j2.W);
+
+				var arrayType = new Classes.ArrayType({
+					innerType: j1.T.id
+				});
+				C.push(new Classes.LEqCheckConstraint(j2.T.id, arrayType.id));
+
+				// check that the index property was a number (we don't support string accesses)
+				var j3 = this.left.property.check(j1.gamma, dynamics);
+				C = C.concat(j3.C);
+				W = W.concat(j3.W);
+				C.push(new Classes.Constraint(Classes.Type.numType.id, j3.T.id));
+
+				returnType = j1.T;
+				break;
 			} else {
 				throw new Error("Unexpected assignment target");
 			}
