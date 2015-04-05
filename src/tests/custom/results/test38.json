@@ -1,0 +1,26 @@
+{
+	"success": true,
+	"types": {
+		"4": {
+			"4": "number",
+			"8": {
+				"type": "wrapper",
+				"innerType": {
+					"type": "object",
+					"memberTypes": {
+						"f": {
+							"type": "function",
+							"argTypes": [
+								"abstract"
+							],
+							"returnType": "number"
+						}
+					}
+				}
+			}
+		},
+		"5": {
+			"0": "number"
+		}
+	}
+}

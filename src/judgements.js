@@ -498,15 +498,13 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 			// these operators have the added constraint that both left and right must be numbers
 			// since we're about to say the two types are equal, can just say left must be number
 
-			if (!(this.left instanceof UglifyJS.AST_Dot)) {
-				C.push(new Classes.Constraint(Classes.Type.numType.id, j1.T.id));
-				C.push(new Classes.Constraint(Classes.Type.numType.id, j2.T.id));
-				returnType = j1.T;
-			} else {
+			if (this.left instanceof UglifyJS.AST_Dot) {
 				// PropNumAssignType
 
 				j2 = this.left.expression.check(j1.gamma, dynamics);
-
+				C = j1.C.concat(j2.C);
+				W = j1.W.concat(j2.W);
+				
 				var memberTypeNum = {};
 				memberTypeNum[this.left.property] = Classes.Type.numType.id;
 
@@ -514,11 +512,19 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 					memberTypes: memberTypeNum
 				});
 
-				C = j1.C.concat(j2.C);
-				W = j1.W.concat(j2.W);
 				var constraintNum = new Classes.LEqConstraint(numT.id, j2.T.id);
 				C.push(constraintNum);
 				C.push(new Classes.Constraint(Classes.Type.numType.id, j1.T.id));
+			} else {
+
+				j2 = this.left.check(j1.gamma, dynamics, dynamicWrite);
+
+				C = C.concat(j2.C);
+				W = W.concat(j2.W);
+
+				C.push(new Classes.Constraint(Classes.Type.numType.id, j1.T.id));
+				C.push(new Classes.Constraint(Classes.Type.numType.id, j2.T.id));
+				returnType = j1.T;
 			}
 			break;
 		default:
