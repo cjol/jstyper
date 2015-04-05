@@ -54,15 +54,15 @@ app.post('/compile/', function(req, res) {
 });
 
 // /compile/test1.js will return the compilation  result for test 1 (no req body needed)
-app.get('/compile/:test/', function(req, res) {
-    var file = __dirname + "/tests/" + req.params.test;
+app.get('/compile/:dir/:test/', function(req, res) {
+    var file = __dirname + "/tests/" + req.params.dir + "/tests/" + req.params.test;
     var src = fs.readFileSync(file, "utf8");
     handleCompile(src, req, res);
 });
 
 // /debug/test2.js will return a json object containing debug results from compiling test 2 
-app.get('/debug/:test/', function(req, res) {
-    var file = __dirname + "/tests/" + req.params.test;
+app.get('/debug/:dir/:test', function(req, res) {
+    var file = __dirname + "/tests/" + req.params.dir + "/tests/" + req.params.test;
     var src = fs.readFileSync(file, "utf8");
     res.set('Content-Type', 'application/javascript');
     try {
@@ -86,10 +86,10 @@ app.get('/', function(req, res) {
 });
 
 // requesting a test directly preloads the editor with the test and its result
-app.get('/:test', function(req, res) {
+app.get('/:dir/:test', function(req, res) {
 	
 	// obtain test data
-    var file = __dirname + "/tests/" + req.params.test;
+    var file = __dirname + "/tests/" + req.params.dir + "/tests/" + req.params.test;
     var src = fs.readFileSync(file, "utf8");
     var result;
     try {

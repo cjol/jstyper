@@ -1,0 +1,34 @@
+{
+	"success": true,
+	"types": {
+		"2": {
+			"4": {
+				"type": "array",
+				"innerType": "string"
+			}
+		},
+		"3": {
+			"4": {
+				"type": "array",
+				"innerType": "number"
+			}
+		},
+		"4": {
+			"4": {
+				"type": "array",
+				"innerType": "number"
+			}
+		},
+		"6": {
+			"4": {
+				"type": "array",
+				"innerType": {
+					"type": "object",
+					"memberTypes": {
+						"foo": "number"
+					}
+				}
+			}
+		}
+	}
+}
