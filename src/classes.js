@@ -189,7 +189,7 @@ ObjectType.prototype.toString = function(donotrecurse) {
 	outerLoop: for (var lab in this.memberTypes) {
 		for (i = 0; i < donotrecurse.length; i++) {
 			if (donotrecurse[i] === this.memberTypes[lab]) {
-				types.push(lab + ": [" + Type.store[this.memberTypes[lab]].type + "]");
+				types.push(lab + ": <" + Type.store[this.memberTypes[lab]].type + ">");
 				continue outerLoop;
 			}
 		}
@@ -226,7 +226,7 @@ ObjectType.prototype.toAST = function(donotrecurse) {
 				types.push(new UglifyJS.AST_ObjectKeyVal({
 					key: lab,
 					value: new UglifyJS.AST_String({
-						value: "[" + Type.store[this.memberTypes[lab]].type + "]"
+						value: "<" + Type.store[this.memberTypes[lab]].type + ">"
 					})
 				}));
 				continue outerLoop;
@@ -284,19 +284,6 @@ tmp.prototype = PrimitiveType.prototype;
 FunctionType.prototype = new tmp();
 FunctionType.prototype.constructor = FunctionType;
 
-// FunctionType.prototype.cloneTo = function(obj) {
-// 	PrimitiveType.prototype.cloneTo.call(this, obj);
-// 	obj.argTypes = [];
-
-// 	for (var i =0; i<this.argTypes.length; i++) {
-// 		obj.argTypes[i] = this.argTypes[i];
-// 	}
-// 	obj.returnType = this.returnType;
-// 	obj.applySubstitution = FunctionType.prototype.applySubstitution;
-// 	obj.toString = FunctionType.prototype.toString;
-// 	obj.cloneTo = FunctionType.prototype.cloneTo;
-// };
-
 FunctionType.prototype.applySubstitution = function(sub, donotrecurse) {
 	if (donotrecurse === undefined) donotrecurse = [];
 	donotrecurse.push(this.id);
@@ -338,7 +325,7 @@ FunctionType.prototype.toString = function(donotrecurse) {
 
 		for (j = 0; j < donotrecurse.length; j++) {
 			if (donotrecurse[j] === this.argTypes[i]) {
-				args.push("[" + Type.store[this.argTypes[i]].type + "]");
+				args.push("<" + Type.store[this.argTypes[i]].type + ">");
 				continue outerLoop;
 			}
 		}
@@ -350,7 +337,7 @@ FunctionType.prototype.toString = function(donotrecurse) {
 	var safe = true;
 	for (j = 0; j < donotrecurse.length; j++) {
 		if (donotrecurse[j] === this.returnType) {
-			ret = "[" + Type.store[this.returnType].type + "]";
+			ret = "<" + Type.store[this.returnType].type + ">";
 			safe = false;
 			break;
 		}
@@ -375,7 +362,7 @@ FunctionType.prototype.toAST = function(donotrecurse) {
 		for (j = 0; j < donotrecurse.length; j++) {
 			if (donotrecurse[j] === this.argTypes[i]) {
 				args.push(new UglifyJS.AST_String({
-					value: "[" + Type.store[this.argTypes[i]].type + "]"
+					value: "<" + Type.store[this.argTypes[i]].type + ">"
 				}));
 				continue outerLoop;
 			}
@@ -389,7 +376,7 @@ FunctionType.prototype.toAST = function(donotrecurse) {
 	for (j = 0; j < donotrecurse.length; j++) {
 		if (donotrecurse[j] === this.returnType) {
 			ret = new UglifyJS.AST_String({
-				value: "[" + Type.store[this.returnType].type + "]"
+				value: "<" + Type.store[this.returnType].type + ">"
 			});
 			safe = false;
 			break;
@@ -429,6 +416,85 @@ FunctionType.prototype.addContainers = function(container) {
 		Type.store[this.argTypes[i]].addContainers(container);
 	}
 	Type.store[this.returnType].addContainers(container);
+};
+
+
+function ArrayType(options, node) {
+	PrimitiveType.call(this, "array", options, node);
+
+	this.innerType = options.innerType;
+	Type.store[this.innerType].addContainers(this.id);
+}
+tmp.prototype = PrimitiveType.prototype;
+ArrayType.prototype = new tmp();
+ArrayType.prototype.constructor = ArrayType;
+
+ArrayType.prototype.applySubstitution = function(sub, donotrecurse) {
+	if (donotrecurse === undefined) donotrecurse = [];
+	donotrecurse.push(this.id);
+
+	if (this.innerType === sub.from) {
+		this.innerType = sub.to;
+		Type.store[sub.to].addContainers(this.id);
+	}
+	for (i = 0; i < donotrecurse.length; i++) {
+		if (this.innerType === donotrecurse[i]) return;
+	}
+	Type.store[this.innerType].applySubstitution(sub, donotrecurse.slice(0));
+};
+ArrayType.prototype.toString = function(donotrecurse) {
+
+	var j;
+	if (donotrecurse === undefined) donotrecurse = [];
+	donotrecurse.push(this.id);
+
+	var innerType;
+	if (donotrecurse.indexOf(this.innerType) < 0) {
+		innerType = Type.store[this.innerType].toString(donotrecurse);
+	} else {
+		innerType = "<" + Type.store[this.innerType].type + ">";
+	}
+
+	return "[" + innerType + "]";
+};
+
+
+ArrayType.prototype.toAST = function(donotrecurse) {
+
+	var j;
+	if (donotrecurse === undefined) donotrecurse = [];
+	donotrecurse.push(this.id);
+
+	// return type
+
+	var innerType;
+	if (donotrecurse.indexOf(this.innerType) < 0) {
+		innerType = Type.store[this.innerType].toAST(donotrecurse);
+	} else {
+		innerType = "<" + Type.store[this.innerType].type + ">";
+	}
+
+	return new UglifyJS.AST_Object({
+		properties: [
+			new UglifyJS.AST_ObjectKeyVal({
+				key: "kind",
+				value: new UglifyJS.AST_String({
+					value: "array"
+				})
+			}),
+			new UglifyJS.AST_ObjectKeyVal({
+				key: "innerType",
+				value: innerType
+			})
+		]
+	});
+};
+ArrayType.prototype.addContainers = function(container) {
+
+	if (this.isContainedBy(container)) return;
+	Type.prototype.addContainers.call(this, container);
+
+	Type.store[this.innerType].addContainers(container);
 };
 
 

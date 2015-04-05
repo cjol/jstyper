@@ -291,8 +291,6 @@ UglifyJS.AST_Dot.prototype.check = function(gamma, dynamics) {
 	return judgement;
 };
 
-// TODO: Rule CallType / PropCallType
-
 UglifyJS.AST_Call.prototype.check = function(gamma, dynamics) {
 	this.expression.parent = parent(this);
 
@@ -375,9 +373,11 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 	this.right.parent = parent(this);
 	this.left.parent = parent(this);
 	var j1 = this.right.check(gamma, dynamics);
+	var C = j1.C;
+	var W = j1.W;
 
 	// if this is an assignment to a dynamic variable, we shouldn't wrap with a mimic
-	var returnType, j, j2, C, W;
+	var returnType, j, j2;
 	switch (this.operator) {
 		case ("="):
 
@@ -386,8 +386,8 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 
 				j2 = this.left.check(j1.gamma, dynamics, dynamicWrite);
 
-				C = j1.C.concat(j2.C);
-				W = j1.W.concat(j2.W);
+				C = C.concat(j2.C);
+				W = W.concat(j2.W);
 
 				// important justification of LEqCheck v. LEq in WWT pad, bottom of page 1.
 				if (!dynamicWrite) C.push(new Classes.LEqCheckConstraint(j2.T.id, j1.T.id));
@@ -411,7 +411,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 				var T = gamma.getFreshType();
 
 				// (important justification of LEqCheck v. LEq in WWT pad, bottom of page 1.)
-				C = j1.C.concat([new Classes.LEqCheckConstraint(T.id, j1.T.id)]);
+				C = C.concat([new Classes.LEqCheckConstraint(T.id, j1.T.id)]);
 
 				// T is initially a placeholder type for a.b (i.e. its only member is T3 above)
 				// We will travel up the dot string, reassigning T until we get to the root (i.e. a)
@@ -442,7 +442,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 				// obtain the original base type, so we can attach originalObjs to our defn
 				j2 = expNode.check(j1.gamma, dynamics);
 				var expType = j2.T;
-				W = j1.W.concat(j2.W);
+				W = W.concat(j2.W);
 
 				function attachOriginalObjs(baseType, newType, path) {
 					newType.originalObj = baseType.id;
@@ -683,6 +683,7 @@ UglifyJS.AST_Return.prototype.check = function(gamma, dynamics) {
 	judgement.nodes.push(this);
 	return judgement;
 };
+
 // Rule SeqTypable
 UglifyJS.AST_Block.prototype.check = function(gamma, dynamics) {
 	var judgement = new Classes.Judgement(null, [], new Classes.TypeEnv(gamma), []);
