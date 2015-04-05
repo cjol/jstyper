@@ -153,6 +153,10 @@ function compareTypes(actual, expected) {
 				}
 				compareTypes(actual.returnType, expected.returnType);
 				break;
+			case "array": 
+				expect(actual.type).toEqual("array");
+				compareTypes(actual.innerType, expected.innerType);
+				break;
 			case "recursive": 
 				expect(actual.type).toEqual("recursive");
 				break;

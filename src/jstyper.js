@@ -77,53 +77,19 @@ module.exports = function(src) {
 			return C;
 		};
 
-		// do {
-			// solve the generated constraints, or throw an error if this isn't possible
-			var result = solveConstraints(consistConstraints);
-			var substitutions = result.substitutions;
+		// solve the generated constraints, or throw an error if this isn't possible
+		var result = solveConstraints(consistConstraints);
+		var substitutions = result.substitutions;
 
-			// apply the solution substitutions to the type environment
-			for (var j = 0; j < substitutions.length; j++) {
+		// apply the solution substitutions to the type environment
+		for (var j = 0; j < substitutions.length; j++) {
 
-				chunks[i].gamma.applySubstitution(substitutions[j]);
+			chunks[i].gamma.applySubstitution(substitutions[j]);
 
-				for (var k = 0; k < chunks[i].W.length; k++) {
-					chunks[i].W[k].applySubstitution(substitutions[j]);
-				}
+			for (var k = 0; k < chunks[i].W.length; k++) {
+				chunks[i].W[k].applySubstitution(substitutions[j]);
 			}
-
-			// // check gamma for consistency:
-			// consistConstraints = [];
-			// for (var tee in chunks[i].gamma) {
-			// 	consistConstraints = consistConstraints.concat(
-			// 		getConsistencyConstraints(
-			// 			Classes.Type.store[chunks[i].gamma[tee].type], {})
-			// 	);
-			// }
-		// } while (consistConstraints.length > 0);
-
-
-		// Prepare a helpful message for each typed chunk
-		// var annotate = function(node) {
-		// 	if (node instanceof UglifyJS.AST_Scope) {
-		// 		if (node.gamma !== undefined) {
-		// 			for (var j = 0; j < substitutions.length; j++) {
-		// 				node.gamma.applySubstitution(substitutions[j]);
-		// 			}
-		// 			var typeComment = "\n\tjstyper types: \n" + node.gamma.toString(2);
-		// 			if (node.body.length > 0) {
-		// 				node.body[0].start.comments_before.push(
-		// 					new UglifyJS.AST_Token({
-		// 						type: 'comment2',
-		// 						value: typeComment
-		// 					})
-		// 				);
-		// 			}
-		// 		}
-		// 	}
-		// };
-		// var walker = new UglifyJS.TreeWalker(annotate);
-		// ast.walk(walker);
+		}
 
 
 		var attachSubtypes = function(tee, k, sourceId, donotrecurse) {
@@ -165,8 +131,12 @@ module.exports = function(src) {
 					attachSubtypes(tee[k].argTypes, key, source.argTypes[key], donotrecurse.concat([sourceId]));
 				}
 				attachSubtypes(tee[k], "returnType", source.returnType, donotrecurse.concat([sourceId]));
+			} else if (source instanceof Classes.ArrayType) {
+				tee[k] = {
+					type: "array",
+				};
+				attachSubtypes(tee[k], "innerType", source.innerType, donotrecurse.concat([sourceId]));
 			} else if (source instanceof Classes.PrimitiveType) {
-
 				tee[k] = source.type;
 			} else if (source instanceof Classes.AbstractType) {
 				tee[k] = "abstract";

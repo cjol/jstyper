@@ -11,6 +11,7 @@ module.exports = {
 	AbstractType: AbstractType,
 	ObjectType: ObjectType,
 	FunctionType: FunctionType,
+	ArrayType: ArrayType,
 	Substitution: Substitution,
 	Constraint: Constraint,
 	LEqConstraint: LEqConstraint,
@@ -566,6 +567,12 @@ Constraint.prototype.check = function() {
 		} else {
 			throw new Error();
 		}
+	} else if (type2.type === "array") {
+
+		var nc = new Constraint(type1.innerType, type2.innerType);
+		if (this.interesting) nc.interesting = true;
+		return [nc];
+
 	} else {
 		// these are primitive types so they're fine
 		return [];

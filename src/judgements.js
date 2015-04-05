@@ -83,7 +83,6 @@ UglifyJS.AST_Object.prototype.check = function(gamma, dynamics) {
 			node: this
 		});
 
-		// TODO: Check the direction of this constraint
 		C.push(new Classes.Constraint(propType.id, judgement.T.id));
 		memberType[this.properties[i].key] = propType.id;
 		memberType[this.properties[i].key].node = this.properties[i];
@@ -95,6 +94,33 @@ UglifyJS.AST_Object.prototype.check = function(gamma, dynamics) {
 	var T = new Classes.ObjectType({
 		memberTypes: memberType
 	});
+
+	return new Classes.Judgement(T, C, gamma, W);
+};
+
+// Rule V_Array TODO: Add this to spec
+UglifyJS.AST_Array.prototype.check = function(gamma, dynamics) {
+
+	var innerType = gamma.getFreshType();
+	var T = new Classes.ArrayType({
+		innerType: innerType.id
+	});
+	var C = [];
+	var W = [];
+	// an array's type is constrained by the elements within it
+	for (var i = 0; i < this.elements.length; i++) {
+		this.elements[i].parent = parent(this);
+
+		var judgement = this.elements[i].check(gamma, dynamics);
+		C = C.concat(judgement.C);
+		W = W.concat(judgement.W);
+
+		// can read an element with less structure than the array's type, (but must write elms with more)
+		C.push(new Classes.LEqConstraint(innerType.id, judgement.T.id));
+
+		// thread gamma through to the next element
+		gamma = judgement.gamma;
+	}
 
 	return new Classes.Judgement(T, C, gamma, W);
 };
@@ -504,7 +530,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 				j2 = this.left.expression.check(j1.gamma, dynamics);
 				C = j1.C.concat(j2.C);
 				W = j1.W.concat(j2.W);
-				
+
 				var memberTypeNum = {};
 				memberTypeNum[this.left.property] = Classes.Type.numType.id;
 
