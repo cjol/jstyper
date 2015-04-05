@@ -22,6 +22,98 @@ var extraMatchers = {
 	}
 };
 
+
+
+testDir('custom', "Custom Test");
+testDir('sunspider', "Sunspider Test");
+
+function testDir(dir, name) {
+		
+	describe(name, function() {
+		beforeEach(function() {
+			jasmine.addMatchers(extraMatchers);
+		});
+
+		console.log("looking at " + "./tests/" + dir + "/tests/");
+		var files = fs.readdirSync("./tests/" + dir + "/tests/");
+
+		files.forEach(function(file) {
+
+			var stem = file.slice(0, -3);
+			var testPath = "./tests/" + dir + "/tests/" + file;
+			var resultPath = "./tests/"+ dir + "/results/" + stem + ".json";
+
+			// skip directories
+			if (fs.lstatSync(testPath).isDirectory()) {
+				return;
+			}
+
+
+			describe("'" + stem + "'", function() {
+
+				if (!fs.existsSync(resultPath)) {
+					it("should have a test", function() {
+						pending("Test hasn't been written yet");
+					});
+					return;
+				}
+				
+				var src = fs.readFileSync(testPath, "utf8");
+				var resfile = fs.readFileSync(resultPath, "utf8");
+				var expected = JSON.parse(resfile);
+				
+				if (expected.incomplete) {
+					it("can't be useful until the test framework is upgraded.", function() {
+						if (expected.reason === undefined) {
+							pending();
+						} else {
+							pending(expected.reason);
+						}
+					});
+					return;
+				}
+
+				var compile;
+				var result;
+				try {
+					result = jstyper(src);
+					compile = true;
+				} catch (e) {
+					compile = false;
+				}
+
+				it('should' + (expected.success?'':' fail to') + ' compile', function() {
+					expect(compile).toEqual(expected.success);
+				});
+
+				if (compile && expected.success) {
+
+					var assertCorrect = function(line, col) {
+						return function() {
+							expect(result.judgements[line]).toBeDefined();
+							expect(result.judgements[line][col]).toBeDefined();
+
+							compareTypes(result.judgements[line][col], expected.types[line][col]);
+						};
+					};
+
+					for (var line in expected.types) {
+						for (var col in expected.types[line]) {
+							it('should correctly type the symbol at l' + line + 'c' + col,
+								assertCorrect(line, col));
+						}
+					}
+
+					// TODO: Further tests to check gradual typing is correct
+					// Further tests to check execution
+
+				} 
+			});
+		});
+
+	});	
+}
+
 function compareTypes(actual, expected) {
 	// console.log("Comparing \n");
 	// console.log(actual); 
@@ -69,79 +161,3 @@ function compareTypes(actual, expected) {
 		}
 	}
 }
-
-describe("Custom test", function() {
-	beforeEach(function() {
-		jasmine.addMatchers(extraMatchers);
-	});
-
-	var files = fs.readdirSync(process.cwd() + '/tests/');
-
-	files.forEach(function(file) {
-
-		var stem = file.slice(0, -3);
-
-		describe("'" + stem + "'", function() {
-
-			var src = fs.readFileSync("./tests/" + file, "utf8");
-			var resfile;
-			try {
-				resfile = fs.readFileSync("./results/" + stem + ".json", "utf8");
-			} catch (e) {
-
-				it("should have a test", function() {
-					pending("Test hasn't been written yet");
-				});
-				return;
-			}
-			var expected = JSON.parse(resfile);
-			
-			if (expected.incomplete) {
-				it("can't be useful until the test framework is upgraded.", function() {
-					if (expected.reason === undefined) {
-						pending();
-					} else {
-						pending(expected.reason);
-					}
-				});
-				return;
-			}
-
-			var compile;
-			var result;
-			try {
-				result = jstyper(src);
-				compile = true;
-			} catch (e) {
-				compile = false;
-			}
-
-			it('should' + (expected.success?'':' fail to') + ' compile', function() {
-				expect(compile).toEqual(expected.success);
-			});
-
-			if (compile && expected.success) {
-
-				var assertCorrect = function(line, col) {
-					return function() {
-						expect(result.judgements[line]).toBeDefined();
-						expect(result.judgements[line][col]).toBeDefined();
-
-						compareTypes(result.judgements[line][col], expected.types[line][col]);
-					};
-				};
-
-				for (var line in expected.types) {
-					for (var col in expected.types[line]) {
-						it('should correctly type the symbol at l' + line + 'c' + col,
-							assertCorrect(line, col));
-					}
-				}
-
-				// TODO: Further tests to check gradual typing is correct
-
-			} 
-		});
-	});
-
-});
