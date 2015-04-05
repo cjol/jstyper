@@ -116,7 +116,10 @@ UglifyJS.AST_Array.prototype.check = function(gamma, dynamics) {
 		W = W.concat(judgement.W);
 
 		// can read an element with less structure than the array's type, (but must write elms with more)
-		C.push(new Classes.LEqConstraint(innerType.id, judgement.T.id));
+		// this is one of those places where I'd like to use straight LEq, to be able to grow array type as I see more elements
+		// unfortunately this is equivalent to growing by assignment of an object, which JSTyper doesn't support as per WWTp1
+		// instead the type of an array is defined by the first element
+		C.push(new Classes.LEqCheckConstraint(innerType.id, judgement.T.id));
 
 		// thread gamma through to the next element
 		gamma = judgement.gamma;
@@ -313,6 +316,37 @@ UglifyJS.AST_Dot.prototype.check = function(gamma, dynamics) {
 	}
 
 	var judgement = new Classes.Judgement(T, C, j1.gamma, W);
+	judgement.nodes.push(this);
+	return judgement;
+};
+
+// Rule ArrayType
+// NB This is not called for assigning to an array. (see AssignType for that)
+UglifyJS.AST_Sub.prototype.check = function(gamma, dynamics) {
+	this.expression.parent = parent(this);
+	this.property.parent = parent(this);
+
+	// get the type of the containing object
+	var j1 = this.expression.check(gamma, dynamics);
+	var C = j1.C;
+	var W = j1.W;
+
+	var innerType = gamma.getFreshType();
+	var T = new Classes.ArrayType({
+		innerType: innerType.id
+	});
+
+	// TODO: This possibly should be LEqCheck. I'm being lenient...
+	// the array type must have more structure than the type being read
+	C.push(new Classes.LEqConstraint(T.id, j1.T.id));
+
+	// check that the index property was a number (we don't support string accesses)
+	var j2 = this.property.check(j1.gamma, dynamics);
+	C = C.concat(j2.C);
+	W = W.concat(j2.W);
+	C.push(new Classes.Constraint(Classes.Type.numType.id, j2.T.id));
+
+	var judgement = new Classes.Judgement(innerType, C, j1.gamma, W);
 	judgement.nodes.push(this);
 	return judgement;
 };

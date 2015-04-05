@@ -1,0 +1,16 @@
+{
+	"success": true,
+	"types": {
+		"2": {
+			"4": {
+				"type": "array",
+				"innerType": {
+					"type": "object",
+					"memberTypes": {
+						"foo": "number"
+					}
+				}
+			}
+		}
+	}
+}
