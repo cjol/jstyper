@@ -135,13 +135,15 @@ module.exports = function(src) {
 					// add a comment
 					if (currentStatementNode.comments_before === undefined) 
 						currentStatementNode.comments_before = [];
-					currentStatementNode.comments_before.push(
-						new UglifyJS.AST_Token({
-							type:"comment1",
-							nlb: true,
-							value: " " + node.name + ": " + Classes.Type.store[node.tee.type]
-						})
-					);
+					if (node.tee.type in Classes.Type.store) {
+						currentStatementNode.comments_before.push(
+							new UglifyJS.AST_Token({
+								type:"comment1",
+								nlb: true,
+								value: " " + node.name + ": " + Classes.Type.store[node.tee.type]
+							})
+						);	
+					}
 				}
 			}
 		};
@@ -149,8 +151,12 @@ module.exports = function(src) {
 		ast.walk(walker);
 
 
+		currentStatementNode = ast.start;
 		function getWrapper(wrappers) {
 			return function(node) {
+				if (node instanceof UglifyJS.AST_Statement) {
+					currentStatementNode = node.start;
+				}
 				var wrapper;
 				for (var j = 0; j < wrappers.length; j++) {
 					if (node === wrappers[j].parent) {
@@ -165,8 +171,9 @@ module.exports = function(src) {
 				};
 
 				attachSubtypes(types[wrapper.expression.start.line][wrapper.expression.start.col], "innerType", wrapper.type, []);
-
+				var name;
 				var mimic;
+				// TODO: assign parents correctly within here
 				if (node instanceof UglifyJS.AST_Unary) {
 					
 					// node is the parent of something which needs wrapping
@@ -180,10 +187,10 @@ module.exports = function(src) {
 							node
 						]
 					});
+					name = node.expression.name.name;
 					node.parent().insertBefore(mimic, node, true);
-					return;
-				} else if (node instanceof UglifyJS.AST_Assign) {
-					if (["+=","-=", "/=", "*=", "%="].indexOf(node.operator) >= 0) {
+				} else if (node instanceof UglifyJS.AST_Assign &&
+					(["+=","-=", "/=", "*=", "%="].indexOf(node.operator) >= 0)) {
 						mimic = new UglifyJS.AST_Assign({
 							left: wrapper.expression,
 							right: new UglifyJS.AST_Binary({
@@ -194,47 +201,25 @@ module.exports = function(src) {
 							operator: "="
 						});
 						node.parent().insertBefore(mimic, node, true);
-						return;
-					}
+				} else {
+					// node is the parent of something which needs wrapping
+					mimic = new UglifyJS.AST_Call({
+						expression: new UglifyJS.AST_Symbol({
+							name: 'mimic'
+						}),
+						args: [
+							Classes.Type.store[wrapper.type].toAST(),
+							wrapper.expression
+						]
+					});
+					node.insertBefore(mimic, wrapper.expression, true);
+
 				}
 						
-				// node is the parent of something which needs wrapping
-				// TODO: assign parents correctly within here
-				mimic = new UglifyJS.AST_Call({
-					expression: new UglifyJS.AST_Symbol({
-						name: 'mimic'
-					}),
-					args: [
-						Classes.Type.store[wrapper.type].toAST(),
-						wrapper.expression
-					]
-				});
-				node.insertBefore(mimic, wrapper.expression, true);
 			};
 		}
 		walker = new UglifyJS.TreeWalker(getWrapper(chunks[i].W));
 		ast.walk(walker);
-
-		// TODO: append a notice indicating the end of the typed section (not easy without a trailing comments property!)
-
-		// for (var l = 0; l<solution.checks.length; l++) {
-		// 	// insert the checks as appropriate
-		// 	// unfortunately we're replacing nodes as we go, so we'll also need to substitute nodes as we go along
-		// 	var typeChecks = solution.checks[l].node.getTypeChecks( solution.checks[l].type );
-		// 	if (typeChecks) {
-		// 		for (var p = 0; p < typeChecks.length; p++) {
-		// 			var subs = solution.checks[l].node.parent().insertBefore(typeChecks[p], solution.checks[l].node);
-		// 			for (var m = 0; m<subs.length; m++) {
-		// 				for (var n=l; n<solution.checks.length; n++) {
-		// 					if (solution.checks[n].node === subs[m].from) {
-		// 						solution.checks[n].node = subs[m].to;
-		// 					}
-		// 				}
-		// 			}
-
-		// 		}
-		// 	}
-		// }
 	}
 
 	var stream = UglifyJS.OutputStream({
