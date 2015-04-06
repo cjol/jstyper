@@ -1,4 +1,4 @@
-% v0.4.1
+% v1.0.0
 % Version numbering: (project_goals_met?1:0).(added syntax).(refined spec)
 metavar termvar, x, y, z, id, l, this, return ::=  
 indexvar index, i, j, k ::= 
@@ -17,8 +17,9 @@ v :: 'v_' ::=                                   {{ com Values }}
 	| eps  		::  :: EmptyStatement							{{ com EmptyStatement }}
 																	{{ tex \epsilon }}
 	| { l1 : v1 , .. , li : vi } ::  :: ObjVal					{{ com ObjVal }}
-	| get( s , id ) :: M:: GetStore 							{{ com GetStore }}
 	| func 		::  :: FuncVal 									{{ com FuncVal }} 
+	| [ v1 , .. , v2 ] ::  :: ArrayVal 							{{ com ArrayVal }}
+	| get( s , id ) :: M:: GetStore 							{{ com GetStore }}
 
 func :: 'func_' ::=
 	| function id ( x1 , .. , xk ) { m } :: :: FunVal			{{ com FuncVal }}
@@ -43,22 +44,28 @@ e :: 'e_' ::=                                   {{ com Expression }}
 	| { l1 : e1 , .. , li : ei } ::  :: ObjExp					{{ com ObjExp }}
 	| e . l 	::  :: PropExp									{{ com PropExp }} 
 	| e ( e1 , .. , e2 ) ::  :: CallExp							{{ com CallExp }} 
+	| [ e1 , .. , e2 ] ::  :: ArrayExp 							{{ com ArrayExp }}
 
 Ass :: 'a_' ::=	                                {{ com Assignments }}
 				                                	{{ tex \approx }}
 	| = 		::  :: PlainAssign                              {{ com PlainAssign }}
 	| numOp =	::  :: NumAssign 								{{ com NumAssign }}
 
+varDec :: 'vd_' ::=
+	| var vd1 , ... , vdk   ::  :: VarDeclaration 				{{ com VarDeclaration }}
+
 m :: 'm_' ::=                                   {{ com Statement }}
 	| e         ::  :: Expression 								{{ com Expression }}
 	| m1 ; .. ; mi    ::  :: Seqs          						{{ com Seqs }}
-	| var vd1 , ... , vdk   ::  :: VarDeclaration 					{{ com VarDeclaration }}
+	| varDec  ::  :: VarDeclaration								{{ com VarDeclaration }}
 	| if ( e ) { m1 }  ::  :: IfStatement						{{ com IfStatement }}
 	| if ( e ) { m1 } else { m2 }  ::  :: IfElseStatement		{{ com IfElseStatement }}
 	| return e  ::  :: ReturnStatement							{{ com ReturnStatement }}
 	| return    ::  :: Return 									{{ com Return }}
-	| { m } [ v1 / id1 , .. , vi / idi ] :: :: SubstStatement	{{ com SubstStatement (meta) }}
 	| @def function id ( x1 , .. , xk ) { m } :: :: FuncDef		{{ com FuncDef }}
+	| while ( e ) { m1 } ::  :: WhileStatement 					{{ com WhileStatement }} 
+	| for ( e1 ; e2 ; e3 ) { m1 } ::  :: ForStatement1 			{{ com ForStatement1 }} 
+	| for ( varDec ; e2 ; e3 ) { m1 } ::  :: ForStatement2 		{{ com ForStatement2 }} 
 
 ret :: 'ret_' ::=
 	| return e 	::  :: ReturnExp								{{ com ReturnExp }}
@@ -131,6 +138,7 @@ T :: 'Tval_' ::=				                {{ com Value Type }}
 	| null      ::  :: null 									{{ com null }}
 	| { l1 : T1 , .. , li : Ti } ::  :: ObjType					{{ com ObjType }}
 	| T1 , ... , Ti -> Tj ::   :: FunType						{{ com FunType }}
+	| [ T1 ]    ::  :: ArrayType								{{ com ArrayType }}
 	| G ["return"] :: :: GammaType 								{{ com GammaType }} 
 
 G {{ tex \Gamma }} :: 'G_' ::= 					{{ com Context }}
@@ -330,10 +338,19 @@ Jop :: '' ::=
 		--------------------------------------------------------    ::	 If4
 		<if (e) {m1}, s> -> <if (e) {m1} else {}, s'>
 
-		% TODO: Need to get a line break in here...
+		--------------------------------------------------------    ::	 While
+		<while (e) {m1}, s> -> <if (e) {m1; while (e) {m1}}, s>
+
+		--------------------------------------------------------    ::	 For
+		<for (e1; e2; e3) {m1}, s> -> <e1; if (e2) {m1;e3; while (e2) {m1;e3}}, s>
+
 		<e, s> -> <e', s'>
 		---------------------------------------------				::   Obj
-		< {l1: v1, .., lj: vj, l: e, l1': e1', .., lj': ej'}, s> -> <{l1: v1, .., lj: vj, l: e', l1': e1', .., lj': ej'}, s'>
+		< {l1: v1, .., lj: vj, l: e, l1': e1, .., lj': ej}, s> -> <{l1: v1, .., lj: vj, l: e', l1': e1, .., lj': ej}, s'>
+
+		<e, s> -> <e', s'>
+		---------------------------------------------				::   Arr
+		< [v1, .., vj, e, e1, .., ek], s> -> <[v1, .., vj, e', e1, .., ek], s'>
 
 		<e, s> -> <e', s'>
 		----------------------- 									::   Prop1
@@ -388,11 +405,18 @@ Jop :: '' ::=
 		------------------------------                     		    :: V_Skip
 		G |- eps : undefined |\{} G
 	
+		G |- {l1: e1, .., lk: ek} : {l1: T1', .., lk: Tk'} |C Gk
 		G |- e1 : T1 | C1 G1 --- Gk-1 |- ek : Tk | Ck Gk 
 		C = (U i=1-k Ci) u (U i=1-k {Ti = Ti'})
 		T1', .., Tk' are fresh
 		---------------------------------------------------------   :: V_Obj
 		G |- {l1: e1, .., lk: ek} : {l1: T1', .., lk: Tk'} |C Gk
+
+		G |- e1 : T1 | C1 G1 --- Gk-1 |- ek : Tk | Ck Gk 
+		C = (U i=1-k Ci) u (U i=1-k {T >c Ti'})
+		T is fresh
+		---------------------------------------------------------   :: V_Arr
+		G |- [e1, .., ek] : [T] |C Gk
 
 		% TODO: Case(s) when G'["return"] doesn't exist
 
@@ -402,7 +426,7 @@ Jop :: '' ::=
 		G |- function (x1, .., xi) { m1; ..; mj } : T0, T1, .., Ti -> T |C u {G'["return"] = T} G
 
 		T0, T1, .., Ti are fresh
-		G u {this: T0, x1:T1, .., xi:Ti, id:T1, .., Ti -> T} |- m1; ..; mj |C G'
+		G u {this: T0, x1:T1, .., xi:Ti, id:T0, T1, .., Ti -> T} |- m1; ..; mj |C G'
 		----------------------------------------------------------------------- :: V_Fun2
 		G |- function id(x1, .., xi) { m1; ..; mj } : T0, T1, .., Ti -> T |C u {G'["return"] = T} G
 
