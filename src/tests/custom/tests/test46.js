@@ -1,5 +1,7 @@
 // jstyper start
-while (x) {
-	y++;
+function f(x, y) {
+	while (x) {
+		y++;
+	}
 }
 // jstyper end

@@ -2,7 +2,7 @@
 	"success": true,
 	"types": {
 		"4": {
-			"0": {
+			"1": {
 				"type": "object", 
 				"memberTypes": {
 					"foo": "number"
@@ -10,7 +10,7 @@
 			}
 		},
 		"7": {
-			"0": {
+			"8": {
 				"type": "object", 
 				"memberTypes": {
 					"foo": "number",

@@ -1,11 +1,11 @@
 {
 	"success": true,
 	"types": {
-		"2": {
-			"7": "boolean"
-		},
 		"3": {
-			"1": "number"
+			"8": "boolean"
+		},
+		"4": {
+			"2": "number"
 		}
 	}
 }

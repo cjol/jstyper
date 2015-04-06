@@ -80,7 +80,7 @@ app.get('/', function(req, res) {
 
 	// render the view with no initial data
     res.render("compile.html", {
-        from: '',
+        from: '// jstyper start \n \n \n \n // jstyper end',
         to: ''
     });
 });

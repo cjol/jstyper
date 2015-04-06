@@ -228,7 +228,7 @@ UglifyJS.AST_Lambda.prototype.check = function(gamma, dynamics) {
 };
 
 // Rule IdType / IdTypeUndef
-UglifyJS.AST_Symbol.prototype.check = function(gamma, dynamics, doNotWrap) {
+UglifyJS.AST_Symbol.prototype.check = function(gamma, dynamics, isAssignment) {
 	var T, W = [];
 	var dynamic = false;
 	if (dynamics.indexOf(this.name) >= 0) {
@@ -243,6 +243,9 @@ UglifyJS.AST_Symbol.prototype.check = function(gamma, dynamics, doNotWrap) {
 			detail: 'symbol type for ' + this.name,
 			node: this
 		});
+		if (!dynamic) {
+			T.illDefined = true;
+		}
 		gamma = new Classes.TypeEnv(gamma);
 
 		if (!dynamic) {
@@ -255,8 +258,13 @@ UglifyJS.AST_Symbol.prototype.check = function(gamma, dynamics, doNotWrap) {
 		this.tee = gamma.getTypeEnvEntry(this.name);
 	}
 
+	if (!isAssignment && T.illDefined === true) {
+		// we are reading this variable but it is ill-defined
+		throw new Error("Reading from " + this.name + " but it is ill-defined");
+	}
+
 	if (dynamic) {
-		if (doNotWrap) {
+		if (isAssignment) {
 			// this was an assignment to a dynamic var
 
 			this.tee = new Classes.TypeEnvEntry(this.name, this, (new Classes.AbstractType()).id);
@@ -439,7 +447,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 			if (this.left instanceof UglifyJS.AST_Symbol) {
 				// AssignType (must be a straight variable)
 				if (!dynamicWrite) {
-					j2 = this.left.check(j1.gamma, dynamics, dynamicWrite);
+					j2 = this.left.check(j1.gamma, dynamics, true);
 
 					C = C.concat(j2.C);
 					W = W.concat(j2.W);
@@ -545,7 +553,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 			} else if (this.left instanceof UglifyJS.AST_Sub) {
 				// ArrayAssignType
 
-				j2 = this.left.expression.check(j1.gamma, dynamics, dynamicWrite);
+				j2 = this.left.expression.check(j1.gamma, dynamics, true);
 				C = C.concat(j2.C);
 				W = W.concat(j2.W);
 
@@ -1203,13 +1211,12 @@ UglifyJS.AST_VarDef.prototype.check = function(gamma, dynamics) {
 	if (this.value) {
 		this.value.parent = parent(this);
 		var judgement = this.value.check(gamma, dynamics);
-		// Contention: Should this be LEqCheck or not?
-		// Straight LEq is required to be able to later expand the object, but
-		// LEqCheck is required for the constraint to actually have any effect
 
 		// C = judgement.C.concat([new Classes.LEqCheckConstraint(T, judgement.T, this.value)]);
 		C = judgement.C.concat([new Classes.LEqConstraint(T.id, judgement.T.id)]);
 		W = judgement.W;
+	} else {
+		T.illDefined = true;
 	}
 
 	gamma = new Classes.TypeEnv(gamma);
