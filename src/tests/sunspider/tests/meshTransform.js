@@ -33,4 +33,4 @@ for (var i=0; i < nx*nz*3; ++i) a[i] = 0;
 var startTime=new Date() ;
 testBody();
 var endTime=new Date() ;
-console.log(startTime, endTime, endTime - startTime);
+alert("Test took " + (endTime - startTime) + "ms");

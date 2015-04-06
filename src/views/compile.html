@@ -17,15 +17,20 @@
 			margin:0;
 		}
 		#compiler > div {
-			width: 50%;
-			float:left;
-			height:100%;
 		}
 		.CodeMirror {
-			height:100%;
+			width: 50%;
+			float:left;
+			height:96%;
 		}
 		.CodeMirror:last-child, .CodeMirror:last-child .CodeMirror-gutter {
 			background-color:#ddd;
+		}
+		#runbuttons button {
+			width: 15%;
+			height: 2%;
+			line-height:2%;
+			margin:0.5% 17.4%;
 		}
 	</style>
 </head>
@@ -34,9 +39,14 @@
 		<textarea id="from"><%- from %></textarea>
 
 		<textarea id="to"><%- to %></textarea>
-
+		<div id="runbuttons">
+			<button onclick="execOrig()">Execute Original</button>
+			<button onclick="execComp()">Execute Compiled</button>
+		</div>
 	</div>
 	<script type="text/javascript">
+		var origCode;
+		var compCode;
 		var from = CodeMirror.fromTextArea($("#from")[0],{
 			theme:"mdn-like",
 			lineNumbers: true,
@@ -50,6 +60,13 @@
 			indentUnit: 4,
 			indentWithTabs: true
 		});
+
+		function execOrig() {
+			(new Function(origCode))();
+		}
+		function execComp() {
+			(new Function(compCode))();
+		}
 		
 		function compile(src, callback) {
 			$.ajax({
@@ -74,10 +91,16 @@
 		from.on("change", function() {
 			window.clearTimeout(compileTimeout);
 			compileTimeout = window.setTimeout(function() {
+				origCode = from.getValue();
 				compile(from.getValue(), function(result) {
+					compCode = result;
 					to.setValue(result);
 				});
 			},1000);
+		});
+		$(document).ready(function() {
+			origCode = document.getElementById("from").innerText;
+			compCode = document.getElementById("to").innerText;
 		});
 	</script>
 </body>
