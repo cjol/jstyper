@@ -6,7 +6,6 @@
 		},
 		"6": {
 			"0": "number",
-			"4": "abstract",
 			"8": {
 				"type": "wrapper",
 				"innerType": "number"

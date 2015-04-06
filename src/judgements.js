@@ -438,24 +438,27 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 
 			if (this.left instanceof UglifyJS.AST_Symbol) {
 				// AssignType (must be a straight variable)
+				if (!dynamicWrite) {
+					j2 = this.left.check(j1.gamma, dynamics, dynamicWrite);
 
-				j2 = this.left.check(j1.gamma, dynamics, dynamicWrite);
+					C = C.concat(j2.C);
+					W = W.concat(j2.W);
 
-				C = C.concat(j2.C);
-				W = W.concat(j2.W);
-
-				// important justification of LEqCheck v. LEq in WWT pad, bottom of page 1.
-				if (!dynamicWrite) C.push(new Classes.LEqCheckConstraint(j2.T.id, j1.T.id));
-				
-				// update gamma
-				// TODO: Update formal spec to show this
-				j2.gamma.push(
-					new Classes.TypeEnvEntry(
-						this.left.name,
-						this,
-						j1.T.id
-					)
-				);
+					// important justification of LEqCheck v. LEq in WWT pad, bottom of page 1.
+					C.push(new Classes.LEqCheckConstraint(j2.T.id, j1.T.id));
+					
+					// update gamma
+					// TODO: Update formal spec to show this
+					j2.gamma.push(
+						new Classes.TypeEnvEntry(
+							this.left.name,
+							this,
+							j1.T.id
+						)
+					);
+				} else {
+					j2 = {gamma: j1.gamma};
+				}
 
 				returnType = j1.T;
 				break;
