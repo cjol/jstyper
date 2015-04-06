@@ -457,6 +457,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 						)
 					);
 				} else {
+					// ignore assignments to dynamic variables, and just use j1.gamma next
 					j2 = {gamma: j1.gamma};
 				}
 
