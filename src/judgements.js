@@ -470,6 +470,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 
 				// T is initially a placeholder type for a.b (i.e. its only member is T3 above)
 				// We will travel up the dot string, reassigning T until we get to the root (i.e. a)
+				this.left.parent = parent(this);
 				var expNode = this.left;
 				var path = [];
 
@@ -484,6 +485,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 					T = new Classes.ObjectType({
 						memberTypes: memberTypes
 					});
+					expNode.expression.parent = parent(expNode);
 					expNode = expNode.expression;
 				}
 
