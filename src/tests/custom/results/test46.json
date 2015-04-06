@@ -1,0 +1,11 @@
+{
+	"success": true,
+	"types": {
+		"2": {
+			"7": "boolean"
+		},
+		"3": {
+			"1": "number"
+		}
+	}
+}

@@ -1025,7 +1025,6 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 			if (lack) newTee.somePathsNoReturn = true;
 			return newTee;
 		} 
-
 	}
 
 	this.body.parent = parent(this);
@@ -1056,6 +1055,9 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 			// determine what goes in outgamma. Here one branch is empty, so
 			// we just use the prior gamma
 
+			// we deal with return values separately
+			if (j1.gamma[i].name === 'return') continue;
+
 			// optimisation - don't make constraints if the types are the same!
 			if (j1.gamma[i].type !== clone1.map[i].type) {
 
@@ -1074,6 +1076,148 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 	j.nodes.push(this);
 	return j;
 };
+
+
+// TODO: Add this to spec
+// Rule WhileTypable
+UglifyJS.AST_While.prototype.check = function(gamma, dynamics) {
+	this.condition.parent = parent(this);
+
+	var j1 = this.condition.check(gamma, dynamics);
+	var C = j1.C;
+	var W = j1.W;
+
+	C.push(new Classes.Constraint(Classes.Type.boolType.id, j1.T.id));
+
+	// create a cloned (SEPARATE!) environment for the body
+	function getClone(original) {
+		var clone = [];
+		var map = {};
+		for (var i = 0; i < original.length; i++) {
+			clone[i] = new Classes.TypeEnvEntry(
+				original[i].name,
+				original[i].node,
+				original[i].type
+			);
+			if (original[i].somePathsNoReturn) clone[i].somePathsNoReturn = true;
+			map[i] = clone[i];
+		}
+		return {
+			gamma: new Classes.TypeEnv(clone),
+			map: map
+		};
+	}
+
+	function mergeReturns(tee1, tee2, reversed) {
+		var lack, type;
+		if (tee1.somePathsNoReturn) {
+			if (tee1.type === Classes.Type.undefinedReturnType.id) {
+				// tee1 is LACK_BLANK
+
+				if (tee2.somePathsNoReturn) {
+					if (tee2.type === Classes.Type.undefinedReturnType.id) {
+						// tee2 is LACK_BLANK
+
+						lack = true;
+						type = tee1.type;
+					} else {
+						// tee2 is LACK_T for T = tee2.type
+
+						lack = true;
+						type = tee2.type; 
+					}
+				} else {
+					// tee2 is T for T = tee2.type
+
+					lack = true;
+					type = tee2.type; 
+				}
+			} else {
+				// tee1 is LACK_T for T = tee1.type
+
+				if (tee2.somePathsNoReturn) {
+					if (tee2.type === Classes.Type.undefinedReturnType.id) {
+						// tee2 is LACK_BLANK
+
+						lack = true;
+						type = tee1.type;
+					} else {
+						// tee2 is LACK_T for T = tee2.type
+
+						C.push(new Classes.Constraint(tee1.type, tee2.type));
+						lack = true;
+						type = tee1.type; // or tee2 would be fine
+					}
+				} else {
+					// tee2 is T for T = tee2.type
+
+					C.push(new Classes.Constraint(tee1.type, tee2.type));
+					lack = true;
+					type = tee1.type; // or tee2 would be fine
+				}
+			}
+		} else {
+			// tee1 is T for T = tee1.type
+
+			if (tee2.somePathsNoReturn) {
+				if (tee2.type === Classes.Type.undefinedReturnType.id) {
+					// tee2 is LACK_BLANK
+
+					lack = true;
+					type = tee1.type;
+				} else {
+					// tee2 is LACK_T for T = tee2.type
+
+					C.push(new Classes.Constraint(tee1.type, tee2.type));
+					lack = true;
+					type = tee1.type; // or tee2 would be fine
+				}
+			} else {
+				// tee2 is T for T = tee2.type
+
+				C.push(new Classes.Constraint(tee1.type, tee2.type));
+				lack = false;
+				type = tee1.type; // or tee2 would be fine
+			}
+		}
+		if (lack === undefined || type === undefined) {
+			throw new Error("Found an unexpected combination of return types (JSTyper error)");
+		} else {
+			var newTee = new Classes.TypeEnvEntry('return', null, type);
+			if (lack) newTee.somePathsNoReturn = true;
+			return newTee;
+		} 
+	}
+
+	this.body.parent = parent(this);
+	var clone1 = getClone(j1.gamma);
+	var j2 = this.body.check(clone1.gamma, dynamics);
+	C = C.concat(j2.C);
+	W = W.concat(j2.W);
+
+	var initLen = j1.gamma.length;
+	for (var i = 0; i < initLen; i++) {
+
+		// we deal with return separately
+		if (j1.gamma[i].name === 'return') continue;
+
+		// optimisation - don't make constraints if the types are the same!
+		if (j1.gamma[i].type !== clone1.map[i].type) {
+
+			C.push(new Classes.LEqConstraint(clone1.map[i].type, j1.gamma[i].type));
+		}
+	}
+
+	if (j1.gamma.get('return') !== null) {
+		var newReturn = mergeReturns(j2.gamma.getTypeEnvEntry('return'), j1.gamma.getTypeEnvEntry('return'));
+		j1.gamma.push(newReturn);
+	}
+
+	var j = new Classes.Judgement(null, C, j1.gamma, W);
+	j.nodes.push(this);
+	return j;
+};
+
 
 // Rule DecTypable / DefTypable
 UglifyJS.AST_VarDef.prototype.check = function(gamma, dynamics) {
@@ -1133,7 +1277,6 @@ UglifyJS.AST_Var.prototype.check = function(gamma, dynamics) {
 
 	return j;
 };
-
 
 // Implementation detail: attach gamma to all lexical scopes:
 UglifyJS.AST_Scope.prototype.check = function(gamma, dynamics) {
