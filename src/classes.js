@@ -1041,6 +1041,11 @@ TypeEnv.prototype.applySubstitution = function(sub) {
 	for (var i = 0; i < this.length; i++) {
 		this[i].applySubstitution(sub);
 	}
+	if (this.derivedGammas !== undefined) {
+		for (var j=0; j<this.derivedGammas.length; j++) {
+			this.derivedGammas[j].applySubstitution(sub);
+		}
+	}
 };
 TypeEnv.prototype.toString = function(indentation) {
 	var ind = "";

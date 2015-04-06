@@ -1,0 +1,28 @@
+{
+	"success": true,
+	"types": {
+		"2": {
+			"9": {
+				"type": "function",
+				"argTypes": [
+					"abstract", {
+						"type": "object",
+						"memberTypes": {
+							"sum": "number",
+							"infer": "number"
+						}
+					}
+				],
+				"returnType": {
+					"type": "object",
+					"memberTypes": {
+						"sum": "number",
+						"infer": "number",
+						"i": "number",
+						"bar": "number"
+					}
+				}
+			}
+		}
+	}
+}
