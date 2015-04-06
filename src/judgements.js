@@ -179,9 +179,10 @@ UglifyJS.AST_Lambda.prototype.check = function(gamma, dynamics) {
 	}
 
 	// add a placeholder type for return
-	var placeholderReturn = new Classes.TypeEnvEntry('return', null, Classes.Type.undefinedReturnType.id);
-	placeholderReturn.somePathsNoReturn = true;
-	gamma1.push(placeholderReturn);
+	var placeholderReturn = Classes.Type.undefinedReturnType;
+	placeholderReturn.illDefined = true;
+	// placeholderReturn.somePathsNoReturn = true;
+	gamma1.push(new Classes.TypeEnvEntry('return', null, placeholderReturn.id));
 
 	// V_Fun2
 	if (this.name !== undefined && this.name !== null) {
@@ -207,9 +208,9 @@ UglifyJS.AST_Lambda.prototype.check = function(gamma, dynamics) {
 
 	var C;
 	var W = j1.W;
-	var finalReturn = j1.gamma.getTypeEnvEntry('return');
-	if (finalReturn.somePathsNoReturn) {
-		if (finalReturn.type === Classes.Type.undefinedReturnType.id) {
+	var finalReturn = j1.gamma.get('return');
+	if (finalReturn.illDefined) {
+		if (finalReturn.type === 'undefinedReturn') {
 			// some paths don't return, but there were never any returns anyway
 			C = j1.C.concat(new Classes.Constraint(Classes.Type.undefinedType.id, retType.id));
 		} else {
@@ -218,7 +219,7 @@ UglifyJS.AST_Lambda.prototype.check = function(gamma, dynamics) {
 		}
 	} else {
 		// all paths return, and I trust they are coherent
-		C = j1.C.concat(new Classes.Constraint(finalReturn.type, retType.id));
+		C = j1.C.concat(new Classes.Constraint(finalReturn.id, retType.id));
 	}
 
 	// return the original gamma
@@ -244,7 +245,7 @@ UglifyJS.AST_Symbol.prototype.check = function(gamma, dynamics, isAssignment) {
 			node: this
 		});
 		if (!dynamic) {
-			T.illDefined = true;
+			T.illDefined = true; //= new Classes.IllDefinedType(T);
 		}
 		gamma = new Classes.TypeEnv(gamma);
 
@@ -758,14 +759,14 @@ UglifyJS.AST_Return.prototype.check = function(gamma, dynamics) {
 
 	
 	// check if 'return' is coherent with what has been defined in this scope
-	var previousReturn = gamma.getTypeEnvEntry('return');
-	previousReturn.somePathsNoReturn = false;
-	if (previousReturn.type === Classes.Type.undefinedReturnType.id) {
+	var previousReturn = gamma.get('return');
+	if (previousReturn.type === 'undefinedReturn') {
 		// no constraint needed - this is the first return
 		newGamma.push(new Classes.TypeEnvEntry('return', this, T.id));
 	} else
 	{
-		C.push(new Classes.Constraint(T.id, previousReturn.type));
+		previousReturn.illDefined = false;
+		C.push(new Classes.Constraint(T.id, previousReturn.id));
 	}
 
 	var judgement = new Classes.Judgement(null, C, newGamma, W);
@@ -832,7 +833,7 @@ function getClone(original) {
 			original[i].node,
 			original[i].type
 		);
-		if (original[i].somePathsNoReturn) clone[i].somePathsNoReturn = true;
+		// if (original[i].illDefined) clone[i].illDefined = true;
 		map[i] = clone[i];
 	}
 	var newGamma = new Classes.TypeEnv(clone);
@@ -844,84 +845,83 @@ function getClone(original) {
 	};
 }
 
-function mergeReturns(tee1, tee2, C) {
+function mergeReturns(r1, r2, C) {
 	var lack, type;
-	if (tee1.somePathsNoReturn) {
-		if (tee1.type === Classes.Type.undefinedReturnType.id) {
-			// tee1 is LACK_BLANK
+	if (r1.illDefined) {
+		if (r1.type === "undefinedReturn") {
+			// r1 is LACK_BLANK
 
-			if (tee2.somePathsNoReturn) {
-				if (tee2.type === Classes.Type.undefinedReturnType.id) {
-					// tee2 is LACK_BLANK
+			if (r2.illDefined) {
+				if (r2.type === "undefinedReturn") {
+					// r2 is LACK_BLANK
 
 					lack = true;
-					type = tee1.type;
+					type = r1;
 				} else {
-					// tee2 is LACK_T for T = tee2.type
+					// r2 is LACK_T for T = r2.type
 
 					lack = true;
-					type = tee2.type; 
+					type = r2; 
 				}
 			} else {
-				// tee2 is T for T = tee2.type
+				// r2 is T for T = r2.type
 
 				lack = true;
-				type = tee2.type; 
+				type = r2.type; 
 			}
 		} else {
-			// tee1 is LACK_T for T = tee1.type
+			// r1 is LACK_T for T = r1.type
 
-			if (tee2.somePathsNoReturn) {
-				if (tee2.type === Classes.Type.undefinedReturnType.id) {
-					// tee2 is LACK_BLANK
+			if (r2.illDefined) {
+				if (r2.type === "undefinedReturn") {
+					// r2 is LACK_BLANK
 
 					lack = true;
-					type = tee1.type;
+					type = r1;
 				} else {
-					// tee2 is LACK_T for T = tee2.type
+					// r2 is LACK_T for T = r2.type
 
-					C.push(new Classes.Constraint(tee1.type, tee2.type));
+					C.push(new Classes.Constraint(r1.id, r2.id));
 					lack = true;
-					type = tee1.type; // or tee2 would be fine
+					type = r1; // or r2 would be fine
 				}
 			} else {
-				// tee2 is T for T = tee2.type
+				// r2 is T for T = r2.type
 
-				C.push(new Classes.Constraint(tee1.type, tee2.type));
+				C.push(new Classes.Constraint(r1.id, r2.id));
 				lack = true;
-				type = tee1.type; // or tee2 would be fine
+				type = r1; // or r2 would be fine
 			}
 		}
 	} else {
-		// tee1 is T for T = tee1.type
+		// r1 is T for T = r1.type
 
-		if (tee2.somePathsNoReturn) {
-			if (tee2.type === Classes.Type.undefinedReturnType.id) {
-				// tee2 is LACK_BLANK
+		if (r2.illDefined) {
+			if (r2.type === "undefinedReturn") {
+				// r2 is LACK_BLANK
 
 				lack = true;
-				type = tee1.type;
+				type = r1;
 			} else {
-				// tee2 is LACK_T for T = tee2.type
+				// r2 is LACK_T for T = r2.type
 
-				C.push(new Classes.Constraint(tee1.type, tee2.type));
+				C.push(new Classes.Constraint(r1.id, r2.id));
 				lack = true;
-				type = tee1.type; // or tee2 would be fine
+				type = r1; // or r2 would be fine
 			}
 		} else {
-			// tee2 is T for T = tee2.type
+			// r2 is T for T = r2.type
 
-			C.push(new Classes.Constraint(tee1.type, tee2.type));
+			C.push(new Classes.Constraint(r1.id, r2.id));
 			lack = false;
-			type = tee1.type; // or tee2 would be fine
+			type = r1; // or r2 would be fine
 		}
 	}
 	if (lack === undefined || type === undefined) {
 		throw new Error("Found an unexpected combination of return types (JSTyper error)");
 	} else {
-		var newTee = new Classes.TypeEnvEntry('return', null, type);
-		if (lack) newTee.somePathsNoReturn = true;
-		return newTee;
+		type.illDefined = lack;
+		return new Classes.TypeEnvEntry('return', null, type.id);
 	} 
 }
 
@@ -1021,12 +1021,16 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 			// optimisation - don't make constraints if the types are the same!
 			if (original[i].type !== T1.type || original[i].type !== T2.type) {
 				var newType = prune(T1, T2, map1[i].type, map2[i].type, original[i].type, C);
+				if (T1.illDefined===true || T2.illDefined === true) {
+					newType.illDefined = true;
+				}
 				original.push(new Classes.TypeEnvEntry(
 					original[i].name,
 					original[i].node,
 					newType.id
 				));
 			}
+
 
 			// Now add constraints on the original type (to allow inference propagation)
 			if (original[i].type !== map1[i].type) {
@@ -1064,7 +1068,7 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 		outGamma = mergeEnv(j1.gamma, clone1.map, clone2.map, j2.gamma, j3.gamma);
 		
 		if (j1.gamma.get('return') !== null) {
-			newReturn = mergeReturns(j2.gamma.getTypeEnvEntry('return'),j3.gamma.getTypeEnvEntry('return'), C);
+			newReturn = mergeReturns(j2.gamma.get('return'),j3.gamma.get('return'), C);
 			outGamma.push(newReturn);
 		}
 	} else {
@@ -1072,21 +1076,30 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 		for (var i = 0; i < initLen; i++) {
 			// normally we would look at the intersection of both branches to
 			// determine what goes in outgamma. Here one branch is empty, so
-			// we just use the prior gamma
+			// we'll just use the prior gamma
 
 			// we deal with return values separately
 			if (j1.gamma[i].name === 'return') continue;
 
+			// propagate illdefined-ness
+			var T1 = clone1.gamma.get(j1.gamma[i].name);
+			var T2 = j1.gamma.get(j1.gamma[i].name);
+			if (T1.illDefined === true || T2.illDefined === true) {
+				T1.illDefined = true;
+			}
+
+			// Now add constraints on the original type (to allow inference propagation)
 			// optimisation - don't make constraints if the types are the same!
 			if (j1.gamma[i].type !== clone1.map[i].type) {
 
 				C.push(new Classes.Constraint(clone1.map[i].type, j1.gamma[i].type));
+
 			}
 		}
 		outGamma = j1.gamma;
 
 		if (j1.gamma.get('return') !== null) {
-			newReturn = mergeReturns(j2.gamma.getTypeEnvEntry('return'),j1.gamma.getTypeEnvEntry('return'), C);
+			newReturn = mergeReturns(j2.gamma.get('return'),j1.gamma.get('return'), C);
 			outGamma.push(newReturn);
 		}
 	}
@@ -1127,7 +1140,7 @@ UglifyJS.AST_While.prototype.check = function(gamma, dynamics) {
 	}
 
 	if (j1.gamma.get('return') !== null) {
-		var newReturn = mergeReturns(j2.gamma.getTypeEnvEntry('return'), j1.gamma.getTypeEnvEntry('return'), C);
+		var newReturn = mergeReturns(j2.gamma.get('return'), j1.gamma.get('return'), C);
 		j1.gamma.push(newReturn);
 	}
 
@@ -1187,7 +1200,7 @@ UglifyJS.AST_For.prototype.check = function(gamma, dynamics) {
 	}
 
 	if (gamma.get('return') !== null) {
-		var newReturn = mergeReturns(j2.gamma.getTypeEnvEntry('return'), gamma.getTypeEnvEntry('return'), C);
+		var newReturn = mergeReturns(j2.gamma.get('return'), gamma.get('return'), C);
 		gamma.push(newReturn);
 	}
 

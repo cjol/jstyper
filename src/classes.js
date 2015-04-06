@@ -12,6 +12,7 @@ module.exports = {
 	ObjectType: ObjectType,
 	FunctionType: FunctionType,
 	ArrayType: ArrayType,
+	IllDefinedType: IllDefinedType,
 	Substitution: Substitution,
 	Constraint: Constraint,
 	LEqConstraint: LEqConstraint,
@@ -38,13 +39,12 @@ var tmp = function() {};
 Type.resetStore = function() {
 	Type.store = [];
 	Type.id = 0;
-
-	Type.numType = new PrimitiveType('number');
-	Type.boolType = new PrimitiveType('boolean');
-	Type.stringType = new PrimitiveType('string');
-	Type.undefinedReturnType = new PrimitiveType('undefined');
-	Type.undefinedType = new PrimitiveType('undefined');
-	Type.nullType = new PrimitiveType('null');
+	
+	// Type.boolType = new PrimitiveType('boolean');
+	// Type.stringType = new PrimitiveType('string');
+	// Type.undefinedReturnType = new PrimitiveType('undefined');
+	// Type.undefinedType = new PrimitiveType('undefined');
+	// Type.nullType = new PrimitiveType('null');
 };
 
 function Type(type, options, node) {
@@ -58,6 +58,25 @@ function Type(type, options, node) {
 	this.containers = [];
 	if (node !== undefined) this.node = node;
 }
+
+Object.defineProperty(Type, 'numType', {
+	get: function() { return new PrimitiveType('number'); }
+});
+Object.defineProperty(Type, 'boolType', {
+	get: function() { return new PrimitiveType('boolean'); }
+});
+Object.defineProperty(Type, 'stringType', {
+	get: function() { return new PrimitiveType('string'); }
+});
+Object.defineProperty(Type, 'undefinedReturnType', {
+	get: function() { return new PrimitiveType('undefinedReturn'); }
+});
+Object.defineProperty(Type, 'undefinedType', {
+	get: function() { return new PrimitiveType('undefined'); }
+});
+Object.defineProperty(Type, 'nullType', {
+	get: function() { return new PrimitiveType('null'); }
+});
 // Type.prototype.cloneTo = function(obj) {
 // 	obj.type = this.type;
 // 	obj.isConcrete = this.isConcrete;
@@ -497,6 +516,37 @@ ArrayType.prototype.addContainers = function(container) {
 
 	Type.store[this.innerType].addContainers(container);
 };
+
+
+
+
+function IllDefinedType(innerType) {
+	Type.call(this, "illdefn", {
+		isConcrete: innerType.isConcrete,
+		isDynamic: innerType.isDynamic
+	});
+
+	this.id = innerType.id;
+	this.innerType = innerType.id;
+	this.constructor = innerType.constructor;
+	this.applySubstitution = function(sub, donotrecurse) {
+			
+		if (donotrecurse === undefined) donotrecurse = [];
+		donotrecurse.push(this.id);
+
+		if (this.id === sub.from) {
+			innerType.id = sub.to;
+		}
+		for (i = 0; i < donotrecurse.length; i++) {
+			if (this.innerType === donotrecurse[i]) return;
+		}
+		Type.store[innerType.id].applySubstitution(sub, donotrecurse.slice(0));
+	};
+	this.toString = function() {
+		return Type.store[innerType.id].toString.apply(innerType, arguments) + "?";
+	};
+}
+
 
 
 function Substitution(from, to) {
