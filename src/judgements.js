@@ -586,7 +586,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 				C.push(new Classes.Constraint(Classes.Type.numType.id, j1.T.id));
 			} else {
 
-				j2 = this.left.check(j1.gamma, dynamics, dynamicWrite);
+				j2 = this.left.check(j1.gamma, dynamics);
 
 				C = C.concat(j2.C);
 				W = W.concat(j2.W);

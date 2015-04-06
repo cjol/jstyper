@@ -50,35 +50,8 @@ module.exports = function(src) {
 	// check the judgement is valid and do gradual typing for each chunk
 	for (var i = 0; i < chunks.length; i++) {
 
-		var consistConstraints = chunks[i].C;
-
-		var getConsistencyConstraints = function(type, existingMembers) {
-			var C = [];
-			if (type instanceof Classes.ObjectType) {
-				for (var member in type.memberTypes) {
-					if (member in existingMembers) {
-						C.push(new Classes.Constraint(type.memberTypes[member], existingMembers[member]));
-					} else {
-						existingMembers[member] = type.memberTypes[member];
-					}
-					C = C.concat(
-						getConsistencyConstraints(
-							Classes.Type.store[type.memberTypes[member]], {}));
-				}
-
-				if (type.originalObj !== null) {
-					var orig = Classes.Type.store[type.originalObj];
-
-					C = C.concat(
-						getConsistencyConstraints(
-							orig, existingMembers));
-				}
-			}
-			return C;
-		};
-
 		// solve the generated constraints, or throw an error if this isn't possible
-		var result = solveConstraints(consistConstraints);
+		var result = solveConstraints(chunks[i].C);
 		var substitutions = result.substitutions;
 
 		// apply the solution substitutions to the type environment
@@ -90,7 +63,6 @@ module.exports = function(src) {
 				chunks[i].W[k].applySubstitution(substitutions[j]);
 			}
 		}
-
 
 		var attachSubtypes = function(tee, k, sourceId, donotrecurse) {
 
@@ -173,7 +145,7 @@ module.exports = function(src) {
 				}
 			}
 		};
-		walker = new UglifyJS.TreeWalker(typeSymbols);
+		var walker = new UglifyJS.TreeWalker(typeSymbols);
 		ast.walk(walker);
 
 
@@ -194,9 +166,41 @@ module.exports = function(src) {
 
 				attachSubtypes(types[wrapper.expression.start.line][wrapper.expression.start.col], "innerType", wrapper.type, []);
 
+				var mimic;
+				if (node instanceof UglifyJS.AST_Unary) {
+					
+					// node is the parent of something which needs wrapping
+					// TODO: assign parents correctly within here
+					mimic = new UglifyJS.AST_Call({
+						expression: new UglifyJS.AST_Symbol({
+							name: 'mimic'
+						}),
+						args: [
+							Classes.Type.store[wrapper.type].toAST(),
+							node
+						]
+					});
+					node.parent().insertBefore(mimic, node, true);
+					return;
+				} else if (node instanceof UglifyJS.AST_Assign) {
+					if (["+=","-=", "/=", "*=", "%="].indexOf(node.operator) >= 0) {
+						mimic = new UglifyJS.AST_Assign({
+							left: wrapper.expression,
+							right: new UglifyJS.AST_Binary({
+								left: wrapper.expression,
+								right: node.right,
+								operator: node.operator[0]
+							}),
+							operator: "="
+						});
+						node.parent().insertBefore(mimic, node, true);
+						return;
+					}
+				}
+						
 				// node is the parent of something which needs wrapping
 				// TODO: assign parents correctly within here
-				var mimic = new UglifyJS.AST_Call({
+				mimic = new UglifyJS.AST_Call({
 					expression: new UglifyJS.AST_Symbol({
 						name: 'mimic'
 					}),
