@@ -19,7 +19,16 @@ function mimic(t, obj) {
 				args[i] = arguments[i];
 			}
 
-			var result = obj.apply(guard(t.argTypes[0], f), args);
+			// TODO: bind 'this' correctly? alert doesn't work, apparently because it needs this===window
+			// potentially it's abstract types I need to be careful with.
+			var thisType;
+			if (t.argTypes[0].kind === 'abstract' || (t.argTypes[0].kind === 'primitive' && t.argTypes[0].type === 'undefined')) {
+				thisType = null;
+			} else {
+				thisType = guard(t.argTypes[0], f);
+			}
+
+			var result = obj.apply(thisType, args);
 			return mimic(t.returnType, result);
 		};
 		return f;
@@ -34,8 +43,7 @@ function mimic(t, obj) {
 		// die hard + JSHint was complaining.
 		var definer = function(propName) {
 
-			// TODO: is it problematic that we're using getOwnProperty rather than getProperty?
-			var prop = Object.getOwnPropertyDescriptor(obj, propName);
+			var prop = getPropertyDescriptor(obj, propName);
 			Object.defineProperty(x, propName, {
 				enumerable: prop.enumerable,
 				get: function() {
@@ -109,8 +117,7 @@ function guard(t, obj) {
 		// die hard + JSHint was complaining.
 		var definer = function(propName) {
 
-			// TODO: is it problematic that we're using getOwnProperty rather than getProperty?
-			var prop = Object.getOwnPropertyDescriptor(obj, propName);
+			var prop = getPropertyDescriptor(obj, propName);
 			Object.defineProperty(x, propName, {
 				enumerable: prop.enumerable,
 				get: function() {
@@ -136,4 +143,16 @@ function guard(t, obj) {
 		console.error(t);
 		throw new Error("Unexpected kind");
 	}
+}
+
+
+
+// courtesy of https://gist.github.com/WebReflection/3373484
+function getPropertyDescriptor(o, name) {
+	var proto = o, descriptor = Object.getOwnPropertyDescriptor(proto, name);
+	while (proto && descriptor === undefined) {
+		descriptor = Object.getOwnPropertyDescriptor(proto, name);
+	 	proto = proto.__proto__;
+	 }
+	return descriptor;
 }
