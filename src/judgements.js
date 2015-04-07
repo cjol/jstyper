@@ -228,7 +228,7 @@ UglifyJS.AST_Lambda.prototype.check = function(gamma, dynamics) {
 };
 
 // Rule IdType / IdTypeUndef
-UglifyJS.AST_Symbol.prototype.check = function(gamma, dynamics, isAssignment) {
+UglifyJS.AST_Symbol.prototype.check = function(gamma, dynamics) {
 	var T, W = [];
 	var dynamic = false;
 	if (dynamics.indexOf(this.name) >= 0) {
@@ -236,43 +236,26 @@ UglifyJS.AST_Symbol.prototype.check = function(gamma, dynamics, isAssignment) {
 		dynamic = true;
 	}
 
-	T = gamma.get(this.name);
-	if (T === null || T === undefined) {
-		// need to select a new type, but create a new env for it
-		T = gamma.getFreshType(undefined, {
-			detail: 'symbol type for ' + this.name,
-			node: this
-		});
-		if (!dynamic) {
-			T.illDefined = true;
-		}
-		gamma = new Classes.TypeEnv(gamma);
-
-		if (!dynamic) {
-			var tee = new Classes.TypeEnvEntry(this.name, this, T.id);
-			this.tee = tee;
-			gamma.push(tee);
-		}
-	} else {
-		// we already have a type env entry for this type
-		this.tee = gamma.getTypeEnvEntry(this.name);
-	}
-
-	if (!isAssignment && T.illDefined === true) {
-		// we are reading this variable but it is ill-defined
-		throw new Error("Reading from " + this.name + " but it is ill-defined");
-	}
-
 	if (dynamic) {
-		if (isAssignment) {
-			// this was an assignment to a dynamic var
+		// if (isAssignment) {
+		// 	// this was an assignment to a dynamic var
 
-			this.tee = new Classes.TypeEnvEntry(this.name, this, (new Classes.AbstractType()).id);
-		} else {
-			this.tee = {
-				type: "wrapped" // will be replaced once the wrapper is generated
-			};
-			W.push(new Classes.Wrapper(this, this.parent(), T.id));
+		// 	this.tee = new Classes.TypeEnvEntry(this.name, this, (new Classes.AbstractType()).id);
+		// } else {
+		T = gamma.getFreshType();
+		this.tee = {
+			type: "wrapped" // will be replaced once the wrapper is generated
+		};
+		W.push(new Classes.Wrapper(this, this.parent(), T.id));
+		// }
+	} else {
+
+		T = gamma.get(this.name);
+		this.tee = gamma.getTypeEnvEntry(this.name);
+
+		if (T.illDefined === true) {
+			// we are reading this variable but it is ill-defined
+			throw new Error("Reading from " + this.name + " but it is ill-defined");
 		}
 	}
 
@@ -436,38 +419,55 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 
 	this.right.parent = parent(this);
 	this.left.parent = parent(this);
+	
+	// all assignments involve checking RHS
 	var j1 = this.right.check(gamma, dynamics);
 	var C = j1.C;
 	var W = j1.W;
 
 	// if this is an assignment to a dynamic variable, we shouldn't wrap with a mimic
 	var returnType, j, j2;
+	var nextGamma;
 	switch (this.operator) {
 		case ("="):
-
 			if (this.left instanceof UglifyJS.AST_Symbol) {
-				// AssignType (must be a straight variable)
+				
 				if (!dynamicWrite) {
-					j2 = this.left.check(j1.gamma, dynamics, true);
 
-					C = C.concat(j2.C);
-					W = W.concat(j2.W);
+					var currentType = j1.gamma.get(this.left.name);
+					if (currentType === null || currentType === undefined) {
+						// AssignTypeUndef
+
+						// need to select a new type, but create a new env for it
+						currentType = j1.gamma.getFreshType();
+						
+						nextGamma = new Classes.TypeEnv(j1.gamma);
+
+						var tee = new Classes.TypeEnvEntry(this.left.name, this.left, currentType.id);
+						this.left.tee = tee;
+						nextGamma.push(tee);
+					} else {
+						// AssignType
+
+						nextGamma = j1.gamma;
+						// we already have a type env entry for this type
+						this.left.tee = nextGamma.getTypeEnvEntry(this.left.name);
+						// update gamma
+						nextGamma.push(
+							new Classes.TypeEnvEntry(
+								this.left.name,
+								this,
+								j1.T.id
+							)
+						);
+					}
 
 					// important justification of LEqCheck v. LEq in WWT pad, bottom of page 1.
-					C.push(new Classes.LEqCheckConstraint(j2.T.id, j1.T.id));
+					C.push(new Classes.LEqCheckConstraint(currentType.id, j1.T.id));
 					
-					// update gamma
-					// TODO: Update formal spec to show this
-					j2.gamma.push(
-						new Classes.TypeEnvEntry(
-							this.left.name,
-							this,
-							j1.T.id
-						)
-					);
 				} else {
 					// ignore assignments to dynamic variables, and just use j1.gamma next
-					j2 = {gamma: j1.gamma};
+					nextGamma = j1.gamma;
 				}
 
 				returnType = j1.T;
@@ -481,7 +481,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 				// (important justification of LEqCheck v. LEq in WWT pad, bottom of page 1.)
 				C = C.concat([new Classes.LEqCheckConstraint(T.id, j1.T.id)]);
 
-				// T is initially a placeholder type for a.b (i.e. its only member is T3 above)
+				// T is initially a placeholder type for a.b (i.e. its only member is T above)
 				// We will travel up the dot string, reassigning T until we get to the root (i.e. a)
 				this.left.parent = parent(this);
 				var expNode = this.left;
@@ -546,15 +546,15 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 				}
 				attachOriginalObjs(expType, T, path);
 
-				j2.gamma = new Classes.TypeEnv(j2.gamma);
-				j2.gamma.push(new Classes.TypeEnvEntry(expNode.name, this, T.id));
+				nextGamma = new Classes.TypeEnv(j2.gamma);
+				nextGamma.push(new Classes.TypeEnvEntry(expNode.name, this, T.id));
 
 				returnType = j1.T;
 	
 			} else if (this.left instanceof UglifyJS.AST_Sub) {
 				// ArrayAssignType
 
-				j2 = this.left.expression.check(j1.gamma, dynamics, true);
+				j2 = this.left.expression.check(j1.gamma, dynamics);
 				C = C.concat(j2.C);
 				W = W.concat(j2.W);
 
@@ -568,6 +568,8 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 				C = C.concat(j3.C);
 				W = W.concat(j3.W);
 				C.push(new Classes.Constraint(Classes.Type.numType.id, j3.T.id));
+
+				nextGamma = j3.gamma;
 
 				returnType = j1.T;
 			} else {
@@ -610,11 +612,12 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 				C.push(new Classes.Constraint(Classes.Type.numType.id, j2.T.id));
 				returnType = j1.T;
 			}
+			nextGamma = j2.gamma;
 			break;
 		default:
 			throw new Error("Unhandled assignment operator " + this.operator);
 	}
-	j = new Classes.Judgement(returnType, C, j2.gamma, W);
+	j = new Classes.Judgement(returnType, C, nextGamma, W);
 	j.nodes.push(this);
 
 	return j;

@@ -34,6 +34,7 @@ vd :: 'vd_' ::=                                 {{ com VariableDeclaration }}
 e :: 'e_' ::=                                   {{ com Expression }}
 	| v         ::  :: Value 									{{ com Value }}
 	| id        ::  :: Deref 									{{ com Deref }}
+	| @assign id :: :: DerefAss 								{{ com DerefAss }}
 	| id Ass e  ::  :: Assign									{{ com Assign }}
 	| e . l Ass e' ::  :: PropAssign							{{ com PropAssign }}
 	| e op e'   ::  :: BinExp 									{{ com BinExp }}
@@ -208,31 +209,31 @@ setIndex :: 'ix_' ::=
 	| j 		::  :: j
 
 formula :: formula_ ::=  
-   |  judgement                       ::  :: judgement         {{ com judgement }}
-   |  not formula                     ::  :: not               {{ com not }}
-   															    	{{ tex \neg [[formula]] }} 
-   |  ( formula )                     ::  :: brackets          {{ com brackets }}
-   															    	{{ tex ([[formula]]\!) }}  
-   |  [ formula ]                     ::  :: bracketsHidden    {{ com bracketsHidden }}
-   															    	{{ tex [[formula]] }}  
-   |  formula1 --- formulak           ::  :: listForm          {{ com listForm }}
-   															    	{{ tex [[formula1]] \hdots [[formulak]] }}
-   |  formula \/ formula’             ::  :: or                {{ com or }}
-   															    	{{ tex [[formula]] \vee [[formula’]] }}
-   |  formula /\ formula’             ::  :: and               {{ com and }}
-   															    	{{ tex [[formula]] \wedge [[formula’]] }}
-   |  formula for formula' 			  ::  :: condform          {{ com condform }}
-   																	{{ tex [[formula]] \hspace{1pc}\textit{for}\hspace{6pt} [[formula']] }}
-   |  A setIndex formula 			  ::  :: ForAll				{{ com ForAll }}
-   																	{{ tex \forall [[setIndex]][[formula]]}}
-   |  A setIndex in sv formula 		  ::  :: ForAllIn			{{ com ForAllIn }}
-   																	{{ tex \forall [[setIndex]]\in[[sv]][[formula]]}}
-   |  fv = fv2                        ::  :: fequal 			{{ com fequal }}
-   |  fv != fv2                       ::  :: fnotequal 			{{ com fnotequal }}
-   																	{{ tex [[fv]] \neq [[fv2]] }}
-   |  fv in sv2		 	              ::  :: Contains			{{ com Contains }}
+	|  judgement                       ::  :: judgement         {{ com judgement }}
+	|  not formula                     ::  :: not               {{ com not }}
+																    	{{ tex \neg [[formula]] }} 
+	|  ( formula )                     ::  :: brackets          {{ com brackets }}
+																    	{{ tex ([[formula]]\!) }}  
+	|  [ formula ]                     ::  :: bracketsHidden    {{ com bracketsHidden }}
+																    	{{ tex [[formula]] }}  
+	|  formula1 --- formulak           ::  :: listForm          {{ com listForm }}
+																    	{{ tex [[formula1]] \hdots [[formulak]] }}
+	|  formula \/ formula’             ::  :: or                {{ com or }}
+																    	{{ tex [[formula]] \vee [[formula’]] }}
+	|  formula /\ formula’             ::  :: and               {{ com and }}
+																    	{{ tex [[formula]] \wedge [[formula’]] }}
+	|  formula for formula' 			  ::  :: condform          {{ com condform }}
+																		{{ tex [[formula]] \hspace{1pc}\textit{for}\hspace{6pt} [[formula']] }}
+	|  A setIndex formula 			  ::  :: ForAll				{{ com ForAll }}
+																		{{ tex \forall [[setIndex]][[formula]]}}
+	|  A setIndex in sv formula 		  ::  :: ForAllIn			{{ com ForAllIn }}
+																		{{ tex \forall [[setIndex]]\in[[sv]][[formula]]}}
+	|  fv = fv2                        ::  :: fequal 			{{ com fequal }}
+	|  fv != fv2                       ::  :: fnotequal 			{{ com fnotequal }}
+																		{{ tex [[fv]] \neq [[fv2]] }}
+	|  fv in sv2		 	              ::  :: Contains			{{ com Contains }}
 																	{{ tex [[fv]] \in [[sv2]] }}
-   |  fv !in sv2	 	              ::  :: NotContains		{{ com NotContains }}
+	|  fv !in sv2	 	              ::  :: NotContains		{{ com NotContains }}
 																	{{ tex [[fv]] \notin [[sv2]] }}
 	| T is fresh 					::  :: Fresh 			{{ com Fresh }} 
 	| T1 , .. , Ti are fresh 					::  :: Freshs 			{{ com Freshs }} 
@@ -478,14 +479,11 @@ Jop :: '' ::=
 		
 		% Variable retrieval
 
+		% can't read an ill-defined variable (one which may not have been initialised)
 		G(id) = T
+		T != IllDefined(T')
 		---------------------		                                :: IdType
 		G |- id : T |\{} G
-
-		T is fresh
-		id !in dom(G)
-		----------------------------------- 						:: IdTypeUndef
-		G |- id : IllDefined(T) |\{} G u {id : IllDefined(T)}
 
 		% TODO?: In the implementation, if I'm in the context of a function I use <, otherwise <c
 		T is fresh
@@ -525,27 +523,36 @@ Jop :: '' ::=
 
 
 		% Assignment operations
-
-		G |- e : T1 |C1 G1
-		G1 |- id : T2 |C2 G2
+		G(id) = T
+		G  |- e' : T1 |C1 G1
 		------------------------------------------------------	 	:: AssignType 
-		G |- id = e : T1 |(C1 u C2) u { T1 >c T2 } G2
+		G  |- id = e' : T1 |C1 u { T >c T1 } G1 u {id: T1}
 
-		T3 is fresh
-		G |- e' : T1 |C1 G1
-		G1 |- e : T2 |C2 G2
+		T is fresh
+		id !in dom(G)
+		G  |- e' : T1 |C1 G1
+		------------------------------------------------------	 	:: AssignTypeUndef
+		G  |- id = e' : T1 |C1 u { T >c T1 } G2 u {id: T}
+
+
+		% dots make list comprehensions hard to express in OTT
+		% 
+		T is fresh
+		G  |- e' : T1 |C1 G1
+		G1 |- id : T2 |C2 G2
+		%T3 = { l0 :{ l1 :{ lk: T}->T2.lk }->T2.l0 }->T2
 		------------------------------------------------------	 	:: PropAssignType
-		G |- e.l = e' : T1 |(C1 u C2) u ({ {l:T3} < T2 } u {T1 >c T3}) G2
+		G  |- id.l0.l1.lk.l = e' : T1 |C1 u ({ {l:T3} < T2 } u {T >c T1}) G2
 
-		G |- e : T1 |C1 G1
+		G  |- e' : T1 |C1 G1
 		G1 |- id : T2 |C2 G2
 		------------------------------------------------------	 	:: NumAssignType
-		G |- id numOp= e : T1 |(C1 u C2) u ({ T2 = number } u {T1 = number}) G2
+		G  |- id numOp= e' : T1 |(C1 u C2) u ({ T2 = number } u {T1 = number}) G2
 
-		G |- e' : T1 |C1 G1
-		G1 |- e : T2 |C2 G2
+		G  |- e' : T1 |C1 G1
+		G1 |- e  : T2 |C2 G2
 		------------------------------------------------------	 	:: PropNumAssignType
-		G |- e.l numOp= e' : T1 |(C1 u C2) u ({ {l:number} < T2 } u {T1 = number}) G2
+		G  |- e.l numOp= e' : T1 |(C1 u C2) u ({ {l:number} < T2 } u {T1 = number}) G2
 
 
 
