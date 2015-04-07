@@ -14,8 +14,6 @@ v :: 'v_' ::=                                   {{ com Values }}
 	| str       ::  :: String 									{{ com String }}
 	| undefined ::  :: Undefined 								{{ com Undefined }}
 	| null      ::  :: null 									{{ com null }}
-	| eps  		::  :: EmptyStatement							{{ com EmptyStatement }}
-																	{{ tex \epsilon }}
 	| { l1 : v1 , .. , li : vi } ::  :: ObjVal					{{ com ObjVal }}
 	| func 		::  :: FuncVal 									{{ com FuncVal }} 
 	| [ v1 , .. , v2 ] ::  :: ArrayVal 							{{ com ArrayVal }}
@@ -43,6 +41,7 @@ e :: 'e_' ::=                                   {{ com Expression }}
 	| preOp e   ::  :: PreExp 									{{ com PreExp }}
 	| { l1 : e1 , .. , li : ei } ::  :: ObjExp					{{ com ObjExp }}
 	| e . l 	::  :: PropExp									{{ com PropExp }} 
+	| e [ e1 ] 	::  :: ArrExp									{{ com ArrExp }} 
 	| e ( e1 , .. , e2 ) ::  :: CallExp							{{ com CallExp }} 
 	| [ e1 , .. , e2 ] ::  :: ArrayExp 							{{ com ArrayExp }}
 
@@ -66,7 +65,8 @@ m :: 'm_' ::=                                   {{ com Statement }}
 	| while ( e ) { m1 } ::  :: WhileStatement 					{{ com WhileStatement }} 
 	| for ( e1 ; e2 ; e3 ) { m1 } ::  :: ForStatement1 			{{ com ForStatement1 }} 
 	| for ( varDec ; e2 ; e3 ) { m1 } ::  :: ForStatement2 		{{ com ForStatement2 }} 
-
+	| eps  		::  :: EmptyStatement							{{ com EmptyStatement }}
+																	{{ tex \epsilon }}
 ret :: 'ret_' ::=
 	| return e 	::  :: ReturnExp								{{ com ReturnExp }}
 	| return 	::  :: Return 									{{ com Return }}
@@ -140,6 +140,8 @@ T :: 'Tval_' ::=				                {{ com Value Type }}
 	| T1 , ... , Ti -> Tj ::   :: FunType						{{ com FunType }}
 	| [ T1 ]    ::  :: ArrayType								{{ com ArrayType }}
 	| G ["return"] :: :: GammaType 								{{ com GammaType }} 
+	| IllDefined ( T )  :: M:: IllDefinedType 							{{ com IllDefinedType }}
+	| pending 	:: M:: PendingType								{{ com Pending }} 
 
 G {{ tex \Gamma }} :: 'G_' ::= 					{{ com Context }}
 	| \{}		::  :: EmptyContext								{{ com EmptyContext }}
@@ -189,7 +191,7 @@ fv :: 'fv_' ::= 								{{ com FormulaVar }}
 	| G ( id )  ::  :: ContextMember							{{ com ContextMember }}
 	| sv 		::  :: SetFormulaVar							{{ com SetFormulaVar }}
 	| T 		::  :: TypeFormulaVar							{{ com TypeFormulaVar }}
-	| id 		::  :: IDFormulaVar								{{ com IDFormulaVar }}
+	| id 		::  :: IllDefinedFormulaVar								{{ com IllDefinedFormulaVar }}
 	| func  	::  :: FuncFormulaVar							{{ com FuncFormulaVar }}
 	| e 		::  :: ExpFormulaVar                            {{ com ExpFormulaVar }}
 
@@ -379,11 +381,14 @@ Jop :: '' ::=
 		--------------------------------------------------------- 	:: 	PropCall
 		<v.l(e1,..,ei),s> -> <function id (this,x1,..,xi){m}(v,e1,..,ei), s'>
 
+	% Note: Only expressions have a type - the more general statements do not
 	defn
 	G |- e : T | C G' :: ::expType::''
 	 {{ tex [[G]] [[|-]] [[e]] : [[T]]\hspace{5pt}| _{ [[C]] } \hspace{5pt} [[G']] }}
 	 by
-		% Note: Only expressions have a type - the more general statements do not
+
+
+
 
 		% typing rules for values
 
@@ -402,33 +407,73 @@ Jop :: '' ::=
 		--------------------------                          		:: V_Null
 		G |- null : null |\{} G
 
-		------------------------------                     		    :: V_Skip
-		G |- eps : undefined |\{} G
-	
-		G |- {l1: e1, .., lk: ek} : {l1: T1', .., lk: Tk'} |C Gk
-		G |- e1 : T1 | C1 G1 --- Gk-1 |- ek : Tk | Ck Gk 
-		C = (U i=1-k Ci) u (U i=1-k {Ti = Ti'})
-		T1', .., Tk' are fresh
-		---------------------------------------------------------   :: V_Obj
-		G |- {l1: e1, .., lk: ek} : {l1: T1', .., lk: Tk'} |C Gk
 
-		G |- e1 : T1 | C1 G1 --- Gk-1 |- ek : Tk | Ck Gk 
-		C = (U i=1-k Ci) u (U i=1-k {T >c Ti'})
+
+
+
+		% object types simply depend on their expressions
+
+		T1, .., Tk are fresh
+		G |- e1 : T1' | C1 G1   ---   Gk-1 |- ek : Tk' | Ck Gk 
+		C = (U i=1-k Ci) u (U i=1-k {Ti = Ti'})
+		---------------------------------------------------------   :: V_Obj
+		G |- {l1: e1, .., lk: ek} : {l1: T1, .., lk: Tk} |C Gk
+
+
+
+
+
+		% array types simply depend on their expressions too (but all constrained to one)
+
 		T is fresh
+		G |- e1 : T1 | C1 G1   ---   Gk-1 |- ek : Tk | Ck Gk 
+		C = (U i=1-k Ci) u (U i=1-k {T >c Ti'})
 		---------------------------------------------------------   :: V_Arr
 		G |- [e1, .., ek] : [T] |C Gk
 
-		% TODO: Case(s) when G'["return"] doesn't exist
 
+
+
+
+		% function types:
+
+		% ill-defined & pending means there were no returns anywhere
+		
 		T, T0, T1, .., Ti are fresh
 		G u {this: T0, x1:T1, .., xi:Ti} |- m1; ..; mj |C G'
+		G'["return"] = IllDefined(pending)
 		----------------------------------------------------------------------- :: V_Fun1
-		G |- function (x1, .., xi) { m1; ..; mj } : T0, T1, .., Ti -> T |C u {G'["return"] = T} G
+		G |- function (x1, .., xi) { m1; ..; mj } : T0, T1, .., Ti -> T |C u {T = undefined} G
 
-		T0, T1, .., Ti are fresh
-		G u {this: T0, x1:T1, .., xi:Ti, id:T0, T1, .., Ti -> T} |- m1; ..; mj |C G'
+		% if the return is not ill-defined, we use its type for the function
+		
+		T, T0, T1, .., Ti are fresh
+		G u {this: T0, x1:T1, .., xi:Ti} |- m1; ..; mj |C G'
+		G'["return"] = Tk
+		Tk != IllDefined(Tk')
 		----------------------------------------------------------------------- :: V_Fun2
-		G |- function id(x1, .., xi) { m1; ..; mj } : T0, T1, .., Ti -> T |C u {G'["return"] = T} G
+		G |- function (x1, .., xi) { m1; ..; mj } : T0, T1, .., Ti -> T |C u {T = Tk} G
+
+		% NB the case IllDefined(T) for T!=pending is not covered, as this is illegal
+
+		% 3 and 4 just add 'id' to the inner type environment (otherwise like 1 and 2)
+
+		T, T0, T1, .., Ti are fresh
+		G u {this: T0, x1:T1, .., xi:Ti, id:T0, T1, .., Ti -> T} |- m1; ..; mj |C G'
+		G'["return"] = IllDefined(pending)
+		----------------------------------------------------------------------- :: V_Fun3
+		G |- function id(x1, .., xi) { m1; ..; mj } : T0, T1, .., Ti -> T |C u {T = undefined} G
+
+		T, T0, T1, .., Ti are fresh
+		G u {this: T0, x1:T1, .., xi:Ti, id:T0, T1, .., Ti -> T} |- m1; ..; mj |C G'
+		G'["return"] = Tk
+		Tk != IllDefined(Tk')
+		----------------------------------------------------------------------- :: V_Fun4
+		G |- function id(x1, .., xi) { m1; ..; mj } : T0, T1, .., Ti -> T |C u {T = Tk} G
+
+
+
+
 
 		
 		% Variable retrieval
@@ -437,40 +482,45 @@ Jop :: '' ::=
 		---------------------		                                :: IdType
 		G |- id : T |\{} G
 
-		id !in dom(G)
 		T is fresh
+		id !in dom(G)
 		----------------------------------- 						:: IdTypeUndef
-		G |- id : T |\{} G u {id : T}
+		G |- id : IllDefined(T) |\{} G u {id : IllDefined(T)}
 
+		% TODO?: In the implementation, if I'm in the context of a function I use <, otherwise <c
+		T is fresh
 		G |- e : T1 |C G1
-		T2 is fresh
 		---------------------------------------------------------   :: PropType
-		G |- e.l : T2 |C u {{l:T2} < T1} G1
+		G |- e.l : T |C u {{l:T} > T1} G1
 	
+		% NB in JSTyper we don't allow string-keyed array accesses
+		T is fresh
+		G  |- e1 : T1 |C1 G1
+		G1 |- e  : T2 |C2 G2
+		---------------------------------------------------------   :: ArrayType
+		G |- e[e1] : T |(C1 u C2) u ({[T] > T2} u {T1 = number}) G2
+	
+
 
 
 		% Function Calls
 
-		% I'm saying this is {} if unspecified (in practice this is global object e.g. window)
-		% TODO: Check direction of T0 constraint (seriously this time!)
-		% Potential fix - constrain T0 to = undefined, such that:
-		%	If the function doesn't use this, it will be so far unconstrained and unify easily
-		% 	If the function does use this, this constraint will fail to unify
+		% I'm saying 'this' is undefined if unspecified (in practice 'this' is global object e.g. window)
 
-		G |- e : T |C0 G0
-		G0 |- e1 : T1' |C1 G1 --- Gi-1 |- ei : Ti' |Ci Gi
-		C' = (U j=0-i Cj) u ( ((U j=1-i {Tj <c Tj'}) u {Tk >c Tk'})u ({T=T0, T1, .., Ti -> Tk} u {T0 = undefined} ))
 		T0,T1,..,Ti,Tk,Tk' are fresh
+		G  |- e  : T   |C0 G0
+		G0 |- e1 : T1' |C1 G1   ---   Gi-1 |- ei : Ti' |Ci Gi
+		C' = ({T0 = undefined} u (U j=1-i {Tj >c Tj'})) u ({Tk <c Tk'} u {T=T0, T1, .., Ti -> Tk})
 		-------------------------------------------------- 			:: CallType
-		G |- e(e1,..,ei) : Tk' |C' Gi
+		G |- e(e1,..,ei) : Tk' |(U j=0-i Cj) u C' Gi
 
-		G |- e.l : T |C0 G0
-		G |- e : T0' |C' G'
-		G0 |- e1 : T1' |C1 G1 --- Gi-1 |- ei : Ti' |Ci Gi
-		C' = (U j=0-i Cj) u ( ((U j=1-i {Tj <c Tj'}) u {Tk >c Tk'})u ({T=T0, T1, .., Ti -> Tk} u {T0 <c T0'} ))
 		T0,T1,..,Ti,Tk,Tk' are fresh
+		G  |- e.l : T   |C0 G0
+		G  |- e   : T0' |C' G'
+		G0 |- e1  : T1' |C1 G1   ---   Gi-1 |- ei : Ti' |Ci Gi
+		C' = ({T0 >c T0'} u (U j=1-i {Tj >c Tj'})) u ({Tk <c Tk'} u {T=T0, T1, .., Ti -> Tk})
 		-------------------------------------------------- 			:: PropCallType
-		G |- e.l(e1,..,ei) : Tk' |C' Gi
+		G |- e.l(e1,..,ei) : Tk' |(U j=0-i Cj) u C' Gi
 
 
 
@@ -481,9 +531,9 @@ Jop :: '' ::=
 		------------------------------------------------------	 	:: AssignType 
 		G |- id = e : T1 |(C1 u C2) u { T1 >c T2 } G2
 
+		T3 is fresh
 		G |- e' : T1 |C1 G1
 		G1 |- e : T2 |C2 G2
-		T3 is fresh
 		------------------------------------------------------	 	:: PropAssignType
 		G |- e.l = e' : T1 |(C1 u C2) u ({ {l:T3} < T2 } u {T1 >c T3}) G2
 
@@ -598,8 +648,8 @@ Jop :: '' ::=
 		---------------------------------                		    :: DecTypable
 		G |- var id |\{} G u {id : T}
 
-		G |- e : T |C G'
 		T' is fresh
+		G |- e : T |C G'
 		---------------------------------                		    :: DefTypable
 		G |- var id = e |C u {T' <c T} G' u {id : T'}
 

@@ -98,7 +98,7 @@ UglifyJS.AST_Object.prototype.check = function(gamma, dynamics) {
 	return new Classes.Judgement(T, C, gamma, W);
 };
 
-// Rule V_Array TODO: Add this to spec
+// Rule V_Array
 UglifyJS.AST_Array.prototype.check = function(gamma, dynamics) {
 
 	var innerType = gamma.getFreshType();
@@ -128,9 +128,8 @@ UglifyJS.AST_Array.prototype.check = function(gamma, dynamics) {
 	return new Classes.Judgement(T, C, gamma, W);
 };
 
+// V_FunDef
 // Add function definitions names to the type environments
-// TODO: Represent this in the spec
-// TODO: What if this is dynamic?
 UglifyJS.AST_Defun.prototype.check = function(gamma, dynamics) {
 	var j = UglifyJS.AST_Lambda.prototype.check.call(this, gamma, dynamics);
 	if (this.name !== null && this.name.name !== null && this.name.name.length > 0) {
@@ -142,7 +141,7 @@ UglifyJS.AST_Defun.prototype.check = function(gamma, dynamics) {
 	return new Classes.Judgement(null, j.C, j.gamma, j.W);
 };
 
-// V_Fun1 / V_Fun2
+// V_Fun1 / V_Fun2 / V_Fun3 / V_Fun4
 UglifyJS.AST_Lambda.prototype.check = function(gamma, dynamics) {
 
 
@@ -245,7 +244,7 @@ UglifyJS.AST_Symbol.prototype.check = function(gamma, dynamics, isAssignment) {
 			node: this
 		});
 		if (!dynamic) {
-			T.illDefined = true; //= new Classes.IllDefinedType(T);
+			T.illDefined = true;
 		}
 		gamma = new Classes.TypeEnv(gamma);
 
@@ -322,7 +321,6 @@ UglifyJS.AST_Dot.prototype.check = function(gamma, dynamics) {
 	return judgement;
 };
 
-// TODO: Add this to spec
 // Rule ArrayType
 // NB This is not called for assigning to an array. (see AssignType for that)
 UglifyJS.AST_Sub.prototype.check = function(gamma, dynamics) {
@@ -334,6 +332,12 @@ UglifyJS.AST_Sub.prototype.check = function(gamma, dynamics) {
 	var C = j1.C;
 	var W = j1.W;
 
+	// check that the index property was a number (we don't support string accesses)
+	var j2 = this.property.check(j1.gamma, dynamics);
+	C = C.concat(j2.C);
+	W = W.concat(j2.W);
+	C.push(new Classes.Constraint(Classes.Type.numType.id, j2.T.id));
+
 	var innerType = gamma.getFreshType();
 	var T = new Classes.ArrayType({
 		innerType: innerType.id
@@ -342,12 +346,6 @@ UglifyJS.AST_Sub.prototype.check = function(gamma, dynamics) {
 	// TODO: This possibly should be LEqCheck. I'm being lenient...
 	// the array type must have more structure than the type being read
 	C.push(new Classes.LEqConstraint(T.id, j1.T.id));
-
-	// check that the index property was a number (we don't support string accesses)
-	var j2 = this.property.check(j1.gamma, dynamics);
-	C = C.concat(j2.C);
-	W = W.concat(j2.W);
-	C.push(new Classes.Constraint(Classes.Type.numType.id, j2.T.id));
 
 	var judgement = new Classes.Judgement(innerType, C, j1.gamma, W);
 	judgement.nodes.push(this);
@@ -362,12 +360,15 @@ UglifyJS.AST_Call.prototype.check = function(gamma, dynamics) {
 	var j0 = this.expression.check(gamma, dynamics);
 	var C = j0.C;
 	var W = j0.W;
+	gamma = j0.gamma;
 
 	// prepare new constraints
+	// firstly the constraint on 'this' - the 0th argument type
 	var argTypes = [gamma.getFreshType(undefined, {
 		detail: 'inferred \'this\' type of call ',
 		node: this
 	}).id];
+	
 	if (this.expression instanceof UglifyJS.AST_Dot) {
 		// this is an instance call
 		// PropCallType
@@ -381,7 +382,6 @@ UglifyJS.AST_Call.prototype.check = function(gamma, dynamics) {
 		// normal function call (no this)
 		C.push(new Classes.Constraint(argTypes[0], Classes.Type.undefinedType.id));
 	}
-	gamma = j0.gamma;
 
 	// typecheck each parameter
 	for (var i = 0; i < this.args.length; i++) {
@@ -422,7 +422,7 @@ UglifyJS.AST_Call.prototype.check = function(gamma, dynamics) {
 	return judgement;
 };
 
-// Rule AssignType / PropAssignType / NumAssignType / PropNumAssignType
+// Rule AssignType / PropAssignType / SunAssignType / NumAssignType / PropNumAssignType
 UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 
 	// if we are writing to a dynamic type, then do not generate the constraint
