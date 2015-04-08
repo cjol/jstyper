@@ -585,34 +585,33 @@ Jop :: '' ::=
 
 		% Mathematical Binary Operations
 
-		G |- e1 : T1 |C1 G1
+		G  |- e1 : T1 |C1 G1
 		G1 |- e2 : T2 |C2 G2
 		------------------------------------------------------------  :: NumOpType
 		G |- e1 numOp e2 : number |(C1 u C2) u ({T1 = number} u {T2 = number}) G2
 
-
-
-
 		% Boolean Binary operations
 
-		G |- e1 : T1 |C1 G1
+		G  |- e1 : T1 |C1 G1
 		G1 |- e2 : T2 |C2 G2
 		------------------------------------------------------------  :: BoolOpType
 		G |- e1 boolOp e2 : boolean | (C1 u C2) u ({T1 = boolean} u {T2 = boolean}) G2
 
-
-
+		% TODO? Object comparison always returns false, and I think == should be disallowed, at least for objects
 		% Equality Operations
 
-		G |- e1 : T1 |C1 G1
+		G  |- e1 : T1 |C1 G1
 		G1 |- e2 : T2 |C2 G2
 		-------------------------------------------------------		  :: CmpOpType
 		G |- e1 cmpOp e2 : boolean |(C1 u C2) u {T1 = T2} G2
 
-		G |- e1 : T1 |C1 G1
+		G  |- e1 : T1 |C1 G1
 		G1 |- e2 : T2 |C2 G2
 		-------------------------------------------------------		  :: NumCmpOpType
-		G |- e1 numcmpOp e2 : boolean |(C1 u C2) u ({T2 = number} u {T1 = number}) G2
+		G  |- e1 numcmpOp e2 : boolean |(C1 u C2) u ({T2 = number} u {T1 = number}) G2
+
+
+
 
 
 		% Unary Operation
@@ -624,6 +623,8 @@ Jop :: '' ::=
 		G |- e : T1 |C G'
 		------------------------------------------- 	:: PreNumType
 		G |- preNum e : number |C u {T1 = number} G'
+
+		% all post-ops are for numbers
 
 		G |- e : T1 |C G'
 		------------------------------------------- 	:: PostOpType

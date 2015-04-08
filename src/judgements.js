@@ -427,7 +427,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 	var W = j1.W;
 
 	// if this is an assignment to a dynamic variable, we shouldn't wrap with a mimic
-	var returnType, j, j2;
+	var returnType, j, j2, j3;
 	var nextGamma;
 	switch (this.operator) {
 		case ("="):
@@ -568,7 +568,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 				W = W.concat(j2.W);
 
 				// check that the index property was a number (we don't support string accesses)
-				var j3 = this.left.property.check(j1.gamma, dynamics);
+				j3 = this.left.property.check(j1.gamma, dynamics);
 				C = C.concat(j3.C);
 				W = W.concat(j3.W);
 				C.push(new Classes.Constraint(Classes.Type.numType.id, j3.T.id));
@@ -610,7 +610,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 				var constraintNum = new Classes.LEqConstraint(numT.id, j2.T.id);
 				C.push(constraintNum);
 				C.push(new Classes.Constraint(Classes.Type.numType.id, j1.T.id));
-			} else {
+			} else if (this.left instanceof UglifyJS.AST_Symbol) {
 				// NumAssignType
 
 				j2 = this.left.check(j1.gamma, dynamics);
@@ -621,7 +621,32 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 				C.push(new Classes.Constraint(Classes.Type.numType.id, j1.T.id));
 				C.push(new Classes.Constraint(Classes.Type.numType.id, j2.T.id));
 				returnType = j1.T;
-			} // TODO: ArrayNumAssignType
+			} else if (this.left instanceof UglifyJS.AST_Sub) {
+				// ArrayNumAssignType	
+				// TODO: test? This may not work at all..
+
+				j2 = this.left.expression.check(j1.gamma, dynamics);
+				C = C.concat(j2.C);
+				W = W.concat(j2.W);
+
+				// check that the index property was a number (we don't support string accesses)
+				j3 = this.left.property.check(j1.gamma, dynamics);
+				C = C.concat(j3.C);
+				W = W.concat(j3.W);
+				C.push(new Classes.Constraint(Classes.Type.numType.id, j3.T.id));
+
+				var numArrayType = new Classes.ArrayType({
+					innerType: Classes.Type.numType.id
+				});
+				C.push(new Classes.Constraint(j2.T.id, numArrayType.id));
+				C.push(new Classes.Constraint(j1.T.id, Classes.Type.numType.id));
+
+				nextGamma = j3.gamma;
+
+				returnType = j1.T;
+			}  else {
+				throw new Error("'Unexpected assignment target");
+			}
 			nextGamma = j2.gamma;
 			break;
 		default:
@@ -648,12 +673,11 @@ UglifyJS.AST_Binary.prototype.check = function(gamma, dynamics) {
 	switch (this.operator) {
 		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Expressions_and_Operators
 		// NumOpType
-		case ("+"): // TODO?: allow string
+		case ("+"): 
 		case ("-"):
 		case ("*"):
 		case ("/"):
 		case ("%"):
-			// TODO: Check order of constraint
 			C = j1.C.concat(j2.C.concat([new Classes.Constraint(Classes.Type.numType.id, j1.T.id),
 				new Classes.Constraint(Classes.Type.numType.id, j2.T.id)
 			]));
@@ -662,7 +686,6 @@ UglifyJS.AST_Binary.prototype.check = function(gamma, dynamics) {
 			// boolean operators (should both be boolean)
 		case ("||"):
 		case ("&&"):
-			// TODO: Check order of constraint
 			C = j1.C.concat(j2.C.concat([new Classes.Constraint(Classes.Type.boolType.id, j1.T.id),
 				new Classes.Constraint(Classes.Type.boolType.id, j2.T.id)
 			]));
@@ -674,7 +697,6 @@ UglifyJS.AST_Binary.prototype.check = function(gamma, dynamics) {
 		case ("!="):
 		case ("==="):
 		case ("!=="):
-			// TODO: Check order of constraint
 			C = j1.C.concat(j2.C.concat([new Classes.Constraint(j2.T.id, j1.T.id),
 				new Classes.Constraint(j1.T.id, j2.T.id)
 			]));
@@ -686,7 +708,6 @@ UglifyJS.AST_Binary.prototype.check = function(gamma, dynamics) {
 		case ("<="):
 		case (">"):
 		case (">="):
-			// TODO: Check order of constraint
 			C = j1.C.concat(j2.C.concat([new Classes.Constraint(Classes.Type.numType.id, j1.T.id),
 				new Classes.Constraint(Classes.Type.numType.id, j2.T.id)
 			]));
@@ -716,16 +737,14 @@ UglifyJS.AST_Unary.prototype.check = function(gamma, dynamics) {
 		// NegType
 		case ("!"):
 
-			// TODO: Check order of constraint
 			C = j1.C.concat([new Classes.Constraint(Classes.Type.boolType.id, j1.T.id)]);
 			returnType = Classes.Type.boolType;
 			break;
-			// PreClasses.Type.numType / PostOpType
 		case ("-"):
 		case ("++"):
 		case ("--"):
+			// PreNumType / PostOpType
 
-			// TODO: Check order of constraint
 			C = j1.C.concat([new Classes.Constraint(Classes.Type.numType.id, j1.T.id)]);
 			returnType = Classes.Type.numType;
 			break;
