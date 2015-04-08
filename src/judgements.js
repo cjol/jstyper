@@ -421,6 +421,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 	this.left.parent = parent(this);
 	
 	// all assignments involve checking RHS
+	// TODO: technically RHS should be checked last apparently
 	var j1 = this.right.check(gamma, dynamics);
 	var C = j1.C;
 	var W = j1.W;
@@ -524,13 +525,21 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 						C.push(new Classes.OptionalConstraint(baseType.id, newType.id));
 						return;
 					}
+
+					// Slight hack / deviation from the spec
 					var nextBase;
+					// TODO: Should really check all orig objects too
+					// example failing test (should compile but doesn't) var x = {a:{}}; x.b = 4; x.a.c = 3;
 					if (baseType.memberTypes !== undefined && path[0] in baseType.memberTypes) {
 						nextBase = Classes.Type.store[baseType.memberTypes[path[0]]];
 
 					} else {
-						// baseType hasn't been identified as an object yet
+						// baseType hasn't been identified as an object yet. 
 						// make a constraint with a fresh obj and we'll use that
+
+						// I think this is legit because it's very similar to the enforce() stage of
+						// solving a LEqConstraint. We don't just use LEqConstraints because we don't
+						// want a random freshtype used for the member. Also it seems to work okay...
 						nextBase = new Classes.ObjectType({
 							memberTypes: {}
 						});
@@ -558,16 +567,16 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 				C = C.concat(j2.C);
 				W = W.concat(j2.W);
 
-				var arrayType = new Classes.ArrayType({
-					innerType: j1.T.id
-				});
-				C.push(new Classes.LEqCheckConstraint(j2.T.id, arrayType.id));
-
 				// check that the index property was a number (we don't support string accesses)
 				var j3 = this.left.property.check(j1.gamma, dynamics);
 				C = C.concat(j3.C);
 				W = W.concat(j3.W);
 				C.push(new Classes.Constraint(Classes.Type.numType.id, j3.T.id));
+
+				var arrayType = new Classes.ArrayType({
+					innerType: j1.T.id
+				});
+				C.push(new Classes.LEqCheckConstraint(j2.T.id, arrayType.id));
 
 				nextGamma = j3.gamma;
 
@@ -602,6 +611,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 				C.push(constraintNum);
 				C.push(new Classes.Constraint(Classes.Type.numType.id, j1.T.id));
 			} else {
+				// NumAssignType
 
 				j2 = this.left.check(j1.gamma, dynamics);
 
@@ -611,7 +621,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 				C.push(new Classes.Constraint(Classes.Type.numType.id, j1.T.id));
 				C.push(new Classes.Constraint(Classes.Type.numType.id, j2.T.id));
 				returnType = j1.T;
-			}
+			} // TODO: ArrayNumAssignType
 			nextGamma = j2.gamma;
 			break;
 		default:

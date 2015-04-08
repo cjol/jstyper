@@ -34,9 +34,9 @@ vd :: 'vd_' ::=                                 {{ com VariableDeclaration }}
 e :: 'e_' ::=                                   {{ com Expression }}
 	| v         ::  :: Value 									{{ com Value }}
 	| id        ::  :: Deref 									{{ com Deref }}
-	| @assign id :: :: DerefAss 								{{ com DerefAss }}
 	| id Ass e  ::  :: Assign									{{ com Assign }}
 	| e . l Ass e' ::  :: PropAssign							{{ com PropAssign }}
+	| e1 [ e2 ] Ass e  ::  :: ArrayAssign						{{ com ArrayAssign }}
 	| e op e'   ::  :: BinExp 									{{ com BinExp }}
 	| e postOp  ::  :: PostExp 									{{ com PostExp }}
 	| preOp e   ::  :: PreExp 									{{ com PreExp }}
@@ -138,11 +138,12 @@ T :: 'Tval_' ::=				                {{ com Value Type }}
 	| undefined ::  :: undefined 								{{ com undefined }}
 	| null      ::  :: null 									{{ com null }}
 	| { l1 : T1 , .. , li : Ti } ::  :: ObjType					{{ com ObjType }}
-	| T1 , ... , Ti -> Tj ::   :: FunType						{{ com FunType }}
+	| ( T1 , ... , Ti -> Tj ) ::   :: FunType					{{ com FunType }}
 	| [ T1 ]    ::  :: ArrayType								{{ com ArrayType }}
 	| G ["return"] :: :: GammaType 								{{ com GammaType }} 
-	| IllDefined ( T )  :: M:: IllDefinedType 							{{ com IllDefinedType }}
+	| IllDefined ( T )  :: M:: IllDefinedType 					{{ com IllDefinedType }}
 	| pending 	:: M:: PendingType								{{ com Pending }} 
+	| T1 ~> T2  ::  :: DerivedType 								{{ com DerivedType }}
 
 G {{ tex \Gamma }} :: 'G_' ::= 					{{ com Context }}
 	| \{}		::  :: EmptyContext								{{ com EmptyContext }}
@@ -160,21 +161,29 @@ C :: 'C_' ::= 					                {{ com Constraint }}
 																	{{ tex [[C]] \cap [[C']] }}
 	| U setIndex = n1 - n2 C :: :: BigUnion 						{{ com BigUnion }}
 																	{{ tex \bigcup \limits_{[[setIndex]]=[[n1]]}^[[n2]] [[C]] }}
-	| { T1 < T2 } ::  :: ConstLeq 										{{ com ConstLeq }}
-																	{{ tex \{ [[T1]] \preceq [[T2]] \} }}
-	| { T1 > T2 } ::  :: ConstGeq				 						{{ com ConstGeq }}
-																	{{ tex \{ [[T1]] \succeq [[T2]] \} }}
-	| { T1 <c T2 } :: :: ConstCheckLeq									{{ com ConstCheckLeq }}
-																	{{ tex \{ [[T1]] \preceq_c [[T2]] \} }}
-	| { T1 >c T2 } :: :: ConstCheckGeq		 						    {{ com ConstCheckGeq }}
-																	{{ tex \{ [[T1]] \succeq_c [[T2]] \} }}
-	| { T1 = T2 } ::  :: ConstEq				 						{{ com ConstEq }}
-																	{{ tex \{ [[T1]] = [[T2]] \} }}
+	| { T1 const T2 } ::  :: ConstLeq 										{{ com ConstLeq }}
 	| ( C )		 ::  :: BracketedConstraint  					{{ com BracketedConstraint }}
 																	{{ tex [[C]] }}
+const :: 'const_' ::=
+	| < 		 ::  :: LEqConstraint 							{{ com LEqConstraint }}
+																	{{ tex \preceq }} 
+	| > 		 ::  :: GEqConstraint 							{{ com GEqConstraint }}
+																	{{ tex \succeq }} 
+	| <c 		 ::  :: LEqCheckConstraint						{{ com LEqCheckConstraint }}
+																	{{ tex \preceq_c }} 
+	| >c 		 ::  :: GEqCheckConstraint						{{ com GEqCheckConstraint }}
+																	{{ tex \succeq_c }} 
+	| <o 		 ::  :: LEqOptConstraint						{{ com LEqOptConstraint }}
+																	{{ tex \preceq_o }} 
+	| >o 		 ::  :: GEqOptConstraint						{{ com GEqOptConstraint }}
+																	{{ tex \succeq_o }} 
+	| = 		 ::  :: EqConstraint							{{ com EqConstraint }}
+																	{{ tex = }} 
+
 
 terminals :: 'terminals_' ::=
 	| ->        ::  :: rightarrow 									{{ tex \rightarrow }}
+	| ~>        ::  :: Rightarrow 									{{ tex \Rightarrow }}
 	| G         ::  :: Gamma                						{{ tex \Gamma }}
 	| |-        ::  :: Entails              						{{ tex \vdash }}
 	| ;         ::  :: semicolon
@@ -209,34 +218,34 @@ setIndex :: 'ix_' ::=
 	| j 		::  :: j
 
 formula :: formula_ ::=  
-	|  judgement                       ::  :: judgement         {{ com judgement }}
-	|  not formula                     ::  :: not               {{ com not }}
+	|  judgement                 		::  :: judgement         {{ com judgement }}
+	|  not formula               		::  :: not               {{ com not }}
 																    	{{ tex \neg [[formula]] }} 
-	|  ( formula )                     ::  :: brackets          {{ com brackets }}
+	|  ( formula )               		::  :: brackets          {{ com brackets }}
 																    	{{ tex ([[formula]]\!) }}  
-	|  [ formula ]                     ::  :: bracketsHidden    {{ com bracketsHidden }}
+	|  [ formula ]               		::  :: bracketsHidden    {{ com bracketsHidden }}
 																    	{{ tex [[formula]] }}  
-	|  formula1 --- formulak           ::  :: listForm          {{ com listForm }}
+	|  formula1 --- formulak     		::  :: listForm          {{ com listForm }}
 																    	{{ tex [[formula1]] \hdots [[formulak]] }}
-	|  formula \/ formula’             ::  :: or                {{ com or }}
+	|  formula \/ formula’       		::  :: or                {{ com or }}
 																    	{{ tex [[formula]] \vee [[formula’]] }}
-	|  formula /\ formula’             ::  :: and               {{ com and }}
+	|  formula /\ formula’       		::  :: and               {{ com and }}
 																    	{{ tex [[formula]] \wedge [[formula’]] }}
-	|  formula for formula' 			  ::  :: condform          {{ com condform }}
+	|  formula for formula'      		::  :: condform          {{ com condform }}
 																		{{ tex [[formula]] \hspace{1pc}\textit{for}\hspace{6pt} [[formula']] }}
-	|  A setIndex formula 			  ::  :: ForAll				{{ com ForAll }}
+	|  A setIndex formula        		::  :: ForAll				{{ com ForAll }}
 																		{{ tex \forall [[setIndex]][[formula]]}}
-	|  A setIndex in sv formula 		  ::  :: ForAllIn			{{ com ForAllIn }}
+	|  A setIndex in sv formula  		::  :: ForAllIn			{{ com ForAllIn }}
 																		{{ tex \forall [[setIndex]]\in[[sv]][[formula]]}}
-	|  fv = fv2                        ::  :: fequal 			{{ com fequal }}
-	|  fv != fv2                       ::  :: fnotequal 			{{ com fnotequal }}
+	|  fv = fv2                  		::  :: fequal 			{{ com fequal }}
+	|  fv != fv2                 		::  :: fnotequal 			{{ com fnotequal }}
 																		{{ tex [[fv]] \neq [[fv2]] }}
-	|  fv in sv2		 	              ::  :: Contains			{{ com Contains }}
+	|  fv in sv2                 		::  :: Contains			{{ com Contains }}
 																	{{ tex [[fv]] \in [[sv2]] }}
-	|  fv !in sv2	 	              ::  :: NotContains		{{ com NotContains }}
+	|  fv !in sv2                		::  :: NotContains		{{ com NotContains }}
 																	{{ tex [[fv]] \notin [[sv2]] }}
-	| T is fresh 					::  :: Fresh 			{{ com Fresh }} 
-	| T1 , .. , Ti are fresh 					::  :: Freshs 			{{ com Freshs }} 
+	| T is fresh                 		::  :: Fresh 			{{ com Fresh }} 
+	| T1 , .. , Ti are fresh 			::  :: Freshs 			{{ com Freshs }} 
 
 
 
@@ -391,7 +400,7 @@ Jop :: '' ::=
 
 
 
-		% typing rules for values
+		% Typing rules for values
 
 		-------------------------                           		:: V_Num
 		G |- n : number |\{} G
@@ -412,7 +421,7 @@ Jop :: '' ::=
 
 
 
-		% object types simply depend on their expressions
+		% Object types simply depend on their expressions
 
 		T1, .., Tk are fresh
 		G |- e1 : T1' | C1 G1   ---   Gk-1 |- ek : Tk' | Ck Gk 
@@ -424,7 +433,7 @@ Jop :: '' ::=
 
 
 
-		% array types simply depend on their expressions too (but all constrained to one)
+		% Array types simply depend on their expressions too (but all constrained to one)
 
 		T is fresh
 		G |- e1 : T1 | C1 G1   ---   Gk-1 |- ek : Tk | Ck Gk 
@@ -436,7 +445,7 @@ Jop :: '' ::=
 
 
 
-		% function types:
+		% Function types:
 
 		% ill-defined & pending means there were no returns anywhere
 		
@@ -444,7 +453,7 @@ Jop :: '' ::=
 		G u {this: T0, x1:T1, .., xi:Ti} |- m1; ..; mj |C G'
 		G'["return"] = IllDefined(pending)
 		----------------------------------------------------------------------- :: V_Fun1
-		G |- function (x1, .., xi) { m1; ..; mj } : T0, T1, .., Ti -> T |C u {T = undefined} G
+		G |- function (x1, .., xi) { m1; ..; mj } : (T0, T1, .., Ti -> T) |C u {T = undefined} G
 
 		% if the return is not ill-defined, we use its type for the function
 		
@@ -453,25 +462,24 @@ Jop :: '' ::=
 		G'["return"] = Tk
 		Tk != IllDefined(Tk')
 		----------------------------------------------------------------------- :: V_Fun2
-		G |- function (x1, .., xi) { m1; ..; mj } : T0, T1, .., Ti -> T |C u {T = Tk} G
+		G |- function (x1, .., xi) { m1; ..; mj } : (T0, T1, .., Ti -> T) |C u {T = Tk} G
 
 		% NB the case IllDefined(T) for T!=pending is not covered, as this is illegal
 
 		% 3 and 4 just add 'id' to the inner type environment (otherwise like 1 and 2)
 
 		T, T0, T1, .., Ti are fresh
-		G u {this: T0, x1:T1, .., xi:Ti, id:T0, T1, .., Ti -> T} |- m1; ..; mj |C G'
+		G u {this: T0, x1:T1, .., xi:Ti, id:(T0, T1, .., Ti -> T)} |- m1; ..; mj |C G'
 		G'["return"] = IllDefined(pending)
 		----------------------------------------------------------------------- :: V_Fun3
-		G |- function id(x1, .., xi) { m1; ..; mj } : T0, T1, .., Ti -> T |C u {T = undefined} G
+		G |- function id(x1, .., xi) { m1; ..; mj } : (T0, T1, .., Ti -> T) |C u {T = undefined} G
 
 		T, T0, T1, .., Ti are fresh
-		G u {this: T0, x1:T1, .., xi:Ti, id:T0, T1, .., Ti -> T} |- m1; ..; mj |C G'
+		G u {this: T0, x1:T1, .., xi:Ti, id:(T0, T1, .., Ti -> T)} |- m1; ..; mj |C G'
 		G'["return"] = Tk
 		Tk != IllDefined(Tk')
 		----------------------------------------------------------------------- :: V_Fun4
-		G |- function id(x1, .., xi) { m1; ..; mj } : T0, T1, .., Ti -> T |C u {T = Tk} G
-
+		G |- function id(x1, .., xi) { m1; ..; mj } : (T0, T1, .., Ti -> T) |C u {T = Tk} G
 
 
 
@@ -485,7 +493,6 @@ Jop :: '' ::=
 		---------------------		                                :: IdType
 		G |- id : T |\{} G
 
-		% TODO?: In the implementation, if I'm in the context of a function I use <, otherwise <c
 		T is fresh
 		G |- e : T1 |C G1
 		---------------------------------------------------------   :: PropType
@@ -501,6 +508,7 @@ Jop :: '' ::=
 
 
 
+
 		% Function Calls
 
 		% I'm saying 'this' is undefined if unspecified (in practice 'this' is global object e.g. window)
@@ -508,7 +516,7 @@ Jop :: '' ::=
 		T0,T1,..,Ti,Tk,Tk' are fresh
 		G  |- e  : T   |C0 G0
 		G0 |- e1 : T1' |C1 G1   ---   Gi-1 |- ei : Ti' |Ci Gi
-		C' = ({T0 = undefined} u (U j=1-i {Tj >c Tj'})) u ({Tk <c Tk'} u {T=T0, T1, .., Ti -> Tk})
+		C' = ({T0 = undefined} u (U j=1-i {Tj >c Tj'})) u ({Tk <c Tk'} u {T=(T0, T1, .., Ti -> Tk)})
 		-------------------------------------------------- 			:: CallType
 		G |- e(e1,..,ei) : Tk' |(U j=0-i Cj) u C' Gi
 
@@ -516,13 +524,16 @@ Jop :: '' ::=
 		G  |- e.l : T   |C0 G0
 		G  |- e   : T0' |C' G'
 		G0 |- e1  : T1' |C1 G1   ---   Gi-1 |- ei : Ti' |Ci Gi
-		C' = ({T0 >c T0'} u (U j=1-i {Tj >c Tj'})) u ({Tk <c Tk'} u {T=T0, T1, .., Ti -> Tk})
+		C' = ({T0 >c T0'} u (U j=1-i {Tj >c Tj'})) u ({Tk <c Tk'} u {T=(T0, T1, .., Ti -> Tk)})
 		-------------------------------------------------- 			:: PropCallType
 		G |- e.l(e1,..,ei) : Tk' |(U j=0-i Cj) u C' Gi
 
 
 
+
+
 		% Assignment operations
+
 		G(id) = T
 		G  |- e' : T1 |C1 G1
 		------------------------------------------------------	 	:: AssignType 
@@ -534,25 +545,40 @@ Jop :: '' ::=
 		------------------------------------------------------	 	:: AssignTypeUndef
 		G  |- id = e' : T1 |C1 u { T >c T1 } G2 u {id: T}
 
-
 		% dots make list comprehensions hard to express in OTT
-		% 
+		
 		T is fresh
-		G  |- e' : T1 |C1 G1
-		G1 |- id : T2 |C2 G2
-		%T3 = { l0 :{ l1 :{ lk: T}->T2.lk }->T2.l0 }->T2
+		G  |- e' : T' |C' G'
+		G' |- id : T0 |C0 G''
+		G' |- id.l1 : T1 |C1 G''
+		G' |- id.l1.lk : Tk |Ck G''
+		G1 = Gk u {id: { l1 :{ lk: {l:T}~>Tk }~>T1 }~>T0 }
+		C = { {l:T3} >o Tk } u {T >c T'}
 		------------------------------------------------------	 	:: PropAssignType
-		G  |- id.l0.l1.lk.l = e' : T1 |C1 u ({ {l:T3} < T2 } u {T >c T1}) G2
+		G  |- id.l1.lk.l = e' : T' |(U j=0-i Cj) u (C' u C) G1
 
-		G  |- e' : T1 |C1 G1
-		G1 |- id : T2 |C2 G2
+		G  |- e1 : T1 |C1 G1
+		G1 |- e2 : T2 |C2 G2
+		G2 |- e3 : T3 |C3 G3
+		------------------------------------------------------	 	:: ArrayAssignType 
+		G  |- e1[e2] = e3 : T1 |((C1 u C2) u C3) u ({T2=number} u {[T1] >c T3}) G3
+
+		G1 |- id : T1 |C1 G1
+		G  |- e' : T2 |C2 G2
 		------------------------------------------------------	 	:: NumAssignType
-		G  |- id numOp= e' : T1 |(C1 u C2) u ({ T2 = number } u {T1 = number}) G2
+		G  |- id numOp= e' : T1 |(C1 u C2) u ({ T2 = T1 } u {T1 = number}) G2
 
-		G  |- e' : T1 |C1 G1
-		G1 |- e  : T2 |C2 G2
+		G  |- e  : T1 |C1 G1
+		G1 |- e' : T2 |C2 G2
 		------------------------------------------------------	 	:: PropNumAssignType
-		G  |- e.l numOp= e' : T1 |(C1 u C2) u ({ {l:number} < T2 } u {T1 = number}) G2
+		G  |- e.l numOp= e' : T2 |(C1 u C2) u ({ {l:number} > T1 } u {T2 = number}) G2
+
+		G  |- e1 : T1 |C1 G1
+		G1 |- e2 : T2 |C2 G2
+		G2 |- e3 : T3 |C3 G3
+		------------------------------------------------------	 	:: ArrayNumAssignType 
+		G  |- e1[e2] numOp= e3 : T1 |((C1 u C2) u C3) u ({T2=T1} u ({[T1] = [number]} u {T3=number})) G3
+
 
 
 
