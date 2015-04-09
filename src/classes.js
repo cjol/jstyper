@@ -42,7 +42,7 @@ Type.resetStore = function() {
 	
 	// Type.boolType = new PrimitiveType('boolean');
 	// Type.stringType = new PrimitiveType('string');
-	// Type.undefinedReturnType = new PrimitiveType('undefined');
+	// Type.pendingType = new PrimitiveType('undefined');
 	// Type.undefinedType = new PrimitiveType('undefined');
 	// Type.nullType = new PrimitiveType('null');
 };
@@ -68,8 +68,8 @@ Object.defineProperty(Type, 'boolType', {
 Object.defineProperty(Type, 'stringType', {
 	get: function() { return new PrimitiveType('string'); }
 });
-Object.defineProperty(Type, 'undefinedReturnType', {
-	get: function() { return new PrimitiveType('undefinedReturn'); }
+Object.defineProperty(Type, 'pendingType', {
+	get: function() { return new PrimitiveType('pending'); }
 });
 Object.defineProperty(Type, 'undefinedType', {
 	get: function() { return new PrimitiveType('undefined'); }
@@ -227,12 +227,11 @@ ObjectType.prototype.toString = function(donotrecurse) {
 		}
 		if (safe) {
 			origString = Type.store[this.originalObj].toString(donotrecurse.slice(0));
-			origString = origString.slice(1, -1);
-			origString = "[, " + origString + "]";
+			origString = "~>" + origString;
 		}
 	}
 	// TODO: Add proto and originalObj members
-	return "{" + types.join(", ") + origString + "}";
+	return "{" + types.join(", ") + "}" +  origString;
 };
 ObjectType.prototype.toAST = function(donotrecurse) {
 	if (donotrecurse === undefined) donotrecurse = [];

@@ -128,19 +128,6 @@ UglifyJS.AST_Array.prototype.check = function(gamma, dynamics) {
 	return new Classes.Judgement(T, C, gamma, W);
 };
 
-// V_FunDef
-// Add function definitions names to the type environments
-UglifyJS.AST_Defun.prototype.check = function(gamma, dynamics) {
-	var j = UglifyJS.AST_Lambda.prototype.check.call(this, gamma, dynamics);
-	if (this.name !== null && this.name.name !== null && this.name.name.length > 0) {
-		var tee = new Classes.TypeEnvEntry(this.name.name, this, j.T.id);
-		this.name.tee = tee;
-		j.gamma.push(tee);
-
-	}
-	return new Classes.Judgement(null, j.C, j.gamma, j.W);
-};
-
 // V_Fun1 / V_Fun2 / V_Fun3 / V_Fun4
 UglifyJS.AST_Lambda.prototype.check = function(gamma, dynamics) {
 
@@ -178,9 +165,8 @@ UglifyJS.AST_Lambda.prototype.check = function(gamma, dynamics) {
 	}
 
 	// add a placeholder type for return
-	var placeholderReturn = Classes.Type.undefinedReturnType;
-	placeholderReturn.illDefined = true;
-	// placeholderReturn.somePathsNoReturn = true;
+	var placeholderReturn = Classes.Type.pendingType;
+	// placeholderReturn.illDefined = true;
 	gamma1.push(new Classes.TypeEnvEntry('return', null, placeholderReturn.id));
 
 	// V_Fun2
@@ -208,14 +194,12 @@ UglifyJS.AST_Lambda.prototype.check = function(gamma, dynamics) {
 	var C;
 	var W = j1.W;
 	var finalReturn = j1.gamma.get('return');
-	if (finalReturn.illDefined) {
-		if (finalReturn.type === 'undefinedReturn') {
-			// some paths don't return, but there were never any returns anyway
-			C = j1.C.concat(new Classes.Constraint(Classes.Type.undefinedType.id, retType.id));
-		} else {
-			// some paths don't return, but there was at least one return somewhere
-			throw new Error("At least one function path does not return");
-		}
+	if (finalReturn.type === 'pending') {
+		// some paths don't return, but there were never any returns anyway
+		C = j1.C.concat(new Classes.Constraint(Classes.Type.undefinedType.id, retType.id));
+	} else if (finalReturn.illDefined) {
+		// some paths don't return, but there was at least one return somewhere
+		throw new Error("At least one function path does not return");
 	} else {
 		// all paths return, and I trust they are coherent
 		C = j1.C.concat(new Classes.Constraint(finalReturn.id, retType.id));
@@ -351,7 +335,7 @@ UglifyJS.AST_Call.prototype.check = function(gamma, dynamics) {
 		detail: 'inferred \'this\' type of call ',
 		node: this
 	}).id];
-	
+
 	if (this.expression instanceof UglifyJS.AST_Dot) {
 		// this is an instance call
 		// PropCallType
@@ -419,7 +403,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 
 	this.right.parent = parent(this);
 	this.left.parent = parent(this);
-	
+
 	// all assignments involve checking RHS
 	// TODO: technically RHS should be checked last apparently
 	var j1 = this.right.check(gamma, dynamics);
@@ -432,7 +416,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 	switch (this.operator) {
 		case ("="):
 			if (this.left instanceof UglifyJS.AST_Symbol) {
-				
+
 				if (!dynamicWrite) {
 
 					var currentType = j1.gamma.get(this.left.name);
@@ -441,7 +425,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 
 						// need to select a new type, but create a new env for it
 						currentType = j1.gamma.getFreshType();
-						
+
 						nextGamma = new Classes.TypeEnv(j1.gamma);
 
 						var tee = new Classes.TypeEnvEntry(this.left.name, this.left, currentType.id);
@@ -465,7 +449,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 
 					// important justification of LEqCheck v. LEq in WWT pad, bottom of page 1.
 					C.push(new Classes.LEqCheckConstraint(currentType.id, j1.T.id));
-					
+
 				} else {
 					// ignore assignments to dynamic variables, and just use j1.gamma next
 					nextGamma = j1.gamma;
@@ -559,7 +543,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 				nextGamma.push(new Classes.TypeEnvEntry(expNode.name, this, T.id));
 
 				returnType = j1.T;
-	
+
 			} else if (this.left instanceof UglifyJS.AST_Sub) {
 				// ArrayAssignType
 
@@ -644,7 +628,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 				nextGamma = j3.gamma;
 
 				returnType = j1.T;
-			}  else {
+			} else {
 				throw new Error("'Unexpected assignment target");
 			}
 			nextGamma = j2.gamma;
@@ -673,7 +657,7 @@ UglifyJS.AST_Binary.prototype.check = function(gamma, dynamics) {
 	switch (this.operator) {
 		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Expressions_and_Operators
 		// NumOpType
-		case ("+"): 
+		case ("+"):
 		case ("-"):
 		case ("*"):
 		case ("/"):
@@ -768,36 +752,55 @@ UglifyJS.AST_SimpleStatement.prototype.check = function(gamma, dynamics) {
 	return this.body.check(gamma, dynamics);
 };
 
+// V_FunDef
+// Add function definitions names to the type environments
+UglifyJS.AST_Defun.prototype.check = function(gamma, dynamics) {
+	var j = UglifyJS.AST_Lambda.prototype.check.call(this, gamma, dynamics);
+	if (this.name !== null && this.name.name !== null && this.name.name.length > 0) {
+		var tee = new Classes.TypeEnvEntry(this.name.name, this, j.T.id);
+		this.name.tee = tee;
+		j.gamma.push(tee);
+
+	}
+	return new Classes.Judgement(null, j.C, j.gamma, j.W);
+};
+
 // RetTypable1/2/3/4
 UglifyJS.AST_Return.prototype.check = function(gamma, dynamics) {
 	// type the return value if present
 	var C, T, newGamma, W;
 
-	// RetTypable 1/2
 	if (this.value !== undefined && this.value !== null) {
+		// RetTypable 2/3/4 
 		var j = this.value.check(gamma, dynamics);
 		C = j.C;
 		W = j.W;
 		newGamma = j.gamma;
 		T = j.T;
-	} else
-	// RetTypable 3/4
-	{
+	} else {
+		// RetTypable 1
 		newGamma = gamma;
 		C = [];
 		W = [];
 		T = Classes.Type.undefinedType;
 	}
 
-	
+
 	// check if 'return' is coherent with what has been defined in this scope
 	var previousReturn = gamma.get('return');
-	if (previousReturn.type === 'undefinedReturn') {
+
+	if (previousReturn.type === 'pending') {
+		// RetTypable 2
 		// no constraint needed - this is the first return
 		newGamma.push(new Classes.TypeEnvEntry('return', this, T.id));
-	} else
-	{
+
+	} else if (previousReturn.illDefined) {
+		// RetTypable 3 
 		previousReturn.illDefined = false;
+		C.push(new Classes.Constraint(T.id, previousReturn.id));
+
+	} else {
+		// RetTypable 4
 		C.push(new Classes.Constraint(T.id, previousReturn.id));
 	}
 
@@ -847,9 +850,6 @@ UglifyJS.AST_Block.prototype.check = function(gamma, dynamics) {
 
 	judgement.nodes.push(this);
 
-	// attach substitutions for higher blocks to apply if necessary
-	judgement.substitutions = allSubs;
-
 	return judgement;
 };
 
@@ -879,68 +879,60 @@ function getClone(original) {
 
 function mergeReturns(r1, r2, C) {
 	var lack, type;
-	if (r1.illDefined) {
-		if (r1.type === "undefinedReturn") {
-			// r1 is LACK_BLANK
+	if (r1.type === "pending") {
+		// r1 is LACK_BLANK
+		if (r2.type === "pending") {
+			// r2 is LACK_BLANK
 
-			if (r2.illDefined) {
-				if (r2.type === "undefinedReturn") {
-					// r2 is LACK_BLANK
+			lack = true;
+			type = r1;
+		} else if (r2.illDefined) {
+			// r2 is LACK_T for T = r2.type
 
-					lack = true;
-					type = r1;
-				} else {
-					// r2 is LACK_T for T = r2.type
-
-					lack = true;
-					type = r2; 
-				}
-			} else {
-				// r2 is T for T = r2.type
-
-				lack = true;
-				type = r2.type; 
-			}
+			lack = true;
+			type = r2;
 		} else {
-			// r1 is LACK_T for T = r1.type
+			// r2 is T for T = r2.type
 
-			if (r2.illDefined) {
-				if (r2.type === "undefinedReturn") {
-					// r2 is LACK_BLANK
-
-					lack = true;
-					type = r1;
-				} else {
-					// r2 is LACK_T for T = r2.type
-
-					C.push(new Classes.Constraint(r1.id, r2.id));
-					lack = true;
-					type = r1; // or r2 would be fine
-				}
-			} else {
-				// r2 is T for T = r2.type
-
-				C.push(new Classes.Constraint(r1.id, r2.id));
-				lack = true;
-				type = r1; // or r2 would be fine
-			}
+			lack = true;
+			type = r2.type;
 		}
+	} else if (r1.illDefined) {
+		// r1 is LACK_T for T = r1.type
+
+		if (r2.type === "pending") {
+			// r2 is LACK_BLANK
+
+			lack = true;
+			type = r1;
+		} else if (r2.illDefined) {
+			// r2 is LACK_T for T = r2.type
+
+			C.push(new Classes.Constraint(r1.id, r2.id));
+			lack = true;
+			type = r1; // or r2 would be fine
+
+		} else {
+			// r2 is T for T = r2.type
+
+			C.push(new Classes.Constraint(r1.id, r2.id));
+			lack = true;
+			type = r1; // or r2 would be fine
+		}
+
 	} else {
 		// r1 is T for T = r1.type
+		if (r2.type === "pending") {
+			// r2 is LACK_BLANK
 
-		if (r2.illDefined) {
-			if (r2.type === "undefinedReturn") {
-				// r2 is LACK_BLANK
+			lack = true;
+			type = r1;
+		} else if (r2.illDefined) {
+			// r2 is LACK_T for T = r2.type
 
-				lack = true;
-				type = r1;
-			} else {
-				// r2 is LACK_T for T = r2.type
-
-				C.push(new Classes.Constraint(r1.id, r2.id));
-				lack = true;
-				type = r1; // or r2 would be fine
-			}
+			C.push(new Classes.Constraint(r1.id, r2.id));
+			lack = true;
+			type = r1; // or r2 would be fine
 		} else {
 			// r2 is T for T = r2.type
 
@@ -954,7 +946,7 @@ function mergeReturns(r1, r2, C) {
 	} else {
 		type.illDefined = lack;
 		return new Classes.TypeEnvEntry('return', null, type.id);
-	} 
+	}
 }
 
 // Rule IfTypable1 / IfTypable2
@@ -970,10 +962,6 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 	function prune(T1, T2, limit1, limit2, base) {
 		var T;
 		if (T1 instanceof Classes.ObjectType && T2 instanceof Classes.ObjectType) {
-			// var debug = true;
-			// if (debug) console.log();
-			// if (debug) console.log(T1.toString());
-			// if (debug) console.log(T2.toString());
 			var memberTypes = {};
 
 			var nextT2 = T2;
@@ -1037,43 +1025,44 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 		if (T1.shouldInfer || T2.shouldInfer) T.shouldInfer = true;
 		return T;
 	}
-	
-	function mergeEnv(original, map1, map2, gamma1, gamma2) {
-		var initLen = original.length;
+
+	function mergeEnv(gamma0, map1, map2, gamma1, gamma2) {
+		var initLen = gamma0.length;
+		var gamma3 = new Classes.TypeEnv();
 		for (var i = 0; i < initLen; i++) {
 
 			// we deal with return separately
-			if (original[i].name === 'return') continue;
+			if (gamma0[i].name === 'return') continue;
 
 			// T1 and T2 represent the final types at the end of each branch
 			// map1[i] and map2[i] are the original types (at the start of each branch)
-			var T1 = gamma1.get(original[i].name);
-			var T2 = gamma2.get(original[i].name);
+			var T1 = gamma1.get(gamma0[i].name);
+			var T2 = gamma2.get(gamma0[i].name);
 
 			// optimisation - don't make constraints if the types are the same!
-			if (original[i].type !== T1.type || original[i].type !== T2.type) {
-				var newType = prune(T1, T2, map1[i].type, map2[i].type, original[i].type, C);
-				if (T1.illDefined===true || T2.illDefined === true) {
+			if (gamma0[i].type !== T1.type || gamma0[i].type !== T2.type) {
+				var newType = prune(T1, T2, map1[i].type, map2[i].type, gamma0[i].type, C);
+				if (T1.illDefined === true || T2.illDefined === true) {
 					newType.illDefined = true;
 				}
-				original.push(new Classes.TypeEnvEntry(
-					original[i].name,
-					original[i].node,
+				gamma0.push(new Classes.TypeEnvEntry(
+					gamma0[i].name,
+					gamma0[i].node,
 					newType.id
 				));
 			}
 
 
 			// Now add constraints on the original type (to allow inference propagation)
-			if (original[i].type !== map1[i].type) {
-				C.push(new Classes.LEqConstraint(map1[i].type, original[i].type));
+			if (gamma0[i].type !== map1[i].type) {
+				C.push(new Classes.LEqConstraint(map1[i].type, gamma0[i].type));
 			}
 
-			if (original[i].type !== map2[i].type) {
-				C.push(new Classes.LEqConstraint(map2[i].type, original[i].type));
+			if (gamma0[i].type !== map2[i].type) {
+				C.push(new Classes.LEqConstraint(map2[i].type, gamma0[i].type));
 			}
 		}
-		return original; 
+		return gamma0;
 	}
 
 	this.body.parent = parent(this);
@@ -1098,9 +1087,9 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 		W = W.concat(j3.W);
 
 		outGamma = mergeEnv(j1.gamma, clone1.map, clone2.map, j2.gamma, j3.gamma);
-		
+
 		if (j1.gamma.get('return') !== null) {
-			newReturn = mergeReturns(j2.gamma.get('return'),j3.gamma.get('return'), C);
+			newReturn = mergeReturns(j2.gamma.get('return'), j3.gamma.get('return'), C);
 			outGamma.push(newReturn);
 		}
 	} else {
@@ -1131,7 +1120,7 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 		outGamma = j1.gamma;
 
 		if (j1.gamma.get('return') !== null) {
-			newReturn = mergeReturns(j2.gamma.get('return'),j1.gamma.get('return'), C);
+			newReturn = mergeReturns(j2.gamma.get('return'), j1.gamma.get('return'), C);
 			outGamma.push(newReturn);
 		}
 	}
@@ -1184,7 +1173,9 @@ UglifyJS.AST_While.prototype.check = function(gamma, dynamics) {
 // TODO: Add this to spec
 // Rule ForTypable
 UglifyJS.AST_For.prototype.check = function(gamma, dynamics) {
-	var C = [], W = [], j;
+	var C = [],
+		W = [],
+		j;
 
 	if (this.init !== null) {
 		this.init.parent = parent(this);

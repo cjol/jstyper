@@ -728,7 +728,7 @@
 \newcommand{\ottdruleVXXFunOne}[1]{\ottdrule[#1]{%
 \ottpremise{\ottnt{T}  \ottsym{,}  \ottnt{T_{{\mathrm{0}}}}  \ottsym{,}  \ottnt{T_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{T_{\ottmv{i}}} \, \ottkw{are} \, \ottkw{fresh}}%
 \ottpremise{  \Gamma  \cup  \ottsym{\{}  \ottmv{this}  \ottsym{:}  \ottnt{T_{{\mathrm{0}}}}  \ottsym{,}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{:}  \ottnt{T_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{i}}}  \ottsym{:}  \ottnt{T_{\ottmv{i}}}  \ottsym{\}}    \vdash   \ottnt{m_{{\mathrm{1}}}}  \ottsym{;} \, .. \, \ottsym{;}  \ottnt{m_{\ottmv{j}}}  \hspace{5pt}| _{  \ottnt{C}  } \hspace{5pt}  \Gamma' }%
-\ottpremise{\Gamma'  \ottsym{["return"]}  \ottsym{=}  \ottkw{IllDefined} \, \ottsym{(}  \ottkw{pending}  \ottsym{)}}%
+\ottpremise{\Gamma'  \ottsym{["return"]}  \ottsym{=}  \ottkw{pending}}%
 }{
  \Gamma   \vdash   \ottkw{function} \, \ottsym{(}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{i}}}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{;} \, .. \, \ottsym{;}  \ottnt{m_{\ottmv{j}}}  \ottsym{\}}  :  \ottsym{(}  \ottnt{T_{{\mathrm{0}}}}  \ottsym{,}  \ottnt{T_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{T_{\ottmv{i}}}  \rightarrow  \ottnt{T}  \ottsym{)} \hspace{5pt}| _{   \ottnt{C}  \cup  \ottsym{\{}  \ottnt{T} \,  =  \, \ottkw{undefined}  \ottsym{\}}   } \hspace{5pt}  \Gamma }{%
 {\ottdrulename{V\_Fun1}}{}%
@@ -999,35 +999,36 @@
 
 
 \newcommand{\ottdruleRetTypableOne}[1]{\ottdrule[#1]{%
-\ottpremise{ \Gamma   \vdash   \ottnt{e}  :  \ottnt{T} \hspace{5pt}| _{  \ottnt{C}  } \hspace{5pt}  \Gamma' }%
-\ottpremise{ \ottmv{return}  \notin  \ottsym{dom(}  \Gamma  \ottsym{)} }%
+\ottpremise{ \Gamma   \vdash   \ottmv{return} \, \ottkw{undefined}  \hspace{5pt}| _{  \ottnt{C}  } \hspace{5pt}  \Gamma' }%
 }{
- \Gamma   \vdash   \ottmv{return} \, \ottnt{e}  \hspace{5pt}| _{  \ottnt{C}  } \hspace{5pt}   \Gamma'  \cup  \ottsym{\{}  \ottmv{return}  \ottsym{:}  \ottnt{T}  \ottsym{\}}  }{%
+ \Gamma   \vdash   \ottmv{return}  \hspace{5pt}| _{  \ottnt{C}  } \hspace{5pt}  \Gamma' }{%
 {\ottdrulename{RetTypable1}}{}%
 }}
 
 
 \newcommand{\ottdruleRetTypableTwo}[1]{\ottdrule[#1]{%
 \ottpremise{ \Gamma   \vdash   \ottnt{e}  :  \ottnt{T} \hspace{5pt}| _{  \ottnt{C}  } \hspace{5pt}  \Gamma' }%
-\ottpremise{ \ottmv{return}  \in  \ottsym{dom(}  \Gamma  \ottsym{)} }%
+\ottpremise{\Gamma'  \ottsym{["return"]}  \ottsym{=}  \ottkw{pending}}%
 }{
- \Gamma   \vdash   \ottmv{return} \, \ottnt{e}  \hspace{5pt}| _{   \ottnt{C}  \cup  \ottsym{\{}  \ottnt{T} \,  =  \, \Gamma  \ottsym{["return"]}  \ottsym{\}}   } \hspace{5pt}  \Gamma' }{%
+ \Gamma   \vdash   \ottmv{return} \, \ottnt{e}  \hspace{5pt}| _{  \ottnt{C}  } \hspace{5pt}   \Gamma'  \cup  \ottsym{\{}  \ottmv{return}  \ottsym{:}  \ottnt{T}  \ottsym{\}}  }{%
 {\ottdrulename{RetTypable2}}{}%
 }}
 
 
 \newcommand{\ottdruleRetTypableThree}[1]{\ottdrule[#1]{%
-\ottpremise{ \ottmv{return}  \notin  \ottsym{dom(}  \Gamma  \ottsym{)} }%
+\ottpremise{ \Gamma   \vdash   \ottnt{e}  :  \ottnt{T} \hspace{5pt}| _{  \ottnt{C}  } \hspace{5pt}  \Gamma' }%
+\ottpremise{\Gamma'  \ottsym{["return"]}  \ottsym{=}  \ottkw{IllDefined} \, \ottsym{(}  \ottnt{T'}  \ottsym{)}}%
 }{
- \Gamma   \vdash   \ottmv{return}  \hspace{5pt}| _{  \varnothing  } \hspace{5pt}   \Gamma  \cup  \ottsym{\{}  \ottmv{return}  \ottsym{:}  \ottkw{undefined}  \ottsym{\}}  }{%
+ \Gamma   \vdash   \ottmv{return} \, \ottnt{e}  \hspace{5pt}| _{   \ottnt{C}  \cup  \ottsym{\{}  \ottnt{T} \,  =  \, \ottnt{T'}  \ottsym{\}}   } \hspace{5pt}   \Gamma'  \cup  \ottsym{\{}  \ottmv{return}  \ottsym{:}  \ottnt{T}  \ottsym{\}}  }{%
 {\ottdrulename{RetTypable3}}{}%
 }}
 
 
 \newcommand{\ottdruleRetTypableFour}[1]{\ottdrule[#1]{%
-\ottpremise{ \ottmv{return}  \in  \ottsym{dom(}  \Gamma  \ottsym{)} }%
+\ottpremise{ \Gamma   \vdash   \ottnt{e}  :  \ottnt{T} \hspace{5pt}| _{  \ottnt{C}  } \hspace{5pt}  \Gamma' }%
+\ottpremise{\Gamma'  \ottsym{["return"]}  \ottsym{=}  \ottnt{T'}}%
 }{
- \Gamma   \vdash   \ottmv{return}  \hspace{5pt}| _{  \ottsym{\{}  \ottkw{undefined} \,  =  \, \Gamma  \ottsym{["return"]}  \ottsym{\}}  } \hspace{5pt}  \Gamma }{%
+ \Gamma   \vdash   \ottmv{return} \, \ottnt{e}  \hspace{5pt}| _{   \ottnt{C}  \cup  \ottsym{\{}  \ottnt{T} \,  =  \, \ottnt{T'}  \ottsym{\}}   } \hspace{5pt}  \Gamma' }{%
 {\ottdrulename{RetTypable4}}{}%
 }}
 
@@ -1115,6 +1116,6 @@
 
 \begin{verbatim}
 Definition rules:        79 good    0 bad
-Definition rule clauses: 189 good    0 bad
+Definition rule clauses: 190 good    0 bad
 \end{verbatim}
 \end{document}

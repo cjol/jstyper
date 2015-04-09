@@ -451,7 +451,7 @@ Jop :: '' ::=
 		
 		T, T0, T1, .., Ti are fresh
 		G u {this: T0, x1:T1, .., xi:Ti} |- m1; ..; mj |C G'
-		G'["return"] = IllDefined(pending)
+		G'["return"] = pending
 		----------------------------------------------------------------------- :: V_Fun1
 		G |- function (x1, .., xi) { m1; ..; mj } : (T0, T1, .., Ti -> T) |C u {T = undefined} G
 
@@ -464,7 +464,7 @@ Jop :: '' ::=
 		----------------------------------------------------------------------- :: V_Fun2
 		G |- function (x1, .., xi) { m1; ..; mj } : (T0, T1, .., Ti -> T) |C u {T = Tk} G
 
-		% NB the case IllDefined(T) for T!=pending is not covered, as this is illegal
+		% NB the case IllDefined(T) is not covered, as this is illegal
 
 		% 3 and 4 just add 'id' to the inner type environment (otherwise like 1 and 2)
 
@@ -537,7 +537,7 @@ Jop :: '' ::=
 		G(id) = T
 		G  |- e' : T1 |C1 G1
 		------------------------------------------------------	 	:: AssignType 
-		G  |- id = e' : T1 |C1 u { T >c T1 } G1 u {id: T1}
+		G  |- id = e' : T1 |C1 u { T >c T1 } G1
 
 		T is fresh
 		id !in dom(G)
@@ -637,31 +637,33 @@ Jop :: '' ::=
 	 by
 		% We say that a statement m is typable if all expressions contained within it are well typed by the definition above.
 
-		G |- function id(x1, .., xi) { m1; ..; mj } : T |C G'
-		----------------------------------------------------------------------- :: V_FunDef
-		G |- @def function id(x1, .., xi) { m1; ..; mj } |C G' u {id: T}
-
 		G |- e : T |C G'
 		-------------------                                		    :: ExpTypable
 		G |- e |C G'
 
+		G |- function id(x1, .., xi) { m1; ..; mj } : T |C G'
+		----------------------------------------------------------------------- :: V_FunDef
+		G |- @def function id(x1, .., xi) { m1; ..; mj } |C G' u {id: T}
+
+		G |- return undefined |C G'
+		--------------------------- 								:: RetTypable1
+		G |- return |C G'
+
 		G |- e : T |C G'
-		return !in dom(G)
-		-------------------                                		    :: RetTypable1
+		G'["return"] = pending
+		--------------------------------- 							:: RetTypable2
 		G |- return e |C G' u {return: T}
 
 		G |- e : T |C G'
-		return in dom(G)
-		-------------------                                		    :: RetTypable2
-		G |- return e |C u {T = G["return"]} G' 
+		G'["return"] = IllDefined(T')
+		------------------------------------------ 					:: RetTypable3
+		G |- return e |C u {T=T'} G' u {return: T}
 
-		return !in dom(G)
-		-------------------                                		    :: RetTypable3
-		G |- return |\{} G u {return: undefined}
+		G |- e : T |C G'
+		G'["return"] = T'
+		------------------------------------------					:: RetTypable4
+		G |- return e |C u {T=T'} G'
 
-		return in dom(G)
-		-------------------                                		    :: RetTypable4
-		G |- return |{undefined = G["return"]} G
 
 		G |- m1 |C1 G1 --- Gi-1 |- mi |Ci Gi
 		---------------------------------                		    :: SeqTypable
