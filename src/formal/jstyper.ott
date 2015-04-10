@@ -152,6 +152,7 @@ G {{ tex \Gamma }} :: 'G_' ::= 					{{ com Context }}
 																	{{ tex [[G]] \cup [[G']] }}
 	| id : T 	::  :: ContextItem								{{ com ContextItem }}
 	| { id1 : T1 , .. , idk : Tk } 	::  :: ContextItems			{{ com ContextItems }}
+	| merge( G1 , G2 , G3 )	:: M:: MergedContext				{{ com MergedContext }}
 
 C :: 'C_' ::= 					                {{ com Constraint }}
 	| \{}		 ::  :: EmptyConstraint							{{ com EmptyConstraint }}
@@ -672,20 +673,39 @@ Jop :: '' ::=
 		---------------------------------                		    :: SeqTypable
 		G |- m1; ...; mi |U i=0-k Ci Gi
 
-		G |- e : T1 |C1 G1
-		G1 |- m1 |C2 G2
-		G1 |- m2 |C3 G3
-		---------------------------------                		    :: IfTypable1
-		G |- if (e) {m1} else {m2} |(C1 u (C2 u C3)) u {T1 = boolean} G1
+		% merge(G0, G1, G2) = { {x:T} | x in dom(G0) ^ T = merge(G1[x], G2[x])}
+		% merge(T1, T2) = 
 
-		G |- e : T1 |C1 G1
-		G1 |- m1 |C2 G2
+		G  |- e : T0 |C0 G0
+		G0 |-   m1   |C1 G1
+		G0 |-   m2   |C2 G2
+		G3 = merge(G0, G1, G2)
+		---------------------------------                		    :: IfTypable1
+		G |- if (e) {m1} else {m2} |(C0 u (C1 u C2)) u {T0 = boolean} G3
+
+		G  |- e : T0 |C0 G0
+		G1 |-   m    |C1 G1
+		G2 = merge(G0, G1, G0)
 		---------------------------------                		    :: IfTypable2
-		G |- if (e) {m1} |(C1 u C2) u {T1 = boolean} G1
+		G |- if (e) {m} |(C0 u C1) u {T0 = boolean} G2
+
+		G  |- e : T0 |C0 G0
+		G0 |-   m    |C1 G1
+		G2 = merge(G0, G1, G0)
+		---------------------------------                		    :: WhileTypable
+		G |- while (e) {m} |(C0 u C1) u {T0 = boolean} G2
+
+		G  |-   e1  |C0 G0
+		G0 |- e2:T2 |C1 G1
+		G1 |-   m   |C2 G2
+		G2 |-   e3  |C3 G3
+		G4 = merge(G1, G3, G1)
+		---------------------------------                		    :: ForTypable
+		G |- for (e1;e2;e3) {m} |(C0 u C1) u ((C2 u C3) u {T0 = boolean}) G4
 
 		T is fresh
 		---------------------------------                		    :: DecTypable
-		G |- var id |\{} G u {id : T}
+		G |- var id |\{} G u {id : IllDefined(T)}
 
 		T' is fresh
 		G |- e : T |C G'

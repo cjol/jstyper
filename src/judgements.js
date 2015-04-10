@@ -248,14 +248,6 @@ UglifyJS.AST_Symbol.prototype.check = function(gamma, dynamics) {
 	return j;
 };
 
-function objectGetProperty(o, p) {
-	if (o instanceof Classes.ObjectType) {
-		if (p in o.memberTypes) return Classes.Type.store[o.memberTypes[p]];
-		if (o.originalObj) return objectGetProperty(Classes.Type.store[o.originalObj], p);
-	}
-	return null;
-}
-
 // Rule PropType
 // NB This is not called for assigning to a dotexpression. (see AssignType for that)
 UglifyJS.AST_Dot.prototype.check = function(gamma, dynamics) {
@@ -995,6 +987,14 @@ function m(T1, T2, C) {
 	}
 }
 
+function objectGetProperty(o, p) {
+	if (o instanceof Classes.ObjectType) {
+		if (p in o.memberTypes) return Classes.Type.store[o.memberTypes[p]];
+		if (o.originalObj) return objectGetProperty(Classes.Type.store[o.originalObj], p);
+	}
+	return null;
+}
+
 // Rule IfTypable1 / IfTypable2
 UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 	
@@ -1055,7 +1055,6 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 	return judgement;
 };
 
-// TODO: Add this to spec
 // Rule WhileTypable
 UglifyJS.AST_While.prototype.check = function(gamma, dynamics) {
 	
@@ -1104,7 +1103,6 @@ UglifyJS.AST_While.prototype.check = function(gamma, dynamics) {
 	return judgement;
 };
 
-// TODO: Add this to spec
 // Rule ForTypable
 UglifyJS.AST_For.prototype.check = function(gamma, dynamics) {
 	var C = [],
@@ -1179,9 +1177,7 @@ UglifyJS.AST_VarDef.prototype.check = function(gamma, dynamics) {
 	var C = [],
 		W = [];
 	// need to select a new type (we are redefining the type from here on)
-	var T = gamma.getFreshType(undefined, {
-		detail: 'var type of ' + this.name.name
-	});
+	var T = gamma.getFreshType();
 
 	// DefTypable
 	if (this.value) {

@@ -8,19 +8,19 @@
 			}
 		},
 		"7": {
-"0": {
-"type": "object",
-"memberTypes": {
-"a": {
-"type": "object",
-"memberTypes": {
-"c": "number"
-}
-},
-"b": "number"
-},
-"name": "x"
-}
-}
+			"0": {
+				"type": "object",
+				"memberTypes": {
+					"a": {
+						"type": "object",
+						"memberTypes": {
+							"c": "number"
+						}
+					},
+					"b": "number"
+				},
+				"name": "x"
+			}
+		}
 	}
 }
