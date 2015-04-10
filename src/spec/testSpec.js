@@ -31,7 +31,7 @@ var extraMatchers = {
 
 
 testDir('custom', "Custom Test");
-// testDir('sunspider', "Sunspider Test");
+testDir('sunspider', "Sunspider Test");
 
 function testDir(dir, name) {
 

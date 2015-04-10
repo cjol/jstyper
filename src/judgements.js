@@ -237,9 +237,9 @@ UglifyJS.AST_Symbol.prototype.check = function(gamma, dynamics) {
 		T = gamma.get(this.name);
 		this.tee = gamma.getTypeEnvEntry(this.name);
 
-		if (T.illDefined === true) {
+		if (T===null || T === undefined || T.illDefined === true) {
 			// we are reading this variable but it is ill-defined
-			throw new Error("Reading from " + this.name + " but it is ill-defined");
+			throw new Error("Reading from '" + this.name + "' but it is ill-defined");
 		}
 	}
 

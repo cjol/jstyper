@@ -17,6 +17,11 @@ function morph(a,f) {
         }
     }
 }
+
+// replace 'new Array()' notation, and
+// move up to before use b/c we don't support var hoisting
+var a = [];
+
 // NB I moved testBody into a function to avoid having to type 'new Date()'
 function testBody() {
    for (var i = 0; i < loops; ++i) {
@@ -24,8 +29,6 @@ function testBody() {
     } 
 }
     
-// replace 'new Array()' notation
-var a = [];
 for (var i=0; i < nx*nz*3; ++i) a[i] = 0;
 
 // jstyper end
@@ -34,3 +37,6 @@ var startTime=new Date() ;
 testBody();
 var endTime=new Date() ;
 alert("Test took " + (endTime - startTime) + "ms");
+
+
+
