@@ -823,8 +823,12 @@ LEqConstraint.prototype.solve = function() {
 
 			// for an optionalconstraint, an abstract effectively = emptyobj
 			if (!(this instanceof OptionalConstraint)) {
-				for (label in Type.store[this.type2].memberTypes) {
-					objType.memberTypes[label] = TypeEnv.getFreshType().id;
+				var o = Type.store[this.type2];
+				while (o !== null && o !== undefined) {
+					for (label in o.memberTypes) {
+						objType.memberTypes[label] = TypeEnv.getFreshType().id;
+					}
+					o = Type.store[o.originalObj];
 				}
 			}
 
@@ -869,8 +873,12 @@ LEqConstraint.prototype.solve = function() {
 				memberTypes: {}
 			});
 			if (!(this instanceof OptionalConstraint)) {
-				for (label in Type.store[this.type1].memberTypes) {
-					objType.memberTypes[label] = TypeEnv.getFreshType().id;
+				var o = Type.store[this.type1];
+				while (o !== null && o !== undefined) {
+					for (label in o.memberTypes) {
+						objType.memberTypes[label] = TypeEnv.getFreshType().id;
+					}
+					o = Type.store[o.originalObj];	
 				}
 			}
 
