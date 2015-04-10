@@ -248,6 +248,14 @@ UglifyJS.AST_Symbol.prototype.check = function(gamma, dynamics) {
 	return j;
 };
 
+function objectGetProperty(o, p) {
+	if (o instanceof Classes.ObjectType) {
+		if (p in o.memberTypes) return Classes.Type.store[o.memberTypes[p]];
+		if (o.originalObj) return objectGetProperty(Classes.Type.store[o.originalObj], p);
+	}
+	return null;
+}
+
 // Rule PropType
 // NB This is not called for assigning to a dotexpression. (see AssignType for that)
 UglifyJS.AST_Dot.prototype.check = function(gamma, dynamics) {
@@ -259,12 +267,20 @@ UglifyJS.AST_Dot.prototype.check = function(gamma, dynamics) {
 	var C = j1.C;
 	var W = j1.W;
 
+
+	// HAAAAAAAAAAACK :( I'm doing this to get around the fact that
+	// shouldInfer will automatically propagate on the newly created type,
+	// when in fact a previously assigned object should potentially not have shouldInfer
+	var existingType = objectGetProperty(j1.T, this.property);
+	if (existingType !== null) {
+		return new Classes.Judgement(existingType, C, j1.gamma, W);
+	}
+
+	// add a new constraint stating the containing object much have this as a property
 	var T = gamma.getFreshType(undefined, {
 		detail: 'required property type for obj.' + this.property,
 		node: this
 	});
-
-	// add a new constraint stating the containing object much have this as a property
 	var memberType = {};
 	memberType[this.property] = T.id;
 
@@ -420,6 +436,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 				if (!dynamicWrite) {
 
 					var currentType = j1.gamma.get(this.left.name);
+					var constrainType;
 					if (currentType === null || currentType === undefined) {
 						// AssignTypeUndef
 
@@ -431,13 +448,32 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 						var tee = new Classes.TypeEnvEntry(this.left.name, this.left, currentType.id);
 						this.left.tee = tee;
 						nextGamma.push(tee);
+						constrainType = j1.T;
 					} else {
 						// AssignType
 
 						nextGamma = j1.gamma;
 						// we already have a type env entry for this type
 						this.left.tee = nextGamma.getTypeEnvEntry(this.left.name);
+
+						// haaaaack ad-hoc solution for preventing ill-
+						// definedness to be lost in the old gamma (mainly for test52)
+						if (currentType.illDefined && j1.T instanceof Classes.PrimitiveType) {
+							constrainType = new Classes.PrimitiveType(j1.T.type);
+							constrainType.illDefined = true;
+						} else {
+							constrainType = j1.T;
+						}
+
 						// update gamma
+						// Shouldn't need to update gamma , but discarding constraints means we do. Example:
+						/*
+							function foo(x, y) {
+								x.foo;
+								x = y;
+								x.bar;
+							}
+						*/
 						nextGamma.push(
 							new Classes.TypeEnvEntry(
 								this.left.name,
@@ -448,7 +484,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 					}
 
 					// important justification of LEqCheck v. LEq in WWT pad, bottom of page 1.
-					C.push(new Classes.LEqCheckConstraint(currentType.id, j1.T.id));
+					C.push(new Classes.LEqCheckConstraint(currentType.id, constrainType.id));
 
 				} else {
 					// ignore assignments to dynamic variables, and just use j1.gamma next
@@ -460,14 +496,9 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 			} else if (this.left instanceof UglifyJS.AST_Dot) {
 				// PropAssignType
 
-				// T is initially a placeholder for the type of a.b.c - it will be constrained against T_e
-				var T = gamma.getFreshType();
+				var T = j1.T;
 
-				// (important justification of LEqCheck v. LEq in WWT pad, bottom of page 1.)
-				C = C.concat([new Classes.LEqCheckConstraint(T.id, j1.T.id)]);
-
-				// T is initially a placeholder type for a.b (i.e. its only member is T above)
-				// We will travel up the dot string, reassigning T until we get to the root (i.e. a)
+				// We will travel up the dot string, reassigning T until we get to the root
 				this.left.parent = parent(this);
 				var expNode = this.left;
 				var path = [];
@@ -514,8 +545,9 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 					var nextBase;
 					// TODO: Should really check all orig objects too
 					// example failing test (should compile but doesn't) var x = {a:{}}; x.b = 4; x.a.c = 3;
-					if (baseType.memberTypes !== undefined && path[0] in baseType.memberTypes) {
-						nextBase = Classes.Type.store[baseType.memberTypes[path[0]]];
+					var myTypeWithAName = objectGetProperty(baseType, path[0]);
+					if (myTypeWithAName !== null) {
+						nextBase = myTypeWithAName;
 
 					} else {
 						// baseType hasn't been identified as an object yet. 
@@ -528,6 +560,10 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 							memberTypes: {}
 						});
 						nextBase.memberTypes[path[0]] = gamma.getFreshType().id;
+						if (baseType.shouldInfer) {
+							nextBase.shouldInfer = true;
+							Classes.Type.store[nextBase.memberTypes[path[0]]].shouldInfer = true;
+						}
 						C.push(new Classes.Constraint(nextBase.id, baseType.id));
 						nextBase = Classes.Type.store[nextBase.memberTypes[path[0]]];
 					}
@@ -819,7 +855,7 @@ UglifyJS.AST_Block.prototype.check = function(gamma, dynamics) {
 		var j = this.body[i].check(gamma, dynamics);
 		judgement.W = judgement.W.concat(j.W);
 		judgement.C = judgement.C.concat(j.C);
-		judgement.gamma = gamma = j.gamma;
+		judgement.gamma = j.gamma;
 
 		// solve the generated constraints, or throw an error if this isn't possible
 		// NB Type.store will be modified by this, and NOT all constraints are used up
@@ -834,11 +870,13 @@ UglifyJS.AST_Block.prototype.check = function(gamma, dynamics) {
 		for (var l = 0; l < substitutions.length; l++) {
 
 			judgement.gamma.applySubstitution(substitutions[l]);
+			gamma.applySubstitution(substitutions[l]);
 
 			for (var k = 0; k < judgement.W.length; k++) {
 				judgement.W[k].applySubstitution(substitutions[l]);
 			}
 		}
+		gamma = judgement.gamma;
 
 	}
 
@@ -856,21 +894,20 @@ UglifyJS.AST_Block.prototype.check = function(gamma, dynamics) {
 // handy functions for if, while and for (which have isolated branches)
 // create a cloned (SEPARATE!) environment for the branches
 // we will then have to merge changes back into the original
-function getClone(original) {
+function getClone(gamma0) {
 	var clone = [];
 	var map = {};
-	for (var i = 0; i < original.length; i++) {
+	for (var i = 0; i < gamma0.length; i++) {
 		clone[i] = new Classes.TypeEnvEntry(
-			original[i].name,
-			original[i].node,
-			original[i].type
+			gamma0[i].name,
+			gamma0[i].node,
+			gamma0[i].type
 		);
-		// if (original[i].illDefined) clone[i].illDefined = true;
 		map[i] = clone[i];
 	}
 	var newGamma = new Classes.TypeEnv(clone);
-	if (original.derivedGammas === undefined) original.derivedGammas = [];
-	original.derivedGammas.push(newGamma);
+	if (gamma0.derivedGammas === undefined) gamma0.derivedGammas = [];
+	gamma0.derivedGammas.push(newGamma);
 	return {
 		gamma: newGamma,
 		map: map
@@ -949,17 +986,157 @@ function mergeReturns(r1, r2, C) {
 	}
 }
 
-// Rule IfTypable1 / IfTypable2
-UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
+function getCommonAncestor(T1, T2) {
+	// trace both paths up to the root, and then go back up both, finding the
+	// first element which is different. O(n) in the max. length of the paths
+	if (!(T1 instanceof Classes.ObjectType)) throw new Error("T1 is not object");
+	if (!(T2 instanceof Classes.ObjectType)) throw new Error("T2 is not object");
+	if (T1.id === T2.id) return T1;
+
+	var p1 = [T1.id],
+		p2 = [T2.id];
+	while (T2.originalObj !== null && T2.originalObj !== undefined) {
+		p2.push(T2.originalObj);
+		T2 = Classes.Type.store[T2.originalObj];
+	}
+	while (T1.originalObj !== null && T1.originalObj !== undefined) {
+		p1.push(T1.originalObj);
+		T1 = Classes.Type.store[T1.originalObj];
+	}
+	p1.reverse();
+	p2.reverse();
+
+	var i = 0;
+	while (p1[i] === p2[i]) {
+		i++;
+	}
+	i--;
+	if (i < 0) {
+		throw Error("T1 and T2 do not share an ancestor");
+	}
+	return Classes.Type.store[p1[i]];
+}
+
+function newIf(gamma, dynamics) {
+
 	this.condition.parent = parent(this);
 
-	var j1 = this.condition.check(gamma, dynamics);
-	var C = j1.C;
-	var W = j1.W;
+	var j = this.condition.check(gamma, dynamics);
+	var C = j.C;
+	var W = j.W;
 
-	C.push(new Classes.Constraint(Classes.Type.boolType.id, j1.T.id));
+	C.push(new Classes.Constraint(Classes.Type.boolType.id, j.T.id));
 
-	function prune(T1, T2, limit1, limit2, base) {
+	var g1 = new Classes.TypeEnv(j.gamma);
+	var g2 = new Classes.TypeEnv(j.gamma);
+
+	var j1 = this.body.check(g1, dynamics);
+	C = C.concat(j1.C);
+	W = W.concat(j1.W);
+	var g1p = j1.gamma;
+
+	var g2p;
+	if (this.alternative !== null) {
+		var j2 = this.alternative.check(g2 , dynamics);
+		C = C.concat(j2.C);
+		W = W.concat(j2.W);
+		g2p = j2.gamma;
+	} else {
+		g2p = g2;
+	}
+
+	// construct a new type environment g3
+	var g3 = new Classes.TypeEnv();
+	for (var i = 0; i < gamma.length; i++) {
+		var mergedType = m(g1p.get(gamma[i].name), g2p.get(gamma[i].name));
+		g3.push(new Classes.TypeEnvEntry(
+			gamma[i].name,
+			gamma[i].node,
+			mergedType.id
+		));
+	}
+
+	return new Classes.Judgement(null, C, g3, W);
+
+
+	function flattenObj(o1, o2, limit) {
+
+		var o = o1;
+		var memberTypes = {};
+		var l;
+
+		// first flatten o1
+		while (o !== undefined && o.memberTypes !== undefined && o.id !== limit.id) {
+
+			for (l in o.memberTypes) {
+				var t2 = objectGetProperty(o2, l);
+				if (l in memberTypes) continue;
+				if (t2 === null) {
+					// memberTypes[l] = o.memberTypes[l];
+					// Classes.Type.store[memberTypes[l]].illDefined = true;
+				} else {
+					memberTypes[l] = m(Classes.Type.store[o.memberTypes[l]], t2).id;
+				}
+			}
+			o = Classes.Type.store[o.originalObj];
+		}
+
+		// then flatten o2
+		// o = o2;
+		// while (o !== undefined && o.memberTypes !== undefined && o.id !== limit.id) {
+		// 	for (l in o.memberTypes) {
+		// 		var t1 = objectGetProperty(o1, l);
+		// 		if (t1 === null) {
+		// 			memberTypes[l] = o.memberTypes[l];
+		// 			Classes.Type.store[memberTypes[l]].illDefined = true;
+		// 		}
+		// 	}
+		// 	o = Classes.Type.store[o.originalObj];
+		// }
+
+		var flat = new Classes.ObjectType({
+			memberTypes: memberTypes
+		});
+		flat.originalObj = limit.id;
+		if (limit.shouldInfer) flat.shouldInfer = true;
+		if (o1.illDefined || o2.illDefined) flat.illDefined = true;
+		return flat;
+
+	}
+
+	function m(T1, T2) {
+		if (T1 instanceof Classes.ObjectType || T2 instanceof Classes.ObjectType) {
+			var an;
+			try {
+				an = getCommonAncestor(T1, T2);
+			} catch (e) {
+				an = {
+					id: null
+				};
+			}
+			return flattenObj(T1, T2, an);
+		} else {
+
+			if (T1.type === "pending") {
+				T2.illDefined = true;
+				return T2;
+			} else if (T2.type === "pending") {
+				T1.illDefined = true;
+				return T1;
+			}
+			C.push(new Classes.Constraint(T1.id, T2.id));
+			if (T2.illDefined) T1.illDefined = true;
+			return T1;
+		}
+	}
+
+}
+
+// Rule IfTypable1 / IfTypable2
+UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
+	return newIf.apply(this, [gamma, dynamics]);
+
+	function intersect(T1, T2, limit1, limit2, base) {
 		var T;
 		if (T1 instanceof Classes.ObjectType && T2 instanceof Classes.ObjectType) {
 			var memberTypes = {};
@@ -967,13 +1144,12 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 			var nextT2 = T2;
 
 			do {
-				// if (debug) console.log(nextT2.toString());
 				for (var member in nextT2.memberTypes) {
 					if (member in T1.memberTypes &&
 						// we want to keep only the uppermost member
 						!(member in memberTypes)
 					) {
-						memberTypes[member] = prune(
+						memberTypes[member] = intersect(
 							Classes.Type.store[T1.memberTypes[member]],
 							Classes.Type.store[nextT2.memberTypes[member]]
 							// No limits because we want to continue until null
@@ -986,7 +1162,7 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 
 			var originalObj;
 			if (T1.originalObj !== null && T1.originalObj !== limit1) {
-				originalObj = prune(Classes.Type.store[T1.originalObj], T2, limit1, limit2, base).id;
+				originalObj = intersect(Classes.Type.store[T1.originalObj], T2, limit1, limit2, base).id;
 			} else if (T1.originalObj === limit1) {
 				// this code was added to attach the bottom element of some
 				// chain to the original type (before the if) - so that
@@ -1028,7 +1204,6 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 
 	function mergeEnv(gamma0, map1, map2, gamma1, gamma2) {
 		var initLen = gamma0.length;
-		var gamma3 = new Classes.TypeEnv();
 		for (var i = 0; i < initLen; i++) {
 
 			// we deal with return separately
@@ -1039,18 +1214,15 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 			var T1 = gamma1.get(gamma0[i].name);
 			var T2 = gamma2.get(gamma0[i].name);
 
-			// optimisation - don't make constraints if the types are the same!
-			if (gamma0[i].type !== T1.type || gamma0[i].type !== T2.type) {
-				var newType = prune(T1, T2, map1[i].type, map2[i].type, gamma0[i].type, C);
-				if (T1.illDefined === true || T2.illDefined === true) {
-					newType.illDefined = true;
-				}
-				gamma0.push(new Classes.TypeEnvEntry(
-					gamma0[i].name,
-					gamma0[i].node,
-					newType.id
-				));
+			var newType = intersect(T1, T2, map1[i].type, map2[i].type, gamma0[i].type, C);
+			if (T1.illDefined === true || T2.illDefined === true) {
+				newType.illDefined = true;
 			}
+			gamma0.push(new Classes.TypeEnvEntry(
+				gamma0[i].name,
+				gamma0[i].node,
+				newType.id
+			));
 
 
 			// Now add constraints on the original type (to allow inference propagation)
@@ -1065,14 +1237,17 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 		return gamma0;
 	}
 
+	this.condition.parent = parent(this);
+
+	var j1 = this.condition.check(gamma, dynamics);
+	var C = j1.C;
+	var W = j1.W;
+
+	C.push(new Classes.Constraint(Classes.Type.boolType.id, j1.T.id));
+
 	this.body.parent = parent(this);
 	var clone1 = getClone(j1.gamma);
 	var j2 = this.body.check(clone1.gamma, dynamics);
-
-	// we should apply substitutions from the inner body to the outer world (maybe?!)
-	// for (var k=0; k<j2.substitutions.length; k++) {
-	// 	j1.gamma.applySubstitution(j2.substitutions[k]);
-	// }
 
 	C = C.concat(j2.C);
 	W = W.concat(j2.W);

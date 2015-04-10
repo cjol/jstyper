@@ -1,14 +1,13 @@
 {
 	"success": true,
 	"types": {
-		"5": {
+		"6": {
 			"9": {
 				"type": "function",
 				"argTypes": [
 					"abstract", {
 						"type": "object",
 						"memberTypes": {
-							"foo": "number"
 						}
 					}
 				],

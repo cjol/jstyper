@@ -128,7 +128,6 @@ function seq(statements, par) {
 			var newJudgement = statements[i].check(judgement.gamma, dynamics);
 			
 			// carry the new judgement into the next statement
-			judgement.gamma = newJudgement.gamma;
 			judgement.W = judgement.W.concat(newJudgement.W);
 			judgement.C = judgement.C.concat(newJudgement.C);
 			
@@ -144,12 +143,14 @@ function seq(statements, par) {
 			for (var j=0; j<substitutions.length; j++) {
 
 				judgement.gamma.applySubstitution(substitutions[j]);
+				newJudgement.gamma.applySubstitution(substitutions[j]);
 
 				for (var k = 0; k<judgement.W.length; k++) {
 					judgement.W[k].applySubstitution(substitutions[j]);
 				}
 			}
 
+			judgement.gamma = newJudgement.gamma;
 		}
 	}
 

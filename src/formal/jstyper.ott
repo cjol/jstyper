@@ -201,7 +201,7 @@ fv :: 'fv_' ::= 								{{ com FormulaVar }}
 	| G ( id )  ::  :: ContextMember							{{ com ContextMember }}
 	| sv 		::  :: SetFormulaVar							{{ com SetFormulaVar }}
 	| T 		::  :: TypeFormulaVar							{{ com TypeFormulaVar }}
-	| id 		::  :: IllDefinedFormulaVar								{{ com IllDefinedFormulaVar }}
+	| id 		::  :: IDFormulaVar								{{ com IDFormulaVar }}
 	| func  	::  :: FuncFormulaVar							{{ com FuncFormulaVar }}
 	| e 		::  :: ExpFormulaVar                            {{ com ExpFormulaVar }}
 
@@ -534,10 +534,14 @@ Jop :: '' ::=
 
 		% Assignment operations
 
+		% contentious about whether assigntype should update gamma. For my
+		% style of constraint solving (discarding used constraints), I need to
+		% update gamma, so might as well update it in the formal system too.
+
 		G(id) = T
 		G  |- e' : T1 |C1 G1
 		------------------------------------------------------	 	:: AssignType 
-		G  |- id = e' : T1 |C1 u { T >c T1 } G1
+		G  |- id = e' : T1 |C1 u { T >c T1 } G1 u {id: T1}
 
 		T is fresh
 		id !in dom(G)
@@ -547,13 +551,12 @@ Jop :: '' ::=
 
 		% dots make list comprehensions hard to express in OTT
 		
-		T is fresh
 		G  |- e' : T' |C' G'
 		G' |- id : T0 |C0 G''
 		G' |- id.l1 : T1 |C1 G''
 		G' |- id.l1.lk : Tk |Ck G''
-		G1 = Gk u {id: { l1 :{ lk: {l:T}~>Tk }~>T1 }~>T0 }
-		C = { {l:T3} >o Tk } u {T >c T'}
+		G1 = Gk u {id: { l1 :{ lk: {l:T'}~>Tk }~>T1 }~>T0 }
+		C = { Tk >o {l:T'} }
 		------------------------------------------------------	 	:: PropAssignType
 		G  |- id.l1.lk.l = e' : T' |(U j=0-i Cj) u (C' u C) G1
 

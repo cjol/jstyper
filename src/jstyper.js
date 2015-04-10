@@ -73,6 +73,7 @@ module.exports = function(src) {
 				return;
 			}
 			var source = Classes.Type.store[sourceId];
+			// if (source.illDefined) return;
 			var key;
 			if (source instanceof Classes.ObjectType) {
 				tee[k] = {
@@ -124,6 +125,7 @@ module.exports = function(src) {
 				if (node.tee !== undefined) {
 					if (types[node.start.line] === undefined)
 						types[node.start.line] = {};
+
 
 					attachSubtypes(types[node.start.line], node.start.col, node.tee.type, []);
 					if (typeof types[node.start.line][node.start.col] === "object") {

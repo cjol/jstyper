@@ -12,7 +12,6 @@ module.exports = {
 	ObjectType: ObjectType,
 	FunctionType: FunctionType,
 	ArrayType: ArrayType,
-	IllDefinedType: IllDefinedType,
 	Substitution: Substitution,
 	Constraint: Constraint,
 	LEqConstraint: LEqConstraint,
@@ -84,7 +83,7 @@ Object.defineProperty(Type, 'nullType', {
 // 	// I think I won't redefine id or node
 // };
 Type.prototype.toString = function() {
-	return this.type;
+	return this.type + (this.illDefined?"?":"");
 };
 Type.prototype.addContainers = function(container) {
 	this.containers.push(container);
@@ -199,7 +198,7 @@ ObjectType.prototype.applySubstitution = function(sub, donotrecurse) {
 	}
 	// if (this.protoObj !== null) Type.store[this.protoObj].applySubstitution(sub, donotrecurse.slice(0));
 };
-ObjectType.prototype.toString = function(donotrecurse) {
+ObjectType.prototype.toString = function(donotrecurse, simple) {
 
 	if (donotrecurse === undefined) donotrecurse = [];
 	donotrecurse.push(this.id);
@@ -213,9 +212,10 @@ ObjectType.prototype.toString = function(donotrecurse) {
 				continue outerLoop;
 			}
 		}
-		types.push(lab + ":" + Type.store[this.memberTypes[lab]].toString(donotrecurse.slice(0)));
+		if (!simple || !Type.store[this.memberTypes[lab]].illDefined) 
+			types.push(lab + ":" + Type.store[this.memberTypes[lab]].toString(donotrecurse.slice(0), simple));
 	}
-	var origString = "";
+	var origString = "}";
 	var safe = true;
 	if (this.originalObj !== null) {
 		for (i = 0; i < donotrecurse.length; i++) {
@@ -226,12 +226,16 @@ ObjectType.prototype.toString = function(donotrecurse) {
 			}
 		}
 		if (safe) {
-			origString = Type.store[this.originalObj].toString(donotrecurse.slice(0));
-			origString = "~>" + origString;
+			origString = Type.store[this.originalObj].toString(donotrecurse.slice(0), simple);
+			if (simple) {
+				origString = ((types.length>0)?", ":"") + origString.slice(1);
+			} else {
+				origString = "}~>" + origString;	
+			}
 		}
 	}
 	// TODO: Add proto and originalObj members
-	return "{" + types.join(", ") + "}" +  origString;
+	return "{" + types.join(", ") +  origString + (this.illDefined?"?":"");
 };
 ObjectType.prototype.toAST = function(donotrecurse) {
 	if (donotrecurse === undefined) donotrecurse = [];
@@ -363,7 +367,7 @@ FunctionType.prototype.toString = function(donotrecurse) {
 	}
 	if (safe) ret = Type.store[this.returnType].toString(donotrecurse);
 
-	return "fn(" + args.join(", ") + " -> " + ret + ")";
+	return "fn(" + args.join(", ") + " -> " + ret + ")" + (this.illDefined?"?":"");
 };
 
 
@@ -474,7 +478,7 @@ ArrayType.prototype.toString = function(donotrecurse) {
 		innerType = "<" + Type.store[this.innerType].type + ">";
 	}
 
-	return "[" + innerType + "]";
+	return "[" + innerType + "]" + (this.illDefined?"?":"");
 };
 
 
@@ -515,36 +519,6 @@ ArrayType.prototype.addContainers = function(container) {
 
 	Type.store[this.innerType].addContainers(container);
 };
-
-
-
-
-function IllDefinedType(innerType) {
-	Type.call(this, "illdefn", {
-		isConcrete: innerType.isConcrete,
-		isDynamic: innerType.isDynamic
-	});
-
-	this.id = innerType.id;
-	this.innerType = innerType.id;
-	this.constructor = innerType.constructor;
-	this.applySubstitution = function(sub, donotrecurse) {
-			
-		if (donotrecurse === undefined) donotrecurse = [];
-		donotrecurse.push(this.id);
-
-		if (this.id === sub.from) {
-			innerType.id = sub.to;
-		}
-		for (i = 0; i < donotrecurse.length; i++) {
-			if (this.innerType === donotrecurse[i]) return;
-		}
-		Type.store[innerType.id].applySubstitution(sub, donotrecurse.slice(0));
-	};
-	this.toString = function() {
-		return Type.store[innerType.id].toString.apply(innerType, arguments) + "?";
-	};
-}
 
 
 
@@ -855,6 +829,7 @@ LEqConstraint.prototype.solve = function() {
 			}
 
 			if (Type.store[this.type1].shouldInfer) objType.shouldInfer = true;
+			if (Type.store[this.type1].illDefined) objType.illDefined = true;
 			subs.push(new Substitution(this.type1, objType.id));
 
 			// I have contributed some information, but the constraint isn't solved yet

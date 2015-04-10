@@ -11,12 +11,18 @@ var extraMatchers = {
 				if (expected === undefined) {
 					throw new Error("Can't check for empty property");
 				}
-				return {
-					pass: actual[expected] !== undefined,
-					message: (actual[expected] !== undefined)?
-								"Expected " + actual + " not to have property '" + expected + "'":
-								"Expected " + actual + " to have property '" + expected + "'"
-				};
+				if (actual[expected] === undefined) {
+					return {
+						pass: false,
+						message: "Expected " + actual + " to have property '" + expected + "'"
+					};
+				} else {
+					return {
+						pass: true,
+						message: "Expected " + actual + " not to have property '" + expected + "'"
+					};
+
+				}
 			}
 		};
 	}
@@ -28,7 +34,7 @@ testDir('custom', "Custom Test");
 // testDir('sunspider', "Sunspider Test");
 
 function testDir(dir, name) {
-		
+
 	describe(name, function() {
 		beforeEach(function() {
 			jasmine.addMatchers(extraMatchers);
@@ -41,7 +47,7 @@ function testDir(dir, name) {
 
 			var stem = file.slice(0, -3);
 			var testPath = "./tests/" + dir + "/tests/" + file;
-			var resultPath = "./tests/"+ dir + "/results/" + stem + ".json";
+			var resultPath = "./tests/" + dir + "/results/" + stem + ".json";
 
 			// skip directories
 			if (fs.lstatSync(testPath).isDirectory()) {
@@ -57,11 +63,11 @@ function testDir(dir, name) {
 					});
 					return;
 				}
-				
+
 				var src = fs.readFileSync(testPath, "utf8");
 				var resfile = fs.readFileSync(resultPath, "utf8");
 				var expected = JSON.parse(resfile);
-				
+
 				if (expected.incomplete) {
 					it("can't be useful until the test framework is upgraded.", function() {
 						if (expected.reason === undefined) {
@@ -82,7 +88,7 @@ function testDir(dir, name) {
 					compile = false;
 				}
 
-				it('should' + (expected.success?'':' fail to') + ' compile', function() {
+				it('should' + (expected.success ? '' : ' fail to') + ' compile', function() {
 					expect(compile).toEqual(expected.success);
 				});
 
@@ -107,11 +113,11 @@ function testDir(dir, name) {
 					// TODO: Further tests to check gradual typing is correct
 					// Further tests to check execution
 
-				} 
+				}
 			});
 		});
 
-	});	
+	});
 }
 
 function compareTypes(actual, expected) {
@@ -120,8 +126,8 @@ function compareTypes(actual, expected) {
 		expect(actual).toEqual(expected);
 	} else {
 		// more complex type
-		switch(expected.type) {
-			case "wrapper": 
+		switch (expected.type) {
+			case "wrapper":
 				compareTypes(actual.innerType, expected.innerType);
 				break;
 			case "object":
@@ -140,19 +146,19 @@ function compareTypes(actual, expected) {
 					}
 				}
 				break;
-			case "function": 
+			case "function":
 				expect(actual.type).toEqual("function");
 				expect(actual.argTypes.length).toEqual(expected.argTypes.length);
-				for (var i = 0; i<expected.argTypes.length; i++) {
+				for (var i = 0; i < expected.argTypes.length; i++) {
 					compareTypes(actual.argTypes[i], expected.argTypes[i]);
 				}
 				compareTypes(actual.returnType, expected.returnType);
 				break;
-			case "array": 
+			case "array":
 				expect(actual.type).toEqual("array");
 				compareTypes(actual.innerType, expected.innerType);
 				break;
-			case "recursive": 
+			case "recursive":
 				expect(actual.type).toEqual("recursive");
 				break;
 			default:
