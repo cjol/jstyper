@@ -62,10 +62,18 @@
 		});
 
 		function execOrig() {
-			(new Function(origCode))();
+			try{
+				(new Function(origCode))();
+			} catch (e) {
+				alert(e);
+			}
 		}
 		function execComp() {
-			(new Function(compCode))();
+			try{
+				(new Function(compCode))();
+			} catch (e) {
+				alert(e);
+			}
 		}
 		
 		function compile(src, callback) {

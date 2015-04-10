@@ -3,14 +3,14 @@ function mimic(t, obj) {
 	// console.log("Made mimic for ", obj);
 	// obj is untrusted, but the context is safe
 	if (t.kind === "function") {
-		if (typeof obj !== "function") throw new Error("obj is not function");
+		if (typeof obj !== "function") throw new Error(typeof obj + " is not a function");
 
 		// f is a type-safe version of obj, which can be used in the typed world
 		var f = function() {
 
 			// +1 is because of 'this'
 			if (arguments.length + 1 !== t.argTypes.length) {
-				throw new Error("obj has the wrong number of parameters");
+				throw new Error("function has the wrong number of parameters");
 			}
 			var args = [];
 
@@ -34,7 +34,7 @@ function mimic(t, obj) {
 		return f;
 
 	} else if (t.kind === "object") {
-		if (typeof obj !== "object") throw new Error("obj is not an object");
+		if (typeof obj !== "object") throw new Error(typeof obj + " is not an object");
 
 		var x = {};
 
@@ -57,13 +57,13 @@ function mimic(t, obj) {
 
 		// Note that we tolerate (and don't protect) extra properties
 		for (var i in t.memberTypes) {
-			if (!(i in obj)) throw new Error("obj is lacking property " + i);
+			if (!(i in obj)) throw new Error("object is lacking property " + i);
 			definer(i);
 		}
 
 		return x;
 	} else if (t.kind === "primitive") {
-		if (typeof obj !== t.type) throw new Error("obj is not " + t.type);
+		if (typeof obj !== t.type) throw new Error(typeof obj + " is not a " + t.type);
 		return obj;
 	} else if (t.kind === "abstract") {
 		// maybe dynamic?
@@ -89,7 +89,7 @@ function guard(t, obj) {
 		var f = function() {
 			// +1 is because of 'this'
 			if (arguments.length + 1 !== t.argTypes.length) {
-				throw new Error("obj has the wrong number of parameters");
+				throw new Error("function has the wrong number of parameters");
 			}
 
 			// obj's code is safe, so it needs to intereact with safe mimics rather than the dirty data from outside
