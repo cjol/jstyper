@@ -6,7 +6,16 @@
 \usepackage{times}
 \usepackage{amsmath,amssymb}
 \usepackage{fixltx2e}
-
+\usepackage{amsthm}
+\newtheoremstyle{dotless}{\topsep}{\topsep}{\itshape}{}{\bfseries}{}{5pt plus 1pt minus 1pt}{}
+\newtheoremstyle{case}{\topsep}{\topsep}{\normalfont}{}{\bfseries}{}{5pt plus 1pt minus 1pt}{}
+\newtheoremstyle{subcase}{\topsep}{\topsep}{\normalfont}{20pt}{\bfseries}{}{5pt plus 1pt minus 1pt}{}
+\theoremstyle{dotless}
+\newtheorem{theorem}{Theorem}[section]
+\theoremstyle{case}
+\newtheorem*{case}{Case}
+\theoremstyle{subcase}
+\newtheorem*{subcase}{case}
 
 \begin{document}
 
@@ -15,15 +24,53 @@
 \author{Christopher Little}
 \maketitle
 
-\section*{Progress}
-	\newcommand{\typable}[2][ ]{\Gamma{}\vdash#2\, |_X#1\:C#1,\:\Gamma#1'}
-	\newcommand{\typed}[2]{\Gamma{}\vdash#1: #2\,|_X\:C,\:\Gamma'}
-	\newcommand{\transition}[4]{\langle{}#1,#2\rangle{}\rightarrow{}\langle{}#3,#4\rangle}
-	\newcommand{\indHyp}{\Phi(\Gamma, m, X, C, \Gamma')}
-	\newcommand{\indHypTwo}{\Psi(\Gamma, e, T, X, C, \Gamma')}
+\section{Progress}
+	\newcommand{\typable}[2][ ]{\Gamma{}\vdash#2\, |C#1\:\Gamma#1'}
+	\newcommand{\typed}[2]{\Gamma{}\vdash#1: #2\,|_C\:\Gamma'}
+	\newcommand{\transition}[6]{\langle{}#1,#2,#3\rangle{}\rightarrow{}\langle{}#4,#5,#6\rangle}
+	\newcommand{\indHyp}{\Phi(\Gamma, m, C, \Gamma')}
+	\newcommand{\indHypTwo}{\Psi(\Gamma, e, T, C, \Gamma')}
 	\newcommand{\var}{\textbf{var}}
 	\newcommand{\sub}[1]{\textsubscript{#1}}
 
+	\begin{theorem}[Progress for expressions]\label{expProgress}
+
+      If $\typed{e}{T}$ and $dom(\Gamma) \subseteq dom(s)$ then either e is a
+      value or there exist $e'$, $s'$ such that $\transition{e}{s}{\theta}{e'}{s'}{\theta'}$
+      
+    \end{theorem}
+
+	\begin{proof} Take $$ \indHypTwo \stackrel{\text{def}}{=} \
+		\forall s.  (dom(\Gamma) \subseteq\ dom(s)) \implies val(e) \vee
+		\exists e', s'. \transition{e}{s}{\theta}{e'}{s'}{\theta'} $$
+	
+	  We show that for all $\Gamma$, $e$, $T$, $C$, $\Gamma'$, if
+	  $\typed{e}{T}$ then $\indHypTwo$, by rule induction on the definition of
+	  the type judgements. Since $\Psi$ is of the form $\forall s.dom(\Gamma) \subseteq\ dom(s)\implies \dots$, in all cases consider an arbitrary s
+	  and assume $dom(\Gamma) \subseteq\ dom(s)$.
+	
+	  \begin{case}[V\_Num, V\_Bool, V\_String, V\_Undefined, V\_Null, V\_Closure] \quad
+		
+		For each of these rules, we immediately have that $e$ is a value, which
+		gives us $\indHypTwo{}$ as desired.
+	  	
+	  \end{case}
+
+	  \begin{case}[V\_Obj]
+		e is of the form ${l_1: e_1, \dots, l_k: e_k}$, and we have $\typed{e_i}{e_i}$ for $1 \leq i \leq k$.
+		We can use the induction hypothesis to determin
+	  \end{case}
+	  
+	Consider some arbitrary store $s$. Assume that the given expression $e$ is
+	well-typed --- i.e.\ that $\typed{e}{T}$ and that $dom(\Gamma) \subseteq\
+	dom(s)$.  Since $e$ is well-typed, there must be some valid type
+	derivation.  We will prove $\indHypTwo$ by induction over the structure of
+	this derivation, by looking in particular at the possible last steps of the
+	derivation.
+
+	\vspace{2ex}
+	
+  \end{proof}
 	We must prove the following $\Phi$ for all statements in the language:
 	\begin{eqnarray*}
 	\lefteqn{ \indHyp =  \forall s.} \\
@@ -31,155 +78,155 @@
 				(dom(\Gamma) \subseteq\ dom(s))
 			\implies \\
 		& & \quad \textrm{$m$ is a value} \vee
-				\exists m', s'. \transition{m}{s}{m'}{s'} \\
+		\exists m', s'. \transition{m}{s}{\theta}{m'}{s'}{\theta'} \\
 	\end{eqnarray*}
 
 	Consider an arbitrary store $s$. Assume that the given statement $m$ is
 	typable --- i.e.\ that $\typable{m}$ and that $dom(\Gamma) \subseteq\ dom(s)$.
-	Since $m$ is typable, there must be some valid type derivation. We will
-	prove $\indHyp$ by induction over the structure of this derivation, by
-	looking in particular at the possible last steps in the derivation.
+	Since $m$ is typable, there must be some valid type derivation.
+	We will prove $\indHyp$ by induction over the structure of this derivation,
+	by looking in particular at the possible last steps in the derivation.
 	
 	\vspace{2ex}
-
-	\begin{description}
-		\item[Case \textsc{DecTypable}] \hfill 
-
-			$m$ must be of the form \texttt{\var\ id}, and from transition
-			rule \textsc{Var1}, we have 
-			$$\exists m', s'.\transition{m}{s}{m'}{s'}$$
-			with $m'=\epsilon$ and $s'=s$ as witnesses. Hence we have $\indHyp$.
-
-		\item[Case \textsc{MultiDecTypable}] \hfill
-
-			$m$ must be of the form \texttt{\var\ vd\sub{1}, vd\sub{2}}, and from
-			transition rule \textsc{Var4}, we have 
-			$$\exists m', s'.\transition{m}{s}{m'}{s'}$$
-			with $m' = \texttt{\var\ vd\sub{1}; \var\ vd\sub{2}}$ and $s'=s$ as 
-			witnesses. Hence we have $\indHyp$.
-
-		\item[Case \textsc{DefTypable}] \hfill
-			
-			$m$ must be of the form \texttt{\var\ vd = e}, and a previous step
-			of the derivation has shown $\typed{e}{T_2}$. Using the induction hypothesis
-			gives us that one of the following subcases must be true:
-
-			\begin{description}
-				\item[Subcase $e$ is a value] \hfill \\
-					
-					$m$ is of right form to have a transition according to
-					rule \textsc{Var3}. We thus have 
-					$$\exists m', s'.\transition{m}{s}{m'}{s'}$$
-					with $m'=\epsilon$ and $s'=put(s,id,e)$ as witnesses ---
-					and from this $\indHyp$.
-					
-				\item[Subcase $\exists e', s''.\transition{e}{s}{e'}{s''}$] \hfill \\
-
-					In this case, the preconditions for rule \textsc{Var2} are
-					satisfied, implying that 
-					$\transition{\texttt{\var\ id=e}}{s}{\texttt{\var\ id=e'}}{s''}$
-					is a valid transition. Hence we have
-					$$\exists m', s'.\transition{m}{s}{m'}{s'}$$
-					with $m'=\texttt{\var\ id=e'}$ and $s'=s''$ as witnesses ---
-					and from this $\indHyp$.
-			\end{description}
-
-		\item[Case \textsc{SeqTypable}] \hfill
-			
-			$m$ must be of the form $m_1;m_2$, and a previous step of the
-			derivation has shown $\typable{m_1}$. Using the induction
-			hypothesis gives us that one of the following subcases must be
-			true:
-
-			\begin{description}
-				\item[Subcase $m_1$ is a value] \hfill \\
-					$m$ is of the right form to have a transition according to
-					rule \textsc{Seq1}. We thus have 
-					$$\exists m', s'.\transition{m}{s}{m'}{s'}$$
-					with $m'=m_2$ and $s'=s$ as witnesses ---
-					and from this \\
-					$\indHyp$. \\
-					
-				\item[Subcase $\exists m_1', s_1'.\transition{m_1}{s}{m_1'}{s_1'}$] \hfill \\
-					In this case, the preconditions for rule \textsc{Var2} are
-					satisfied, implying that 
-					$\transition{m_1;m_2}{s}{m_1';m_2}{s_1'}$
-					is a valid transition. Hence we have
-					$$\exists m', s'.\transition{m}{s}{m'}{s'}$$
-					with $m'=m_1';m_2$ and $s'=s_1'$ as witnesses ---
-					and from this \\
-					$\indHyp$.
-			\end{description}
-
-		\item[Case \textsc{ExpTypable}] \hfill
-
-			For $m$ to be judged typable by this rule, we must have
-			established that $\typed{e}{T}$ is valid during some earlier part
-			of the derivation. We cannot use the induction hypothesis directly
-			in this case, so instead we must derive the desired conclusion
-			from $\typed{e}{T}$. To do this, we prove the following $\Psi$ for
-			all expressions in the language, again by induction over the
-			structure of the type derivation for $e$, looking in particular at
-			the last step of the derivation:
-
-			\begin{eqnarray*}
-			\lefteqn{ \indHypTwo =  \forall s.} \\
-				& & (\,\typed{e}{T}\,) \wedge
-						(dom(\Gamma) \subseteq\ dom(s))
-					\implies \\
-				& & \quad \textrm{$e$ is a value} \vee
-						\exists{}\, e', s'. \transition{e}{s}{e'}{s'}
-			\end{eqnarray*}
-
-			\begin{description}
-
-				\item[Cases \textsc{V\_Num}, \textsc{V\_Bool},
-				\textsc{V\_String}, \textsc{V\_Undefined}, \textsc{V\_Null} and
-				\textsc{V\_Skip}] \hfill 
-
-					In each of these cases, we immediately have that $e$ is a value,
-					which gives us $\indHypTwo$ as desired.
-
-				\item[Cases \textsc{IdType} and \textsc{IdTypeUndef}] \hfill
-
-					In both of these cases, we have $e=id$, for which a
-					transition is always available by rule \textsc{Deref}, so
-					we have $\indHypTwo$ as desired.
-				
-				\item[Case \textsc{AssignType}] \hfill
-
-					$e$ must be of the form \texttt{\var\ id = e\sub{1}}. We
-					have that $\typed{e_1}{T_1}$, and from $\Psi$ we have one
-					of the following subcases:
-
-					\begin{description}
-						\item[Subcase $e_1$ is a value] \hfill
-
-							Rule \textsc{Assign2} gives us that 
-							$$\exists{}\, e', s'. \transition{e}{s}{e'}{s'}$$
-							with $e'=e_1$ and $s'=put(s,id,e_1)$ as witnesses. 
-							Hence $\indHypTwo$ holds.
-
-						\item[Subcase $\exists{}\, e_1', s'. \transition{e_1}{s}{e_1'}{s_1'}$]
-
-							In this subcase, we have the necessary
-							preconditions for rule \textsc{Assign1} to hold,
-							such that we conclude $$\exists{}\, e', s'.
-							\transition{e}{s}{e'}{s'}$$ with
-							$e'=\texttt{id=e\sub{1}'}$ and $s'=s_1'$ as
-							witnesses. Finally then, $\indHypTwo$ holds.
-
-					\end{description}
-
-			\end{description}
-
-			By structural induction, then, we can conclude that $\indHypTwo$
-			holds for all expressions in the language. From this and the fact
-			that $\typed{e}{T}$, we can derive the conclusion that 
-			$$\textrm{$m$ is a value} \vee
-				\exists m', s'. \transition{m}{s}{m'}{s'}$$
-			and hence that $\indHyp$ holds in this case.
-	\end{description}
+%
+%	\begin{description}
+%		\item[Case \textsc{DecTypable}] \hfill 
+%
+%			$m$ must be of the form \texttt{\var\ id}, and from transition
+%			rule \textsc{Var1}, we have 
+%			$$\exists m', s'.\transition{m}{s}{\theta}{m'}{s'}{\theta'}$$
+%			with $m'=\epsilon$ and $s'=s$ as witnesses. Hence we have $\indHyp$.
+%
+%		\item[Case \textsc{MultiDecTypable}] \hfill
+%
+%			$m$ must be of the form \texttt{\var\ vd\sub{1}, vd\sub{2}}, and from
+%			transition rule \textsc{Var4}, we have 
+%			$$\exists m', s'.\transition{m}{s}{\theta}{m'}{s'}{\theta'}$$
+%			with $m' = \texttt{\var\ vd\sub{1}; \var\ vd\sub{2}}$ and $s'=s$ as 
+%			witnesses. Hence we have $\indHyp$.
+%
+%		\item[Case \textsc{DefTypable}] \hfill
+%			
+%			$m$ must be of the form \texttt{\var\ vd = e}, and a previous step
+%			of the derivation has shown $\typed{e}{T_2}$. Using the induction hypothesis
+%			gives us that one of the following subcases must be true:
+%
+%			\begin{description}
+%				\item[Subcase $e$ is a value] \hfill \\
+%					
+%					$m$ is of right form to have a transition according to
+%					rule \textsc{Var3}. We thus have 
+%				  	$$\exists m', s'.\transition{m}{s}{\theta}{m'}{s'}{\theta'}$$
+%					with $m'=\epsilon$ and $s'=put(s,id,e)$ as witnesses ---
+%					and from this $\indHyp$.
+%					
+%				\item[Subcase $\exists e', s''.\transition{e}{s}{e'}{s''}$] \hfill \\
+%
+%					In this case, the preconditions for rule \textsc{Var2} are
+%					satisfied, implying that 
+%					$\transition{\texttt{\var\ id=e}}{s}{\texttt{\var\ id=e'}}{s''}$
+%					is a valid transition. Hence we have
+%					$$\exists m', s'.\transition{m}{s}{m'}{s'}$$
+%					with $m'=\texttt{\var\ id=e'}$ and $s'=s''$ as witnesses ---
+%					and from this $\indHyp$.
+%			\end{description}
+%
+%		\item[Case \textsc{SeqTypable}] \hfill
+%			
+%			$m$ must be of the form $m_1;m_2$, and a previous step of the
+%			derivation has shown $\typable{m_1}$. Using the induction
+%			hypothesis gives us that one of the following subcases must be
+%			true:
+%
+%			\begin{description}
+%				\item[Subcase $m_1$ is a value] \hfill \\
+%					$m$ is of the right form to have a transition according to
+%					rule \textsc{Seq1}. We thus have 
+%					$$\exists m', s'.\transition{m}{s}{m'}{s'}$$
+%					with $m'=m_2$ and $s'=s$ as witnesses ---
+%					and from this \\
+%					$\indHyp$. \\
+%					
+%				\item[Subcase $\exists m_1', s_1'.\transition{m_1}{s}{m_1'}{s_1'}$] \hfill \\
+%					In this case, the preconditions for rule \textsc{Var2} are
+%					satisfied, implying that 
+%					$\transition{m_1;m_2}{s}{m_1';m_2}{s_1'}$
+%					is a valid transition. Hence we have
+%					$$\exists m', s'.\transition{m}{s}{m'}{s'}$$
+%					with $m'=m_1';m_2$ and $s'=s_1'$ as witnesses ---
+%					and from this \\
+%					$\indHyp$.
+%			\end{description}
+%
+%		\item[Case \textsc{ExpTypable}] \hfill
+%
+%			For $m$ to be judged typable by this rule, we must have
+%			established that $\typed{e}{T}$ is valid during some earlier part
+%			of the derivation. We cannot use the induction hypothesis directly
+%			in this case, so instead we must derive the desired conclusion
+%			from $\typed{e}{T}$. To do this, we prove the following $\Psi$ for
+%			all expressions in the language, again by induction over the
+%			structure of the type derivation for $e$, looking in particular at
+%			the last step of the derivation:
+%
+%			\begin{eqnarray*}
+%			\lefteqn{ \indHypTwo =  \forall s.} \\
+%				& & (\,\typed{e}{T}\,) \wedge
+%						(dom(\Gamma) \subseteq\ dom(s))
+%					\implies \\
+%				& & \quad \textrm{$e$ is a value} \vee
+%						\exists{}\, e', s'. \transition{e}{s}{e'}{s'}
+%			\end{eqnarray*}
+%
+%			\begin{description}
+%
+%				\item[Cases \textsc{V\_Num}, \textsc{V\_Bool},
+%				\textsc{V\_String}, \textsc{V\_Undefined}, \textsc{V\_Null} and
+%				\textsc{V\_Skip}] \hfill 
+%
+%					In each of these cases, we immediately have that $e$ is a value,
+%					which gives us $\indHypTwo$ as desired.
+%
+%				\item[Cases \textsc{IdType} and \textsc{IdTypeUndef}] \hfill
+%
+%					In both of these cases, we have $e=id$, for which a
+%					transition is always available by rule \textsc{Deref}, so
+%					we have $\indHypTwo$ as desired.
+%				
+%				\item[Case \textsc{AssignType}] \hfill
+%
+%					$e$ must be of the form \texttt{\var\ id = e\sub{1}}. We
+%					have that $\typed{e_1}{T_1}$, and from $\Psi$ we have one
+%					of the following subcases:
+%
+%					\begin{description}
+%						\item[Subcase $e_1$ is a value] \hfill
+%
+%							Rule \textsc{Assign2} gives us that 
+%							$$\exists{}\, e', s'. \transition{e}{s}{e'}{s'}$$
+%							with $e'=e_1$ and $s'=put(s,id,e_1)$ as witnesses. 
+%							Hence $\indHypTwo$ holds.
+%
+%						\item[Subcase $\exists{}\, e_1', s'. \transition{e_1}{s}{e_1'}{s_1'}$]
+%
+%							In this subcase, we have the necessary
+%							preconditions for rule \textsc{Assign1} to hold,
+%							such that we conclude $$\exists{}\, e', s'.
+%							\transition{e}{s}{e'}{s'}$$ with
+%							$e'=\texttt{id=e\sub{1}'}$ and $s'=s_1'$ as
+%							witnesses. Finally then, $\indHypTwo$ holds.
+%
+%					\end{description}
+%
+%			\end{description}
+%
+%			By structural induction, then, we can conclude that $\indHypTwo$
+%			holds for all expressions in the language. From this and the fact
+%			that $\typed{e}{T}$, we can derive the conclusion that 
+%			$$\textrm{$m$ is a value} \vee
+%				\exists m', s'. \transition{m}{s}{m'}{s'}$$
+%			and hence that $\indHyp$ holds in this case.
+%	\end{description}
 	
 	So we have proven that $\indHyp$ holds for all statments in the language,
 	and thus any statement which is well typed must either have an available
