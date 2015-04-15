@@ -19,3 +19,17 @@ Conclusion, clearly they should have different types. How?..
 
 Polymorphism (I have none?) See test 20.
 
+
+
+Thoughts 
+
+Next two stolen from http://gideon.smdng.nl/wp-content/uploads/thesis.pdf
+
+Formal semantics are often defined separately from the actual implementation.
+Whether or not a compiler or interpreter actually adheres to the defined
+semantics is unclear and difficult to judge. Very few compilers or
+interpreters have been proven correct with respect to the semantics.
+
+• It has been argued that formal semantics might inhibit evolution of a
+language; the maintenance costs of formal semantics could discourage
+experimentation and extension

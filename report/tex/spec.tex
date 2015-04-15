@@ -46,33 +46,29 @@
 \ottprodline{|}{\ottkw{str}}{}{}{}{\ottcom{String}}\ottprodnewline
 \ottprodline{|}{\ottkw{undefined}}{}{}{}{\ottcom{Undefined}}\ottprodnewline
 \ottprodline{|}{\ottkw{null}}{}{}{}{\ottcom{null}}\ottprodnewline
-\ottprodline{|}{\ottsym{\{}  \ottmv{l_{{\mathrm{1}}}}  \ottsym{:}  \ottnt{v_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{l_{\ottmv{i}}}  \ottsym{:}  \ottnt{v_{\ottmv{i}}}  \ottsym{\}}}{}{}{}{\ottcom{ObjVal}}\ottprodnewline
-\ottprodline{|}{\ottnt{func}}{}{}{}{\ottcom{FuncVal}}\ottprodnewline
-\ottprodline{|}{\ottsym{[}  \ottnt{v_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{v_{{\mathrm{2}}}}  \ottsym{]}}{}{}{}{\ottcom{ArrayVal}}\ottprodnewline
-\ottprodline{|}{\ottsym{get(}  \ottnt{s}  \ottsym{,}  \ottmv{id}  \ottsym{)}} {\textsf{M}}{}{}{\ottcom{GetStore}}}
+\ottprodline{|}{\ottnt{obj}}{}{}{}{\ottcom{ObjVal}}\ottprodnewline
+\ottprodline{|}{\ottnt{arr}}{}{}{}{\ottcom{ArrVal}}\ottprodnewline
+\ottprodline{|}{ \langle  \ottnt{func} ,  \ottnt{s}  \rangle }{}{}{}{\ottcom{FuncClosure}}\ottprodnewline
+\ottprodline{|}{\Theta  \ottsym{(}  \ottnt{a}  \ottsym{)}}{}{}{}{\ottcom{GetStore}}}
+
+\newcommand{\ottobj}{
+\ottrulehead{\ottnt{obj}}{::=}{}\ottprodnewline
+\ottfirstprodline{|}{\ottsym{\{}  \ottmv{l_{{\mathrm{1}}}}  \ottsym{:}  \ottnt{v_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{l_{\ottmv{i}}}  \ottsym{:}  \ottnt{v_{\ottmv{i}}}  \ottsym{\}}}{}{}{}{\ottcom{ObjVal}}}
+
+\newcommand{\ottarr}{
+\ottrulehead{\ottnt{arr}}{::=}{}\ottprodnewline
+\ottfirstprodline{|}{\ottsym{[}  \ottnt{v_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{v_{{\mathrm{2}}}}  \ottsym{]}}{}{}{}{\ottcom{ArrayVal}}}
 
 \newcommand{\ottfunc}{
 \ottrulehead{\ottnt{func}}{::=}{}\ottprodnewline
 \ottfirstprodline{|}{\ottkw{function} \, \ottmv{id}  \ottsym{(}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{k}}}  \ottsym{)}  \ottsym{\{}  \ottnt{m}  \ottsym{\}}}{}{}{}{\ottcom{FuncVal}}\ottprodnewline
 \ottprodline{|}{\ottkw{function} \, \ottsym{(}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{k}}}  \ottsym{)}  \ottsym{\{}  \ottnt{m}  \ottsym{\}}}{}{}{}{\ottcom{AnonFuncVal}}}
 
-\newcommand{\otts}{
-\ottrulehead{\ottnt{s}}{::=}{\ottcom{Store}}\ottprodnewline
-\ottfirstprodline{|}{\ottsym{put(}  \ottnt{s}  \ottsym{,}  \ottsym{[}  \ottmv{id_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{id_{\ottmv{i}}}  \ottsym{]}  \ottsym{,}  \ottsym{[}  \ottnt{v_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{v_{\ottmv{k}}}  \ottsym{]}  \ottsym{)}} {\textsf{M}}{}{}{\ottcom{PutStore}}\ottprodnewline
-\ottprodline{|}{\ottsym{del(}  \ottnt{s}  \ottsym{,}  \ottsym{[}  \ottmv{id_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{id_{\ottmv{i}}}  \ottsym{]}  \ottsym{)}} {\textsf{M}}{}{}{\ottcom{DelStore}}}
-
-\newcommand{\ottvd}{
-\ottrulehead{\ottnt{vd}}{::=}{\ottcom{VariableDeclaration}}\ottprodnewline
-\ottfirstprodline{|}{\ottmv{id}}{}{}{}{\ottcom{Declaration}}\ottprodnewline
-\ottprodline{|}{\ottmv{id}  \ottsym{=}  \ottnt{e}}{}{}{}{\ottcom{Definition}}}
-
 \newcommand{\otte}{
 \ottrulehead{\ottnt{e}}{::=}{\ottcom{Expression}}\ottprodnewline
 \ottfirstprodline{|}{\ottnt{v}}{}{}{}{\ottcom{Value}}\ottprodnewline
 \ottprodline{|}{\ottmv{id}}{}{}{}{\ottcom{Deref}}\ottprodnewline
-\ottprodline{|}{\ottmv{id} \, \approx \, \ottnt{e}}{}{}{}{\ottcom{Assign}}\ottprodnewline
-\ottprodline{|}{\ottnt{e}  \ottsym{.}  \ottmv{l} \, \approx \, \ottnt{e'}}{}{}{}{\ottcom{PropAssign}}\ottprodnewline
-\ottprodline{|}{\ottnt{e_{{\mathrm{1}}}}  \ottsym{[}  \ottnt{e_{{\mathrm{2}}}}  \ottsym{]}  \approx \, \ottnt{e}}{}{}{}{\ottcom{ArrayAssign}}\ottprodnewline
+\ottprodline{|}{\ottnt{e_{{\mathrm{1}}}} \, \approx \, \ottnt{e_{{\mathrm{2}}}}}{}{}{}{\ottcom{Assign}}\ottprodnewline
 \ottprodline{|}{\ottnt{e} \, \ottnt{op} \, \ottnt{e'}}{}{}{}{\ottcom{BinExp}}\ottprodnewline
 \ottprodline{|}{\ottnt{e} \, \ottnt{postOp}}{}{}{}{\ottcom{PostExp}}\ottprodnewline
 \ottprodline{|}{\ottnt{preOp} \, \ottnt{e}}{}{}{}{\ottcom{PreExp}}\ottprodnewline
@@ -80,16 +76,20 @@
 \ottprodline{|}{\ottnt{e}  \ottsym{.}  \ottmv{l}}{}{}{}{\ottcom{PropExp}}\ottprodnewline
 \ottprodline{|}{\ottnt{e}  \ottsym{[}  \ottnt{e_{{\mathrm{1}}}}  \ottsym{]}}{}{}{}{\ottcom{ArrExp}}\ottprodnewline
 \ottprodline{|}{\ottnt{e}  \ottsym{(}  \ottnt{e_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{e_{{\mathrm{2}}}}  \ottsym{)}}{}{}{}{\ottcom{CallExp}}\ottprodnewline
-\ottprodline{|}{\ottsym{[}  \ottnt{e_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{e_{{\mathrm{2}}}}  \ottsym{]}}{}{}{}{\ottcom{ArrayExp}}}
+\ottprodline{|}{\ottsym{[}  \ottnt{e_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{e_{{\mathrm{2}}}}  \ottsym{]}}{}{}{}{\ottcom{ArrayExp}}\ottprodnewline
+\ottprodline{|}{\ottnt{assignTarget}}{}{}{}{}\ottprodnewline
+\ottprodline{|}{\ottnt{func}}{}{}{}{}}
 
 \newcommand{\ottAss}{
 \ottrulehead{\approx}{::=}{\ottcom{Assignments}}\ottprodnewline
 \ottfirstprodline{|}{\ottsym{=}}{}{}{}{\ottcom{PlainAssign}}\ottprodnewline
 \ottprodline{|}{\ottnt{numOp}  \ottsym{=}}{}{}{}{\ottcom{NumAssign}}}
 
-\newcommand{\ottvarDec}{
-\ottrulehead{\ottnt{varDec}}{::=}{}\ottprodnewline
-\ottfirstprodline{|}{\ottkw{var} \, \ottnt{vd_{{\mathrm{1}}}}  \ottsym{,} \, ... \, \ottsym{,}  \ottnt{vd_{\ottmv{k}}}}{}{}{}{\ottcom{VarDeclaration}}}
+\newcommand{\ottassignTarget}{
+\ottrulehead{\ottnt{assignTarget}}{::=}{\ottcom{Assignment Targets}}\ottprodnewline
+\ottfirstprodline{|}{\ottnt{obj}  \ottsym{.}  \ottmv{l}}{}{}{}{\ottcom{DotAssign}}\ottprodnewline
+\ottprodline{|}{\ottnt{arr}  \ottsym{[}  \ottnt{n}  \ottsym{]}}{}{}{}{\ottcom{ArrAssign}}\ottprodnewline
+\ottprodline{|}{\ottmv{id}}{}{}{}{\ottcom{IDAssign}}}
 
 \newcommand{\ottm}{
 \ottrulehead{\ottnt{m}}{::=}{\ottcom{Statement}}\ottprodnewline
@@ -104,7 +104,16 @@
 \ottprodline{|}{\ottkw{while} \, \ottsym{(}  \ottnt{e}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{\}}}{}{}{}{\ottcom{WhileStatement}}\ottprodnewline
 \ottprodline{|}{\ottkw{for} \, \ottsym{(}  \ottnt{e_{{\mathrm{1}}}}  \ottsym{;}  \ottnt{e_{{\mathrm{2}}}}  \ottsym{;}  \ottnt{e_{{\mathrm{3}}}}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{\}}}{}{}{}{\ottcom{ForStatement1}}\ottprodnewline
 \ottprodline{|}{\ottkw{for} \, \ottsym{(}  \ottnt{varDec}  \ottsym{;}  \ottnt{e_{{\mathrm{2}}}}  \ottsym{;}  \ottnt{e_{{\mathrm{3}}}}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{\}}}{}{}{}{\ottcom{ForStatement2}}\ottprodnewline
-\ottprodline{|}{ \epsilon }{}{}{}{\ottcom{EmptyStatement}}}
+\ottprodline{|}{\ottkw{eps}}{}{}{}{\ottcom{EmptyStatement}}}
+
+\newcommand{\ottvd}{
+\ottrulehead{\ottnt{vd}}{::=}{\ottcom{VariableDeclaration}}\ottprodnewline
+\ottfirstprodline{|}{\ottmv{id}}{}{}{}{\ottcom{Declaration}}\ottprodnewline
+\ottprodline{|}{\ottmv{id}  \ottsym{=}  \ottnt{e}}{}{}{}{\ottcom{Definition}}}
+
+\newcommand{\ottvarDec}{
+\ottrulehead{\ottnt{varDec}}{::=}{}\ottprodnewline
+\ottfirstprodline{|}{ \epsilon }{}{}{}{\ottcom{VarDeclaration}}}
 
 \newcommand{\ottret}{
 \ottrulehead{\ottnt{ret}}{::=}{}\ottprodnewline
@@ -160,6 +169,23 @@
 \ottrulehead{\ottnt{postOp}}{::=}{\ottcom{PostfixOperation}}\ottprodnewline
 \ottfirstprodline{|}{ \!\!\!-\!\!- }{}{}{}{\ottcom{PostDecrement}}\ottprodnewline
 \ottprodline{|}{ \!\!+\!\!+ }{}{}{}{\ottcom{PostIncrement}}}
+
+\newcommand{\otta}{
+\ottrulehead{\ottnt{a}}{::=}{\ottcom{Heap Addresses}}\ottprodnewline
+\ottfirstprodline{|}{\ottnt{s}  \ottsym{(}  \ottmv{id}  \ottsym{)}}{}{}{}{\ottcom{StoreAddress}}\ottprodnewline
+\ottprodline{|}{\ottnt{a}  \ottsym{[}  \ottmv{l}  \ottsym{]}}{}{}{}{\ottcom{PropAddress}}\ottprodnewline
+\ottprodline{|}{\ottnt{a}  \ottsym{[}  \ottnt{n}  \ottsym{]}}{}{}{}{\ottcom{ArrAddress}}\ottprodnewline
+\ottprodline{|}{\ottkw{addr} \, \ottsym{(}  \ottnt{e}  \ottsym{,}  \ottnt{s}  \ottsym{,}  \Theta  \ottsym{)}}{}{}{}{\ottcom{AddrLookup}}}
+
+\newcommand{\otts}{
+\ottrulehead{\ottnt{s}}{::=}{\ottcom{Store}}\ottprodnewline
+\ottfirstprodline{|}{ \ottnt{s_{{\mathrm{1}}}}  \oplus  \ottnt{s_{{\mathrm{2}}}} }{}{}{}{\ottcom{StoreUnion}}\ottprodnewline
+\ottprodline{|}{\ottsym{\{}  \ottmv{id_{{\mathrm{1}}}}  \ottsym{:}  \ottnt{a_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{id_{\ottmv{i}}}  \ottsym{:}  \ottnt{a_{\ottmv{i}}}  \ottsym{\}}}{}{}{}{\ottcom{LiteralStore}}}
+
+\newcommand{\otth}{
+\ottrulehead{\Theta}{::=}{\ottcom{Heap}}\ottprodnewline
+\ottfirstprodline{|}{ \Theta_{{\mathrm{1}}}  \oplus  \Theta_{{\mathrm{2}}} }{}{}{}{\ottcom{HeapUnion}}\ottprodnewline
+\ottprodline{|}{\ottsym{\{}  \ottnt{a_{{\mathrm{1}}}}  \ottsym{:}  \ottnt{v_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{a_{\ottmv{k}}}  \ottsym{:}  \ottnt{v_{\ottmv{k}}}  \ottsym{\}}}{}{}{}{\ottcom{LiteralHeap}}}
 
 \newcommand{\ottb}{
 \ottrulehead{\ottnt{b}}{::=}{}\ottprodnewline
@@ -219,12 +245,19 @@
 \ottprodline{|}{\ottkw{var}}{}{}{}{}\ottprodnewline
 \ottprodline{|}{ \varnothing }{}{}{}{}}
 
+\newcommand{\ottmaps}{
+\ottrulehead{\ottnt{maps}}{::=}{}\ottprodnewline
+\ottfirstprodline{|}{\Gamma}{}{}{}{}\ottprodnewline
+\ottprodline{|}{\Theta}{}{}{}{}\ottprodnewline
+\ottprodline{|}{\ottnt{s}}{}{}{}{}\ottprodnewline
+\ottprodline{|}{ \ottnt{maps_{{\mathrm{1}}}}  \oplus  \ottnt{maps_{{\mathrm{2}}}} }{}{}{}{}}
+
 \newcommand{\ottsv}{
 \ottrulehead{\ottnt{sv}}{::=}{\ottcom{SetVar}}\ottprodnewline
 \ottfirstprodline{|}{\ottnt{C}}{}{}{}{\ottcom{ConstraintSet}}\ottprodnewline
 \ottprodline{|}{\ottkw{X}}{}{}{}{\ottcom{VariableSet}}\ottprodnewline
-\ottprodline{|}{\ottsym{dom(}  \Gamma  \ottsym{)}}{}{}{}{}\ottprodnewline
-\ottprodline{|}{\ottsym{codom(}  \Gamma  \ottsym{)}}{}{}{}{}}
+\ottprodline{|}{\ottsym{dom(}  \ottnt{maps}  \ottsym{)}}{}{}{}{}\ottprodnewline
+\ottprodline{|}{\ottsym{codom(}  \ottnt{maps}  \ottsym{)}}{}{}{}{}}
 
 \newcommand{\ottfv}{
 \ottrulehead{\ottnt{fv}}{::=}{\ottcom{FormulaVar}}\ottprodnewline
@@ -234,7 +267,8 @@
 \ottprodline{|}{\ottnt{T}}{}{}{}{\ottcom{TypeFormulaVar}}\ottprodnewline
 \ottprodline{|}{\ottmv{id}}{}{}{}{\ottcom{IDFormulaVar}}\ottprodnewline
 \ottprodline{|}{\ottnt{func}}{}{}{}{\ottcom{FuncFormulaVar}}\ottprodnewline
-\ottprodline{|}{\ottnt{e}}{}{}{}{\ottcom{ExpFormulaVar}}}
+\ottprodline{|}{\ottnt{e}}{}{}{}{\ottcom{ExpFormulaVar}}\ottprodnewline
+\ottprodline{|}{\ottnt{a}}{}{}{}{}}
 
 \newcommand{\ottn}{
 \ottrulehead{\ottnt{n}}{::=}{}\ottprodnewline
@@ -267,11 +301,13 @@
 \ottprodline{|}{ \ottnt{fv}  \in  \ottnt{sv_{{\mathrm{2}}}} }{}{}{}{\ottcom{Contains}}\ottprodnewline
 \ottprodline{|}{ \ottnt{fv}  \notin  \ottnt{sv_{{\mathrm{2}}}} }{}{}{}{\ottcom{NotContains}}\ottprodnewline
 \ottprodline{|}{\ottnt{T} \, \ottkw{is} \, \ottkw{fresh}}{}{}{}{\ottcom{Fresh}}\ottprodnewline
-\ottprodline{|}{\ottnt{T_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{T_{\ottmv{i}}} \, \ottkw{are} \, \ottkw{fresh}}{}{}{}{\ottcom{Freshs}}}
+\ottprodline{|}{\ottnt{T_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{T_{\ottmv{i}}} \, \ottkw{are} \, \ottkw{fresh}}{}{}{}{\ottcom{Freshs}}\ottprodnewline
+\ottprodline{|}{\ottnt{a} \, \ottkw{is} \, \ottkw{fresh}}{}{}{}{\ottcom{FreshAddress}}\ottprodnewline
+\ottprodline{|}{\ottsym{a1,}  \ottsym{..,}  \ottnt{a_{\ottmv{i}}} \, \ottkw{are} \, \ottkw{fresh}}{}{}{}{\ottcom{FreshAddresses}}}
 
 \newcommand{\ottJop}{
 \ottrulehead{\ottnt{Jop}}{::=}{}\ottprodnewline
-\ottfirstprodline{|}{ \langle  \ottnt{m} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{m'} ,  \ottnt{s'}  \rangle }{}{}{}{}\ottprodnewline
+\ottfirstprodline{|}{ \langle  \ottnt{m} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{m'} ,  \ottnt{s'} ,  \Theta'  \rangle }{}{}{}{}\ottprodnewline
 \ottprodline{|}{ \Gamma   \vdash   \ottnt{e}  :  \ottnt{T} \hspace{5pt}| _{  \ottnt{C}  } \hspace{5pt}  \Gamma' }{}{}{}{}\ottprodnewline
 \ottprodline{|}{ \Gamma   \vdash   \ottnt{m}  \hspace{5pt}| _{  \ottnt{C}  } \hspace{5pt}  \Gamma' }{}{}{}{}}
 
@@ -284,13 +320,15 @@
 \ottfirstprodline{|}{\ottmv{termvar}}{}{}{}{}\ottprodnewline
 \ottprodline{|}{\ottmv{index}}{}{}{}{}\ottprodnewline
 \ottprodline{|}{\ottnt{v}}{}{}{}{}\ottprodnewline
+\ottprodline{|}{\ottnt{obj}}{}{}{}{}\ottprodnewline
+\ottprodline{|}{\ottnt{arr}}{}{}{}{}\ottprodnewline
 \ottprodline{|}{\ottnt{func}}{}{}{}{}\ottprodnewline
-\ottprodline{|}{\ottnt{s}}{}{}{}{}\ottprodnewline
-\ottprodline{|}{\ottnt{vd}}{}{}{}{}\ottprodnewline
 \ottprodline{|}{\ottnt{e}}{}{}{}{}\ottprodnewline
 \ottprodline{|}{\approx}{}{}{}{}\ottprodnewline
-\ottprodline{|}{\ottnt{varDec}}{}{}{}{}\ottprodnewline
+\ottprodline{|}{\ottnt{assignTarget}}{}{}{}{}\ottprodnewline
 \ottprodline{|}{\ottnt{m}}{}{}{}{}\ottprodnewline
+\ottprodline{|}{\ottnt{vd}}{}{}{}{}\ottprodnewline
+\ottprodline{|}{\ottnt{varDec}}{}{}{}{}\ottprodnewline
 \ottprodline{|}{\ottnt{ret}}{}{}{}{}\ottprodnewline
 \ottprodline{|}{\ottnt{op}}{}{}{}{}\ottprodnewline
 \ottprodline{|}{\ottnt{numOp}}{}{}{}{}\ottprodnewline
@@ -300,12 +338,16 @@
 \ottprodline{|}{\ottnt{preOp}}{}{}{}{}\ottprodnewline
 \ottprodline{|}{\ottnt{preNum}}{}{}{}{}\ottprodnewline
 \ottprodline{|}{\ottnt{postOp}}{}{}{}{}\ottprodnewline
+\ottprodline{|}{\ottnt{a}}{}{}{}{}\ottprodnewline
+\ottprodline{|}{\ottnt{s}}{}{}{}{}\ottprodnewline
+\ottprodline{|}{\Theta}{}{}{}{}\ottprodnewline
 \ottprodline{|}{\ottnt{b}}{}{}{}{}\ottprodnewline
 \ottprodline{|}{\ottnt{T}}{}{}{}{}\ottprodnewline
 \ottprodline{|}{\Gamma}{}{}{}{}\ottprodnewline
 \ottprodline{|}{\ottnt{C}}{}{}{}{}\ottprodnewline
 \ottprodline{|}{\ottnt{const}}{}{}{}{}\ottprodnewline
 \ottprodline{|}{\ottnt{terminals}}{}{}{}{}\ottprodnewline
+\ottprodline{|}{\ottnt{maps}}{}{}{}{}\ottprodnewline
 \ottprodline{|}{\ottnt{sv}}{}{}{}{}\ottprodnewline
 \ottprodline{|}{\ottnt{fv}}{}{}{}{}\ottprodnewline
 \ottprodline{|}{\ottnt{n}}{}{}{}{}\ottprodnewline
@@ -314,13 +356,15 @@
 
 \newcommand{\ottgrammar}{\ottgrammartabular{
 \ottv\ottinterrule
+\ottobj\ottinterrule
+\ottarr\ottinterrule
 \ottfunc\ottinterrule
-\otts\ottinterrule
-\ottvd\ottinterrule
 \otte\ottinterrule
 \ottAss\ottinterrule
-\ottvarDec\ottinterrule
+\ottassignTarget\ottinterrule
 \ottm\ottinterrule
+\ottvd\ottinterrule
+\ottvarDec\ottinterrule
 \ottret\ottinterrule
 \ottop\ottinterrule
 \ottnumOp\ottinterrule
@@ -330,12 +374,16 @@
 \ottpreOp\ottinterrule
 \ottpreNum\ottinterrule
 \ottpostOp\ottinterrule
+\otta\ottinterrule
+\otts\ottinterrule
+\otth\ottinterrule
 \ottb\ottinterrule
 \ottT\ottinterrule
 \ottG\ottinterrule
 \ottC\ottinterrule
 \ottconst\ottinterrule
 \ottterminals\ottinterrule
+\ottmaps\ottinterrule
 \ottsv\ottinterrule
 \ottfv\ottinterrule
 \ottn\ottinterrule
@@ -351,112 +399,141 @@
 %% defn reduce
 \newcommand{\ottdruleSeqOne}[1]{\ottdrule[#1]{%
 }{
- \langle  \ottnt{v}  \ottsym{;}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{;} \, .. \, \ottsym{;}  \ottnt{m_{\ottmv{i}}} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{m_{{\mathrm{1}}}}  \ottsym{;} \, .. \, \ottsym{;}  \ottnt{m_{\ottmv{i}}} ,  \ottnt{s}  \rangle }{%
+ \langle  \ottnt{v}  \ottsym{;}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{;} \, .. \, \ottsym{;}  \ottnt{m_{\ottmv{i}}} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{m_{{\mathrm{1}}}}  \ottsym{;} \, .. \, \ottsym{;}  \ottnt{m_{\ottmv{i}}} ,  \ottnt{s} ,  \Theta  \rangle }{%
 {\ottdrulename{Seq1}}{}%
 }}
 
 
 \newcommand{\ottdruleSeqTwo}[1]{\ottdrule[#1]{%
-\ottpremise{ \langle  \ottnt{m_{{\mathrm{1}}}} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{m'_{{\mathrm{1}}}} ,  \ottnt{s'}  \rangle }%
+\ottpremise{ \langle  \ottnt{m_{{\mathrm{1}}}} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{m'_{{\mathrm{1}}}} ,  \ottnt{s'} ,  \Theta'  \rangle }%
 }{
- \langle  \ottnt{m_{{\mathrm{1}}}}  \ottsym{;}  \ottnt{m_{{\mathrm{2}}}}  \ottsym{;} \, .. \, \ottsym{;}  \ottnt{m_{\ottmv{i}}} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{m'_{{\mathrm{1}}}}  \ottsym{;}  \ottnt{m_{{\mathrm{2}}}}  \ottsym{;} \, .. \, \ottsym{;}  \ottnt{m_{\ottmv{i}}} ,  \ottnt{s'}  \rangle }{%
+ \langle  \ottnt{m_{{\mathrm{1}}}}  \ottsym{;}  \ottnt{m_{{\mathrm{2}}}}  \ottsym{;} \, .. \, \ottsym{;}  \ottnt{m_{\ottmv{i}}} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{m'_{{\mathrm{1}}}}  \ottsym{;}  \ottnt{m_{{\mathrm{2}}}}  \ottsym{;} \, .. \, \ottsym{;}  \ottnt{m_{\ottmv{i}}} ,  \ottnt{s'} ,  \Theta'  \rangle }{%
 {\ottdrulename{Seq2}}{}%
 }}
 
 
 \newcommand{\ottdruleAssignOne}[1]{\ottdrule[#1]{%
-\ottpremise{ \langle  \ottnt{e} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{e'} ,  \ottnt{s'}  \rangle }%
+\ottpremise{ \langle  \ottnt{e} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{e'} ,  \ottnt{s'} ,  \Theta'  \rangle }%
 }{
- \langle  \ottmv{id} \, \approx \, \ottnt{e} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottmv{id} \, \approx \, \ottnt{e'} ,  \ottnt{s'}  \rangle }{%
+ \langle  \ottnt{assignTarget} \, \approx \, \ottnt{e} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{assignTarget} \, \approx \, \ottnt{e'} ,  \ottnt{s'} ,  \Theta'  \rangle }{%
 {\ottdrulename{Assign1}}{}%
 }}
 
 
-\newcommand{\ottdruleAssign}[1]{\ottdrule[#1]{%
+\newcommand{\ottdruleAssignTwo}[1]{\ottdrule[#1]{%
+\ottpremise{ \langle  \ottnt{e} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{e'} ,  \ottnt{s'} ,  \Theta'  \rangle }%
 }{
- \langle  \ottmv{id} \, \ottsym{=} \, \ottnt{v} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{v} ,  \ottsym{put(}  \ottnt{s}  \ottsym{,}  \ottsym{[}  \ottmv{id}  \ottsym{]}  \ottsym{,}  \ottsym{[}  \ottnt{v}  \ottsym{]}  \ottsym{)}  \rangle }{%
-{\ottdrulename{Assign}}{}%
+ \langle  \ottnt{e} \, \approx \, \ottnt{e_{{\mathrm{1}}}} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{e'} \, \approx \, \ottnt{e_{{\mathrm{1}}}} ,  \ottnt{s'} ,  \Theta'  \rangle }{%
+{\ottdrulename{Assign2}}{}%
 }}
 
 
 \newcommand{\ottdruleAssignNum}[1]{\ottdrule[#1]{%
 }{
- \langle  \ottmv{id} \, \ottnt{numOp}  \ottsym{=} \, \ottnt{v} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottmv{id} \, \ottsym{=} \, \ottmv{id} \, \ottnt{numOp} \, \ottnt{v} ,  \ottnt{s}  \rangle }{%
+ \langle  \ottnt{assignTarget} \, \ottnt{numOp}  \ottsym{=} \, \ottnt{v} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{assignTarget} \, \ottsym{=} \, \ottnt{assignTarget} \, \ottnt{numOp} \, \ottnt{v} ,  \ottnt{s} ,  \Theta  \rangle }{%
 {\ottdrulename{AssignNum}}{}%
 }}
 
 
-\newcommand{\ottdruleDeref}[1]{\ottdrule[#1]{%
+\newcommand{\ottdruleAssignUndef}[1]{\ottdrule[#1]{%
+\ottpremise{ \ottmv{id}  \notin  \ottsym{dom(}  \ottnt{s}  \ottsym{)} }%
+\ottpremise{\ottnt{a} \, \ottkw{is} \, \ottkw{fresh}}%
 }{
- \langle  \ottmv{id} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottsym{get(}  \ottnt{s}  \ottsym{,}  \ottmv{id}  \ottsym{)} ,  \ottnt{s}  \rangle }{%
+ \langle  \ottmv{id} \, \ottsym{=} \, \ottnt{v} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{v} ,   \ottnt{s}  \oplus  \ottsym{\{}  \ottmv{id}  \ottsym{:}  \ottnt{a}  \ottsym{\}}  ,   \Theta  \oplus  \ottsym{\{}  \ottnt{a}  \ottsym{:}  \ottnt{v}  \ottsym{\}}   \rangle }{%
+{\ottdrulename{AssignUndef}}{}%
+}}
+
+
+\newcommand{\ottdruleAssign}[1]{\ottdrule[#1]{%
+}{
+ \langle  \ottnt{assignTarget} \, \ottsym{=} \, \ottnt{v} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{v} ,  \ottnt{s} ,   \Theta  \oplus  \ottsym{\{}  \ottkw{addr} \, \ottsym{(}  \ottnt{assignTarget}  \ottsym{,}  \ottnt{s}  \ottsym{,}  \Theta  \ottsym{)}  \ottsym{:}  \ottnt{v}  \ottsym{\}}   \rangle }{%
+{\ottdrulename{Assign}}{}%
+}}
+
+
+\newcommand{\ottdruleDeref}[1]{\ottdrule[#1]{%
+\ottpremise{ \ottmv{id}  \in  \ottsym{dom(}  \ottnt{s}  \ottsym{)} }%
+\ottpremise{ \ottnt{s}  \ottsym{(}  \ottmv{id}  \ottsym{)}  \in  \ottsym{dom(}  \Theta  \ottsym{)} }%
+}{
+ \langle  \ottmv{id} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \Theta  \ottsym{(}  \ottnt{s}  \ottsym{(}  \ottmv{id}  \ottsym{)}  \ottsym{)} ,  \ottnt{s} ,  \Theta  \rangle }{%
 {\ottdrulename{Deref}}{}%
 }}
 
 
 \newcommand{\ottdruleVarOne}[1]{\ottdrule[#1]{%
+\ottpremise{\ottnt{a} \, \ottkw{is} \, \ottkw{fresh}}%
 }{
- \langle  \ottkw{var} \, \ottmv{id} ,  \ottnt{s}  \rangle  \rightarrow  \langle   \epsilon  ,  \ottnt{s}  \rangle }{%
+ \langle   \epsilon  ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottkw{eps} ,   \ottnt{s}  \oplus  \ottsym{\{}  \ottmv{id}  \ottsym{:}  \ottnt{a}  \ottsym{\}}  ,   \Theta  \oplus  \ottsym{\{}  \ottnt{a}  \ottsym{:}  \ottkw{undefined}  \ottsym{\}}   \rangle }{%
 {\ottdrulename{Var1}}{}%
 }}
 
 
 \newcommand{\ottdruleVarTwo}[1]{\ottdrule[#1]{%
-\ottpremise{ \langle  \ottnt{e} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{e'} ,  \ottnt{s'}  \rangle }%
+\ottpremise{ \langle  \ottnt{e} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{e'} ,  \ottnt{s'} ,  \Theta'  \rangle }%
 }{
- \langle  \ottkw{var} \, \ottmv{id}  \ottsym{=}  \ottnt{e} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottkw{var} \, \ottmv{id}  \ottsym{=}  \ottnt{e'} ,  \ottnt{s}  \rangle }{%
+ \langle   \epsilon  ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle   \epsilon  ,  \ottnt{s} ,  \Theta'  \rangle }{%
 {\ottdrulename{Var2}}{}%
 }}
 
 
 \newcommand{\ottdruleVarThree}[1]{\ottdrule[#1]{%
+\ottpremise{\ottnt{a} \, \ottkw{is} \, \ottkw{fresh}}%
 }{
- \langle  \ottkw{var} \, \ottmv{id}  \ottsym{=}  \ottnt{v} ,  \ottnt{s}  \rangle  \rightarrow  \langle   \epsilon  ,  \ottsym{put(}  \ottnt{s}  \ottsym{,}  \ottsym{[}  \ottmv{id}  \ottsym{]}  \ottsym{,}  \ottsym{[}  \ottnt{v}  \ottsym{]}  \ottsym{)}  \rangle }{%
+ \langle   \epsilon  ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottkw{eps} ,   \ottnt{s}  \oplus  \ottsym{\{}  \ottmv{id}  \ottsym{:}  \ottnt{a}  \ottsym{\}}  ,   \Theta  \oplus  \ottsym{\{}  \ottnt{a}  \ottsym{:}  \ottnt{v}  \ottsym{\}}   \rangle }{%
 {\ottdrulename{Var3}}{}%
 }}
 
 
 \newcommand{\ottdruleVarFour}[1]{\ottdrule[#1]{%
 }{
- \langle  \ottkw{var} \, \ottnt{vd}  \ottsym{,}  \ottnt{vd'} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottkw{var} \, \ottnt{vd}  \ottsym{;}  \ottkw{var} \, \ottnt{vd'} ,  \ottnt{s}  \rangle }{%
+ \langle   \epsilon  ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle   \epsilon   \ottsym{;}   \epsilon  ,  \ottnt{s} ,  \Theta  \rangle }{%
 {\ottdrulename{Var4}}{}%
 }}
 
 
-\newcommand{\ottdruleFuncDef}[1]{\ottdrule[#1]{%
+\newcommand{\ottdruleFunc}[1]{\ottdrule[#1]{%
 }{
- \langle  \ottsym{@def} \, \ottkw{function} \, \ottmv{x}  \ottsym{(}  \ottmv{y_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{y_{\ottmv{i}}}  \ottsym{)}  \ottsym{\{}  \ottnt{m}  \ottsym{\}} ,  \ottnt{s}  \rangle  \rightarrow  \langle   \epsilon  ,  \ottsym{put(}  \ottnt{s}  \ottsym{,}  \ottsym{[}  \ottmv{x}  \ottsym{]}  \ottsym{,}  \ottsym{[}  \ottkw{function} \, \ottsym{(}  \ottmv{y_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{y_{\ottmv{i}}}  \ottsym{)}  \ottsym{\{}  \ottnt{m}  \ottsym{\}}  \ottsym{]}  \ottsym{)}  \rangle }{%
+ \langle  \ottnt{func} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle   \langle  \ottnt{func} ,  \ottnt{s}  \rangle  ,  \ottnt{s} ,  \Theta  \rangle }{%
+{\ottdrulename{Func}}{}%
+}}
+
+
+\newcommand{\ottdruleFuncDef}[1]{\ottdrule[#1]{%
+\ottpremise{\ottnt{a} \, \ottkw{is} \, \ottkw{fresh}}%
+}{
+ \langle  \ottsym{@def} \, \ottkw{function} \, \ottmv{x}  \ottsym{(}  \ottmv{y_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{y_{\ottmv{i}}}  \ottsym{)}  \ottsym{\{}  \ottnt{m}  \ottsym{\}} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottkw{eps} ,   \ottnt{s}  \oplus  \ottsym{\{}  \ottmv{x}  \ottsym{:}  \ottnt{a}  \ottsym{\}}  ,   \Theta  \oplus  \ottsym{\{}  \ottnt{a}  \ottsym{:}   \langle  \ottkw{function} \, \ottsym{(}  \ottmv{y_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{y_{\ottmv{i}}}  \ottsym{)}  \ottsym{\{}  \ottnt{m}  \ottsym{\}} ,  \ottnt{s}  \rangle   \ottsym{\}}   \rangle }{%
 {\ottdrulename{FuncDef}}{}%
 }}
 
 
 \newcommand{\ottdruleUnOpOne}[1]{\ottdrule[#1]{%
-\ottpremise{ \langle  \ottnt{e} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{e'} ,  \ottnt{s'}  \rangle }%
+\ottpremise{ \langle  \ottnt{e} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{e'} ,  \ottnt{s'} ,  \Theta'  \rangle }%
 }{
- \langle  \ottnt{preOp} \, \ottnt{e_{{\mathrm{1}}}} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{preOp} \, \ottnt{e'_{{\mathrm{1}}}} ,  \ottnt{s'}  \rangle }{%
+ \langle  \ottnt{preOp} \, \ottnt{e_{{\mathrm{1}}}} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{preOp} \, \ottnt{e'_{{\mathrm{1}}}} ,  \ottnt{s'} ,  \Theta'  \rangle }{%
 {\ottdrulename{UnOp1}}{}%
 }}
 
 
 \newcommand{\ottdruleUnOpTwo}[1]{\ottdrule[#1]{%
-\ottpremise{ \langle  \ottnt{e} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{e'} ,  \ottnt{s'}  \rangle }%
+\ottpremise{ \langle  \ottnt{e} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{e'} ,  \ottnt{s'} ,  \Theta'  \rangle }%
 }{
- \langle  \ottnt{e_{{\mathrm{1}}}} \, \ottnt{postOp} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{e'_{{\mathrm{1}}}} \, \ottnt{postOp} ,  \ottnt{s'}  \rangle }{%
+ \langle  \ottnt{e_{{\mathrm{1}}}} \, \ottnt{postOp} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{e'_{{\mathrm{1}}}} \, \ottnt{postOp} ,  \ottnt{s'} ,  \Theta'  \rangle }{%
 {\ottdrulename{UnOp2}}{}%
 }}
 
 
 \newcommand{\ottdruleBinOpOne}[1]{\ottdrule[#1]{%
-\ottpremise{ \langle  \ottnt{e_{{\mathrm{1}}}} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{e'_{{\mathrm{1}}}} ,  \ottnt{s'}  \rangle }%
+\ottpremise{ \langle  \ottnt{e_{{\mathrm{1}}}} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{e'_{{\mathrm{1}}}} ,  \ottnt{s'} ,  \Theta'  \rangle }%
 }{
- \langle  \ottnt{e_{{\mathrm{1}}}} \, \ottnt{op} \, \ottnt{e_{{\mathrm{2}}}} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{e'_{{\mathrm{1}}}} \, \ottnt{op} \, \ottnt{e_{{\mathrm{2}}}} ,  \ottnt{s'}  \rangle }{%
+ \langle  \ottnt{e_{{\mathrm{1}}}} \, \ottnt{op} \, \ottnt{e_{{\mathrm{2}}}} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{e'_{{\mathrm{1}}}} \, \ottnt{op} \, \ottnt{e_{{\mathrm{2}}}} ,  \ottnt{s'} ,  \Theta'  \rangle }{%
 {\ottdrulename{BinOp1}}{}%
 }}
 
 
 \newcommand{\ottdruleBinOpTwo}[1]{\ottdrule[#1]{%
-\ottpremise{ \langle  \ottnt{e_{{\mathrm{2}}}} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{e'_{{\mathrm{2}}}} ,  \ottnt{s'}  \rangle }%
+\ottpremise{ \langle  \ottnt{e_{{\mathrm{2}}}} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{e'_{{\mathrm{2}}}} ,  \ottnt{s'} ,  \Theta'  \rangle }%
 }{
- \langle  \ottnt{v} \, \ottnt{op} \, \ottnt{e_{{\mathrm{2}}}} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{v} \, \ottnt{op} \, \ottnt{e'_{{\mathrm{2}}}} ,  \ottnt{s'}  \rangle }{%
+ \langle  \ottnt{v} \, \ottnt{op} \, \ottnt{e_{{\mathrm{2}}}} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{v} \, \ottnt{op} \, \ottnt{e'_{{\mathrm{2}}}} ,  \ottnt{s'} ,  \Theta'  \rangle }{%
 {\ottdrulename{BinOp2}}{}%
 }}
 
@@ -464,7 +541,7 @@
 \newcommand{\ottdruleBinOpThree}[1]{\ottdrule[#1]{%
 \ottpremise{\ottnt{n_{{\mathrm{1}}}} \, \ottnt{op} \, \ottnt{n_{{\mathrm{2}}}}  \ottsym{=}  \ottnt{n}}%
 }{
- \langle  \ottnt{n_{{\mathrm{1}}}} \, \ottnt{op} \, \ottnt{n_{{\mathrm{2}}}} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{n} ,  \ottnt{s}  \rangle }{%
+ \langle  \ottnt{n_{{\mathrm{1}}}} \, \ottnt{op} \, \ottnt{n_{{\mathrm{2}}}} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{n} ,  \ottnt{s} ,  \Theta  \rangle }{%
 {\ottdrulename{BinOp3}}{}%
 }}
 
@@ -472,7 +549,7 @@
 \newcommand{\ottdruleBoolNeg}[1]{\ottdrule[#1]{%
 \ottpremise{ !\!  \, \ottnt{b_{{\mathrm{1}}}}  \ottsym{=}  \ottnt{b_{{\mathrm{2}}}}}%
 }{
- \langle   !\!  \, \ottnt{b_{{\mathrm{1}}}} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{b_{{\mathrm{2}}}} ,  \ottnt{s}  \rangle }{%
+ \langle   !\!  \, \ottnt{b_{{\mathrm{1}}}} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{b_{{\mathrm{2}}}} ,  \ottnt{s} ,  \Theta  \rangle }{%
 {\ottdrulename{BoolNeg}}{}%
 }}
 
@@ -480,167 +557,215 @@
 \newcommand{\ottdruleNumNeg}[1]{\ottdrule[#1]{%
 \ottpremise{ -\!  \, \ottnt{n_{{\mathrm{1}}}}  \ottsym{=}  \ottnt{n}}%
 }{
- \langle   -\!  \, \ottnt{n_{{\mathrm{1}}}} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{n} ,  \ottnt{s}  \rangle }{%
+ \langle   -\!  \, \ottnt{n_{{\mathrm{1}}}} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{n} ,  \ottnt{s} ,  \Theta  \rangle }{%
 {\ottdrulename{NumNeg}}{}%
 }}
 
 
 \newcommand{\ottdrulePostInc}[1]{\ottdrule[#1]{%
-\ottpremise{\ottsym{get(}  \ottnt{s}  \ottsym{,}  \ottmv{id}  \ottsym{)} \, \ottsym{+} \, \ottsym{1}  \ottsym{=}  \ottnt{v}}%
+\ottpremise{ \ottmv{id}  \in  \ottsym{dom(}  \ottnt{s}  \ottsym{)} }%
+\ottpremise{ \ottnt{s}  \ottsym{(}  \ottmv{id}  \ottsym{)}  \in  \ottsym{dom(}  \Theta  \ottsym{)} }%
+\ottpremise{\Theta  \ottsym{(}  \ottnt{s}  \ottsym{(}  \ottmv{id}  \ottsym{)}  \ottsym{)} \, \ottsym{+} \, \ottsym{1}  \ottsym{=}  \ottnt{v}}%
 }{
- \langle  \ottmv{id} \,  \!\!+\!\!+  ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottmv{id} ,  \ottsym{put(}  \ottnt{s}  \ottsym{,}  \ottsym{[}  \ottmv{id}  \ottsym{]}  \ottsym{,}  \ottsym{[}  \ottnt{v}  \ottsym{]}  \ottsym{)}  \rangle }{%
+ \langle  \ottmv{id} \,  \!\!+\!\!+  ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottmv{id} ,  \ottnt{s} ,   \Theta  \oplus  \ottsym{\{}  \ottnt{s}  \ottsym{(}  \ottmv{id}  \ottsym{)}  \ottsym{:}  \ottnt{v}  \ottsym{\}}   \rangle }{%
 {\ottdrulename{PostInc}}{}%
 }}
 
 
 \newcommand{\ottdrulePreInc}[1]{\ottdrule[#1]{%
-\ottpremise{\ottsym{get(}  \ottnt{s}  \ottsym{,}  \ottmv{id}  \ottsym{)} \, \ottsym{+} \, \ottsym{1}  \ottsym{=}  \ottnt{v}}%
+\ottpremise{ \ottmv{id}  \in  \ottsym{dom(}  \ottnt{s}  \ottsym{)} }%
+\ottpremise{ \ottnt{s}  \ottsym{(}  \ottmv{id}  \ottsym{)}  \in  \ottsym{dom(}  \Theta  \ottsym{)} }%
+\ottpremise{\Theta  \ottsym{(}  \ottnt{s}  \ottsym{(}  \ottmv{id}  \ottsym{)}  \ottsym{)} \, \ottsym{+} \, \ottsym{1}  \ottsym{=}  \ottnt{v}}%
 }{
- \langle   +\!\!+\!\!  \, \ottmv{id} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottmv{id} \, \ottsym{+} \, \ottsym{1} ,  \ottsym{put(}  \ottnt{s}  \ottsym{,}  \ottsym{[}  \ottmv{id}  \ottsym{]}  \ottsym{,}  \ottsym{[}  \ottnt{v}  \ottsym{]}  \ottsym{)}  \rangle }{%
+ \langle   +\!\!+\!\!  \, \ottmv{id} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottmv{id} \, \ottsym{+} \, \ottsym{1} ,  \ottnt{s} ,   \Theta  \oplus  \ottsym{\{}  \ottnt{s}  \ottsym{(}  \ottmv{id}  \ottsym{)}  \ottsym{:}  \ottnt{v}  \ottsym{\}}   \rangle }{%
 {\ottdrulename{PreInc}}{}%
 }}
 
 
 \newcommand{\ottdrulePostDec}[1]{\ottdrule[#1]{%
-\ottpremise{\ottsym{get(}  \ottnt{s}  \ottsym{,}  \ottmv{id}  \ottsym{)} \, \ottsym{-} \, \ottsym{1}  \ottsym{=}  \ottnt{v}}%
+\ottpremise{ \ottmv{id}  \in  \ottsym{dom(}  \ottnt{s}  \ottsym{)} }%
+\ottpremise{ \ottnt{s}  \ottsym{(}  \ottmv{id}  \ottsym{)}  \in  \ottsym{dom(}  \Theta  \ottsym{)} }%
+\ottpremise{\Theta  \ottsym{(}  \ottnt{s}  \ottsym{(}  \ottmv{id}  \ottsym{)}  \ottsym{)} \, \ottsym{-} \, \ottsym{1}  \ottsym{=}  \ottnt{v}}%
 }{
- \langle  \ottmv{id} \,  \!\!\!-\!\!-  ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottmv{id} ,  \ottsym{put(}  \ottnt{s}  \ottsym{,}  \ottsym{[}  \ottmv{id}  \ottsym{]}  \ottsym{,}  \ottsym{[}  \ottnt{v}  \ottsym{]}  \ottsym{)}  \rangle }{%
+ \langle  \ottmv{id} \,  \!\!\!-\!\!-  ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottmv{id} ,  \ottnt{s} ,   \Theta  \oplus  \ottsym{\{}  \ottnt{s}  \ottsym{(}  \ottmv{id}  \ottsym{)}  \ottsym{:}  \ottnt{v}  \ottsym{\}}   \rangle }{%
 {\ottdrulename{PostDec}}{}%
 }}
 
 
 \newcommand{\ottdrulePreDec}[1]{\ottdrule[#1]{%
-\ottpremise{\ottsym{get(}  \ottnt{s}  \ottsym{,}  \ottmv{id}  \ottsym{)} \, \ottsym{-} \, \ottsym{1}  \ottsym{=}  \ottnt{v}}%
+\ottpremise{ \ottmv{id}  \in  \ottsym{dom(}  \ottnt{s}  \ottsym{)} }%
+\ottpremise{ \ottnt{s}  \ottsym{(}  \ottmv{id}  \ottsym{)}  \in  \ottsym{dom(}  \Theta  \ottsym{)} }%
+\ottpremise{\Theta  \ottsym{(}  \ottnt{s}  \ottsym{(}  \ottmv{id}  \ottsym{)}  \ottsym{)} \, \ottsym{-} \, \ottsym{1}  \ottsym{=}  \ottnt{v}}%
 }{
- \langle   -\!\!-\!\!  \, \ottmv{id} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottmv{id} \, \ottsym{+} \, \ottsym{1} ,  \ottsym{put(}  \ottnt{s}  \ottsym{,}  \ottsym{[}  \ottmv{id}  \ottsym{]}  \ottsym{,}  \ottsym{[}  \ottnt{v}  \ottsym{]}  \ottsym{)}  \rangle }{%
+ \langle   -\!\!-\!\!  \, \ottmv{id} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottmv{id} \, \ottsym{+} \, \ottsym{1} ,  \ottnt{s} ,   \Theta  \oplus  \ottsym{\{}  \ottnt{s}  \ottsym{(}  \ottmv{id}  \ottsym{)}  \ottsym{:}  \ottnt{v}  \ottsym{\}}   \rangle }{%
 {\ottdrulename{PreDec}}{}%
 }}
 
 
 \newcommand{\ottdruleIfOne}[1]{\ottdrule[#1]{%
-\ottpremise{ \langle  \ottnt{e} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{e'} ,  \ottnt{s'}  \rangle }%
+\ottpremise{ \langle  \ottnt{e} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{e'} ,  \ottnt{s'} ,  \Theta'  \rangle }%
 }{
- \langle  \ottkw{if} \, \ottsym{(}  \ottnt{e}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{\}} \, \ottkw{else} \, \ottsym{\{}  \ottnt{m_{{\mathrm{2}}}}  \ottsym{\}} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottkw{if} \, \ottsym{(}  \ottnt{e'}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{\}} \, \ottkw{else} \, \ottsym{\{}  \ottnt{m_{{\mathrm{2}}}}  \ottsym{\}} ,  \ottnt{s'}  \rangle }{%
+ \langle  \ottkw{if} \, \ottsym{(}  \ottnt{e}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{\}} \, \ottkw{else} \, \ottsym{\{}  \ottnt{m_{{\mathrm{2}}}}  \ottsym{\}} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottkw{if} \, \ottsym{(}  \ottnt{e'}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{\}} \, \ottkw{else} \, \ottsym{\{}  \ottnt{m_{{\mathrm{2}}}}  \ottsym{\}} ,  \ottnt{s'} ,  \Theta'  \rangle }{%
 {\ottdrulename{If1}}{}%
 }}
 
 
 \newcommand{\ottdruleIfTwo}[1]{\ottdrule[#1]{%
 }{
- \langle  \ottkw{if} \, \ottsym{(}  \ottkw{true}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{\}} \, \ottkw{else} \, \ottsym{\{}  \ottnt{m_{{\mathrm{2}}}}  \ottsym{\}} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{m_{{\mathrm{1}}}} ,  \ottnt{s}  \rangle }{%
+ \langle  \ottkw{if} \, \ottsym{(}  \ottkw{true}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{\}} \, \ottkw{else} \, \ottsym{\{}  \ottnt{m_{{\mathrm{2}}}}  \ottsym{\}} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{m_{{\mathrm{1}}}} ,  \ottnt{s} ,  \Theta  \rangle }{%
 {\ottdrulename{If2}}{}%
 }}
 
 
 \newcommand{\ottdruleIfThree}[1]{\ottdrule[#1]{%
 }{
- \langle  \ottkw{if} \, \ottsym{(}  \ottkw{false}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{\}} \, \ottkw{else} \, \ottsym{\{}  \ottnt{m_{{\mathrm{2}}}}  \ottsym{\}} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{m_{{\mathrm{2}}}} ,  \ottnt{s}  \rangle }{%
+ \langle  \ottkw{if} \, \ottsym{(}  \ottkw{false}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{\}} \, \ottkw{else} \, \ottsym{\{}  \ottnt{m_{{\mathrm{2}}}}  \ottsym{\}} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{m_{{\mathrm{2}}}} ,  \ottnt{s} ,  \Theta  \rangle }{%
 {\ottdrulename{If3}}{}%
 }}
 
 
 \newcommand{\ottdruleIfFour}[1]{\ottdrule[#1]{%
 }{
- \langle  \ottkw{if} \, \ottsym{(}  \ottnt{e}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{\}} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottkw{if} \, \ottsym{(}  \ottnt{e}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{\}} \, \ottkw{else} \, \ottsym{\{}  \,  \ottsym{\}} ,  \ottnt{s'}  \rangle }{%
+ \langle  \ottkw{if} \, \ottsym{(}  \ottnt{e}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{\}} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottkw{if} \, \ottsym{(}  \ottnt{e}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{\}} \, \ottkw{else} \, \ottsym{\{}  \,  \ottsym{\}} ,  \ottnt{s} ,  \Theta  \rangle }{%
 {\ottdrulename{If4}}{}%
 }}
 
 
 \newcommand{\ottdruleWhile}[1]{\ottdrule[#1]{%
 }{
- \langle  \ottkw{while} \, \ottsym{(}  \ottnt{e}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{\}} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottkw{if} \, \ottsym{(}  \ottnt{e}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{;}  \ottkw{while} \, \ottsym{(}  \ottnt{e}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{\}}  \ottsym{\}} ,  \ottnt{s}  \rangle }{%
+ \langle  \ottkw{while} \, \ottsym{(}  \ottnt{e}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{\}} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottkw{if} \, \ottsym{(}  \ottnt{e}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{;}  \ottkw{while} \, \ottsym{(}  \ottnt{e}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{\}}  \ottsym{\}} ,  \ottnt{s} ,  \Theta  \rangle }{%
 {\ottdrulename{While}}{}%
 }}
 
 
 \newcommand{\ottdruleFor}[1]{\ottdrule[#1]{%
 }{
- \langle  \ottkw{for} \, \ottsym{(}  \ottnt{e_{{\mathrm{1}}}}  \ottsym{;}  \ottnt{e_{{\mathrm{2}}}}  \ottsym{;}  \ottnt{e_{{\mathrm{3}}}}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{\}} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{e_{{\mathrm{1}}}}  \ottsym{;}  \ottkw{if} \, \ottsym{(}  \ottnt{e_{{\mathrm{2}}}}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{;}  \ottnt{e_{{\mathrm{3}}}}  \ottsym{;}  \ottkw{while} \, \ottsym{(}  \ottnt{e_{{\mathrm{2}}}}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{;}  \ottnt{e_{{\mathrm{3}}}}  \ottsym{\}}  \ottsym{\}} ,  \ottnt{s}  \rangle }{%
+ \langle  \ottkw{for} \, \ottsym{(}  \ottnt{e_{{\mathrm{1}}}}  \ottsym{;}  \ottnt{e_{{\mathrm{2}}}}  \ottsym{;}  \ottnt{e_{{\mathrm{3}}}}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{\}} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{e_{{\mathrm{1}}}}  \ottsym{;}  \ottkw{if} \, \ottsym{(}  \ottnt{e_{{\mathrm{2}}}}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{;}  \ottnt{e_{{\mathrm{3}}}}  \ottsym{;}  \ottkw{while} \, \ottsym{(}  \ottnt{e_{{\mathrm{2}}}}  \ottsym{)}  \ottsym{\{}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{;}  \ottnt{e_{{\mathrm{3}}}}  \ottsym{\}}  \ottsym{\}} ,  \ottnt{s} ,  \Theta  \rangle }{%
 {\ottdrulename{For}}{}%
 }}
 
 
 \newcommand{\ottdruleObj}[1]{\ottdrule[#1]{%
-\ottpremise{ \langle  \ottnt{e} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{e'} ,  \ottnt{s'}  \rangle }%
+\ottpremise{ \langle  \ottnt{e} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{e'} ,  \ottnt{s'} ,  \Theta'  \rangle }%
 }{
- \langle  \ottsym{\{}  \ottmv{l_{{\mathrm{1}}}}  \ottsym{:}  \ottnt{v_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{l_{\ottmv{j}}}  \ottsym{:}  \ottnt{v_{\ottmv{j}}}  \ottsym{,}  \ottmv{l}  \ottsym{:}  \ottnt{e}  \ottsym{,}  \ottmv{l'_{{\mathrm{1}}}}  \ottsym{:}  \ottnt{e_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{l'_{\ottmv{j}}}  \ottsym{:}  \ottnt{e_{\ottmv{j}}}  \ottsym{\}} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottsym{\{}  \ottmv{l_{{\mathrm{1}}}}  \ottsym{:}  \ottnt{v_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{l_{\ottmv{j}}}  \ottsym{:}  \ottnt{v_{\ottmv{j}}}  \ottsym{,}  \ottmv{l}  \ottsym{:}  \ottnt{e'}  \ottsym{,}  \ottmv{l'_{{\mathrm{1}}}}  \ottsym{:}  \ottnt{e_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{l'_{\ottmv{j}}}  \ottsym{:}  \ottnt{e_{\ottmv{j}}}  \ottsym{\}} ,  \ottnt{s'}  \rangle }{%
+ \langle  \ottsym{\{}  \ottmv{l_{{\mathrm{1}}}}  \ottsym{:}  \ottnt{v_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{l_{\ottmv{j}}}  \ottsym{:}  \ottnt{v_{\ottmv{j}}}  \ottsym{,}  \ottmv{l}  \ottsym{:}  \ottnt{e}  \ottsym{,}  \ottmv{l'_{{\mathrm{1}}}}  \ottsym{:}  \ottnt{e_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{l'_{\ottmv{j}}}  \ottsym{:}  \ottnt{e_{\ottmv{j}}}  \ottsym{\}} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottsym{\{}  \ottmv{l_{{\mathrm{1}}}}  \ottsym{:}  \ottnt{v_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{l_{\ottmv{j}}}  \ottsym{:}  \ottnt{v_{\ottmv{j}}}  \ottsym{,}  \ottmv{l}  \ottsym{:}  \ottnt{e'}  \ottsym{,}  \ottmv{l'_{{\mathrm{1}}}}  \ottsym{:}  \ottnt{e_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{l'_{\ottmv{j}}}  \ottsym{:}  \ottnt{e_{\ottmv{j}}}  \ottsym{\}} ,  \ottnt{s'} ,  \Theta  \rangle }{%
 {\ottdrulename{Obj}}{}%
 }}
 
 
-\newcommand{\ottdruleArr}[1]{\ottdrule[#1]{%
-\ottpremise{ \langle  \ottnt{e} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{e'} ,  \ottnt{s'}  \rangle }%
-}{
- \langle  \ottsym{[}  \ottnt{v_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{v_{\ottmv{j}}}  \ottsym{,}  \ottnt{e}  \ottsym{,}  \ottnt{e_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{e_{\ottmv{k}}}  \ottsym{]} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottsym{[}  \ottnt{v_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{v_{\ottmv{j}}}  \ottsym{,}  \ottnt{e'}  \ottsym{,}  \ottnt{e_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{e_{\ottmv{k}}}  \ottsym{]} ,  \ottnt{s'}  \rangle }{%
-{\ottdrulename{Arr}}{}%
-}}
-
-
 \newcommand{\ottdrulePropOne}[1]{\ottdrule[#1]{%
-\ottpremise{ \langle  \ottnt{e} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{e'} ,  \ottnt{s'}  \rangle }%
+\ottpremise{ \langle  \ottnt{e} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{e'} ,  \ottnt{s'} ,  \Theta'  \rangle }%
 }{
- \langle  \ottnt{e}  \ottsym{.}  \ottmv{l} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{e'}  \ottsym{.}  \ottmv{l} ,  \ottnt{s'}  \rangle }{%
+ \langle  \ottnt{e}  \ottsym{.}  \ottmv{l} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{e'}  \ottsym{.}  \ottmv{l} ,  \ottnt{s'} ,  \Theta'  \rangle }{%
 {\ottdrulename{Prop1}}{}%
 }}
 
 
 \newcommand{\ottdrulePropTwo}[1]{\ottdrule[#1]{%
 }{
- \langle  \ottsym{\{}  \ottmv{l_{{\mathrm{1}}}}  \ottsym{:}  \ottnt{v_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{l_{\ottmv{j}}}  \ottsym{:}  \ottnt{v_{\ottmv{j}}}  \ottsym{,}  \ottmv{l}  \ottsym{:}  \ottnt{v}  \ottsym{,}  \ottmv{l'_{{\mathrm{1}}}}  \ottsym{:}  \ottnt{v'_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{l'_{\ottmv{j}}}  \ottsym{:}  \ottnt{v'_{\ottmv{j}}}  \ottsym{\}}  \ottsym{.}  \ottmv{l} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{v} ,  \ottnt{s'}  \rangle }{%
+ \langle  \ottsym{\{}  \ottmv{l_{{\mathrm{1}}}}  \ottsym{:}  \ottnt{v_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{l_{\ottmv{j}}}  \ottsym{:}  \ottnt{v_{\ottmv{j}}}  \ottsym{,}  \ottmv{l}  \ottsym{:}  \ottnt{v}  \ottsym{,}  \ottmv{l'_{{\mathrm{1}}}}  \ottsym{:}  \ottnt{v'_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{l'_{\ottmv{j}}}  \ottsym{:}  \ottnt{v'_{\ottmv{j}}}  \ottsym{\}}  \ottsym{.}  \ottmv{l} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{v} ,  \ottnt{s'} ,  \Theta'  \rangle }{%
 {\ottdrulename{Prop2}}{}%
 }}
 
 
-\newcommand{\ottdruleCallOne}[1]{\ottdrule[#1]{%
-\ottpremise{ \langle  \ottnt{e} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{e'} ,  \ottnt{s'}  \rangle }%
+\newcommand{\ottdruleArr}[1]{\ottdrule[#1]{%
+\ottpremise{ \langle  \ottnt{e} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{e'} ,  \ottnt{s'} ,  \Theta'  \rangle }%
 }{
- \langle  \ottnt{e}  \ottsym{(}  \ottnt{e_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{e_{\ottmv{i}}}  \ottsym{)} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{e'}  \ottsym{(}  \ottnt{e_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{e_{\ottmv{i}}}  \ottsym{)} ,  \ottnt{s'}  \rangle }{%
+ \langle  \ottsym{[}  \ottnt{v_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{v_{\ottmv{j}}}  \ottsym{,}  \ottnt{e}  \ottsym{,}  \ottnt{e_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{e_{\ottmv{k}}}  \ottsym{]} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottsym{[}  \ottnt{v_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{v_{\ottmv{j}}}  \ottsym{,}  \ottnt{e'}  \ottsym{,}  \ottnt{e_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{e_{\ottmv{k}}}  \ottsym{]} ,  \ottnt{s'} ,  \Theta'  \rangle }{%
+{\ottdrulename{Arr}}{}%
+}}
+
+
+\newcommand{\ottdruleArrTwo}[1]{\ottdrule[#1]{%
+\ottpremise{ \langle  \ottnt{e} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{e'} ,  \ottnt{s'} ,  \Theta'  \rangle }%
+}{
+ \langle  \ottnt{e}  \ottsym{[}  \ottnt{e_{{\mathrm{2}}}}  \ottsym{]} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{e'}  \ottsym{[}  \ottnt{e_{{\mathrm{2}}}}  \ottsym{]} ,  \ottnt{s'} ,  \Theta'  \rangle }{%
+{\ottdrulename{Arr2}}{}%
+}}
+
+
+\newcommand{\ottdruleArrThree}[1]{\ottdrule[#1]{%
+\ottpremise{ \langle  \ottnt{e} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{e'} ,  \ottnt{s'} ,  \Theta'  \rangle }%
+}{
+ \langle  \ottnt{v}  \ottsym{[}  \ottnt{e}  \ottsym{]} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{v}  \ottsym{[}  \ottnt{e'}  \ottsym{]} ,  \ottnt{s'} ,  \Theta'  \rangle }{%
+{\ottdrulename{Arr3}}{}%
+}}
+
+
+\newcommand{\ottdruleArrFour}[1]{\ottdrule[#1]{%
+}{
+ \langle  \ottsym{[}  \ottnt{v_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{v_{\ottmv{j}}}  \ottsym{]}  \ottsym{[}  \ottmv{k}  \ottsym{]} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{v_{\ottmv{k}}} ,  \ottnt{s} ,  \Theta  \rangle }{%
+{\ottdrulename{Arr4}}{}%
+}}
+
+
+\newcommand{\ottdruleCallOne}[1]{\ottdrule[#1]{%
+\ottpremise{ \langle  \ottnt{e} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{e'} ,  \ottnt{s'} ,  \Theta'  \rangle }%
+}{
+ \langle  \ottnt{e}  \ottsym{(}  \ottnt{e_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{e_{\ottmv{i}}}  \ottsym{)} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{e'}  \ottsym{(}  \ottnt{e_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{e_{\ottmv{i}}}  \ottsym{)} ,  \ottnt{s'} ,  \Theta'  \rangle }{%
 {\ottdrulename{Call1}}{}%
 }}
 
 
 \newcommand{\ottdruleCallTwo}[1]{\ottdrule[#1]{%
-\ottpremise{ \langle  \ottnt{e_{{\mathrm{1}}}} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{e'_{{\mathrm{1}}}} ,  \ottnt{s'}  \rangle }%
+\ottpremise{ \langle  \ottnt{e_{{\mathrm{1}}}} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{e'_{{\mathrm{1}}}} ,  \ottnt{s'} ,  \Theta'  \rangle }%
 }{
- \langle  \ottnt{v}  \ottsym{(}  \ottnt{v_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{v_{\ottmv{i}}}  \ottsym{,}  \ottnt{e_{{\mathrm{1}}}}  \ottsym{,}  \ottnt{e_{{\mathrm{2}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{e_{\ottmv{j}}}  \ottsym{)} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{v}  \ottsym{(}  \ottnt{v_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{v_{\ottmv{i}}}  \ottsym{,}  \ottnt{e'_{{\mathrm{1}}}}  \ottsym{,}  \ottnt{e_{{\mathrm{2}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{e_{\ottmv{j}}}  \ottsym{)} ,  \ottnt{s'}  \rangle }{%
+ \langle  \ottnt{v}  \ottsym{(}  \ottnt{v_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{v_{\ottmv{i}}}  \ottsym{,}  \ottnt{e_{{\mathrm{1}}}}  \ottsym{,}  \ottnt{e_{{\mathrm{2}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{e_{\ottmv{j}}}  \ottsym{)} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{v}  \ottsym{(}  \ottnt{v_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{v_{\ottmv{i}}}  \ottsym{,}  \ottnt{e'_{{\mathrm{1}}}}  \ottsym{,}  \ottnt{e_{{\mathrm{2}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{e_{\ottmv{j}}}  \ottsym{)} ,  \ottnt{s'} ,  \Theta'  \rangle }{%
 {\ottdrulename{Call2}}{}%
 }}
 
 
 \newcommand{\ottdruleCallThree}[1]{\ottdrule[#1]{%
-\ottpremise{ \langle  \ottnt{m} ,  \ottsym{put(}  \ottnt{s}  \ottsym{,}  \ottsym{[}  \ottmv{id}  \ottsym{,}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{i}}}  \ottsym{]}  \ottsym{,}  \ottsym{[}  \ottkw{function} \, \ottmv{id}  \ottsym{(}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{i}}}  \ottsym{)}  \ottsym{\{}  \ottnt{m}  \ottsym{\}}  \ottsym{,}  \ottnt{v_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{v_{\ottmv{i}}}  \ottsym{]}  \ottsym{)}  \rangle  \rightarrow  \langle  \ottmv{return} \, \ottnt{v}  \ottsym{;}  \ottnt{m'} ,  \ottnt{s'}  \rangle }%
+\ottpremise{\ottnt{a} \, \ottkw{is} \, \ottkw{fresh}}%
 }{
- \langle  \ottkw{function} \, \ottmv{id}  \ottsym{(}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{i}}}  \ottsym{)}  \ottsym{\{}  \ottnt{m}  \ottsym{\}}  \ottsym{(}  \ottnt{v_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{v_{\ottmv{i}}}  \ottsym{)} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{v} ,  \ottsym{del(}  \ottnt{s'}  \ottsym{,}  \ottsym{[}  \ottmv{id}  \ottsym{,}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{i}}}  \ottsym{]}  \ottsym{)}  \rangle }{%
+ \langle   \langle  \ottkw{function} \, \ottmv{id}  \ottsym{(}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{i}}}  \ottsym{)}  \ottsym{\{}  \ottnt{m}  \ottsym{\}} ,  \ottnt{s}  \rangle   \ottsym{(}  \ottnt{v_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{v_{\ottmv{i}}}  \ottsym{)} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle   \langle  \ottkw{function} \, \ottsym{(}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{i}}}  \ottsym{)}  \ottsym{\{}  \ottnt{m}  \ottsym{\}} ,  \ottnt{s}  \rangle   \ottsym{(}  \ottnt{v_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{v_{\ottmv{i}}}  \ottsym{)} ,   \ottnt{s}  \oplus  \ottsym{\{}  \ottmv{id}  \ottsym{:}  \ottnt{a}  \ottsym{\}}  ,   \Theta  \oplus  \ottsym{\{}  \ottnt{a}  \ottsym{:}   \langle  \ottkw{function} \, \ottmv{id}  \ottsym{(}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{i}}}  \ottsym{)}  \ottsym{\{}  \ottnt{m}  \ottsym{\}} ,  \ottnt{s}  \rangle   \ottsym{\}}   \rangle }{%
 {\ottdrulename{Call3}}{}%
 }}
 
 
 \newcommand{\ottdruleCallFour}[1]{\ottdrule[#1]{%
-\ottpremise{ \langle  \ottnt{m} ,  \ottsym{put(}  \ottnt{s}  \ottsym{,}  \ottsym{[}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{i}}}  \ottsym{]}  \ottsym{,}  \ottsym{[}  \ottnt{v_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{v_{\ottmv{i}}}  \ottsym{]}  \ottsym{)}  \rangle  \rightarrow  \langle  \ottmv{return} \, \ottnt{v}  \ottsym{;}  \ottnt{m'} ,  \ottnt{s'}  \rangle }%
+\ottpremise{\ottsym{a1,}  \ottsym{..,}  \ottnt{a_{\ottmv{i}}} \, \ottkw{are} \, \ottkw{fresh}}%
 }{
- \langle  \ottkw{function} \, \ottsym{(}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{i}}}  \ottsym{)}  \ottsym{\{}  \ottnt{m}  \ottsym{\}}  \ottsym{(}  \ottnt{v_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{v_{\ottmv{i}}}  \ottsym{)} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{v} ,  \ottsym{del(}  \ottnt{s'}  \ottsym{,}  \ottsym{[}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{i}}}  \ottsym{]}  \ottsym{)}  \rangle }{%
+ \langle   \langle  \ottkw{function} \, \ottsym{(}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{i}}}  \ottsym{)}  \ottsym{\{}  \ottnt{m}  \ottsym{\}} ,  \ottnt{s}  \rangle   \ottsym{(}  \ottnt{v_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{v_{\ottmv{i}}}  \ottsym{)} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle   \langle  \ottkw{function} \, \ottsym{(}  \,  \ottsym{)}  \ottsym{\{}  \ottnt{m}  \ottsym{\}} ,   \ottnt{s}  \oplus  \ottsym{\{}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{:}  \ottnt{a_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{i}}}  \ottsym{:}  \ottnt{a_{\ottmv{i}}}  \ottsym{\}}   \rangle   \ottsym{(}  \,  \ottsym{)} ,  \ottnt{s} ,   \Theta  \oplus  \ottsym{\{}  \ottnt{a_{{\mathrm{1}}}}  \ottsym{:}  \ottnt{v_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{a_{\ottmv{i}}}  \ottsym{:}  \ottnt{v_{\ottmv{i}}}  \ottsym{\}}   \rangle }{%
 {\ottdrulename{Call4}}{}%
 }}
 
 
-\newcommand{\ottdrulePropCall}[1]{\ottdrule[#1]{%
-\ottpremise{ \langle  \ottnt{v}  \ottsym{.}  \ottmv{l} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottkw{function} \, \ottmv{id}  \ottsym{(}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{i}}}  \ottsym{)}  \ottsym{\{}  \ottnt{m}  \ottsym{\}} ,  \ottnt{s'}  \rangle }%
+\newcommand{\ottdruleCallFive}[1]{\ottdrule[#1]{%
+\ottpremise{ \langle  \ottnt{m} ,  \ottnt{s'} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{m'} ,  \ottnt{s''} ,  \Theta'  \rangle }%
 }{
- \langle  \ottnt{v}  \ottsym{.}  \ottmv{l}  \ottsym{(}  \ottnt{e_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{e_{\ottmv{i}}}  \ottsym{)} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottkw{function} \, \ottmv{id}  \ottsym{(}  \ottmv{this}  \ottsym{,}  \ottmv{x_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottmv{x_{\ottmv{i}}}  \ottsym{)}  \ottsym{\{}  \ottnt{m}  \ottsym{\}}  \ottsym{(}  \ottnt{v}  \ottsym{,}  \ottnt{e_{{\mathrm{1}}}}  \ottsym{,} \, .. \, \ottsym{,}  \ottnt{e_{\ottmv{i}}}  \ottsym{)} ,  \ottnt{s'}  \rangle }{%
-{\ottdrulename{PropCall}}{}%
+ \langle   \langle  \ottkw{function} \, \ottsym{(}  \,  \ottsym{)}  \ottsym{\{}  \ottnt{m}  \ottsym{\}} ,  \ottnt{s'}  \rangle   \ottsym{(}  \,  \ottsym{)} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle   \langle  \ottkw{function} \, \ottsym{(}  \,  \ottsym{)}  \ottsym{\{}  \ottnt{m'}  \ottsym{\}} ,  \ottnt{s''}  \rangle   \ottsym{(}  \,  \ottsym{)} ,  \ottnt{s} ,  \Theta'  \rangle }{%
+{\ottdrulename{Call5}}{}%
 }}
 
-\newcommand{\ottdefnreduce}[1]{\begin{ottdefnblock}[#1]{$ \langle  \ottnt{m} ,  \ottnt{s}  \rangle  \rightarrow  \langle  \ottnt{m'} ,  \ottnt{s'}  \rangle $}{}
+
+\newcommand{\ottdruleCallSix}[1]{\ottdrule[#1]{%
+}{
+ \langle   \langle  \ottkw{function} \, \ottsym{(}  \,  \ottsym{)}  \ottsym{\{}  \ottkw{eps}  \ottsym{\}} ,  \ottnt{s'}  \rangle   \ottsym{(}  \,  \ottsym{)} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottkw{undefined} ,  \ottnt{s} ,  \Theta  \rangle }{%
+{\ottdrulename{Call6}}{}%
+}}
+
+
+\newcommand{\ottdruleCallSeven}[1]{\ottdrule[#1]{%
+}{
+ \langle   \langle  \ottkw{function} \, \ottsym{(}  \,  \ottsym{)}  \ottsym{\{}  \ottmv{return} \, \ottnt{v}  \ottsym{\}} ,  \ottnt{s'}  \rangle   \ottsym{(}  \,  \ottsym{)} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{v} ,  \ottnt{s} ,  \Theta  \rangle }{%
+{\ottdrulename{Call7}}{}%
+}}
+
+\newcommand{\ottdefnreduce}[1]{\begin{ottdefnblock}[#1]{$ \langle  \ottnt{m} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{m'} ,  \ottnt{s'} ,  \Theta'  \rangle $}{}
 \ottusedrule{\ottdruleSeqOne{}}
 \ottusedrule{\ottdruleSeqTwo{}}
 \ottusedrule{\ottdruleAssignOne{}}
-\ottusedrule{\ottdruleAssign{}}
+\ottusedrule{\ottdruleAssignTwo{}}
 \ottusedrule{\ottdruleAssignNum{}}
+\ottusedrule{\ottdruleAssignUndef{}}
+\ottusedrule{\ottdruleAssign{}}
 \ottusedrule{\ottdruleDeref{}}
 \ottusedrule{\ottdruleVarOne{}}
 \ottusedrule{\ottdruleVarTwo{}}
 \ottusedrule{\ottdruleVarThree{}}
 \ottusedrule{\ottdruleVarFour{}}
+\ottusedrule{\ottdruleFunc{}}
 \ottusedrule{\ottdruleFuncDef{}}
 \ottusedrule{\ottdruleUnOpOne{}}
 \ottusedrule{\ottdruleUnOpTwo{}}
@@ -660,14 +785,19 @@
 \ottusedrule{\ottdruleWhile{}}
 \ottusedrule{\ottdruleFor{}}
 \ottusedrule{\ottdruleObj{}}
-\ottusedrule{\ottdruleArr{}}
 \ottusedrule{\ottdrulePropOne{}}
 \ottusedrule{\ottdrulePropTwo{}}
+\ottusedrule{\ottdruleArr{}}
+\ottusedrule{\ottdruleArrTwo{}}
+\ottusedrule{\ottdruleArrThree{}}
+\ottusedrule{\ottdruleArrFour{}}
 \ottusedrule{\ottdruleCallOne{}}
 \ottusedrule{\ottdruleCallTwo{}}
 \ottusedrule{\ottdruleCallThree{}}
 \ottusedrule{\ottdruleCallFour{}}
-\ottusedrule{\ottdrulePropCall{}}
+\ottusedrule{\ottdruleCallFive{}}
+\ottusedrule{\ottdruleCallSix{}}
+\ottusedrule{\ottdruleCallSeven{}}
 \end{ottdefnblock}}
 
 %% defn expType
@@ -856,7 +986,7 @@
 \ottpremise{ \Gamma_{{\mathrm{1}}}   \vdash   \ottnt{e_{{\mathrm{2}}}}  :  \ottnt{T_{{\mathrm{2}}}} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{2}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }%
 \ottpremise{ \Gamma_{{\mathrm{2}}}   \vdash   \ottnt{e_{{\mathrm{3}}}}  :  \ottnt{T_{{\mathrm{3}}}} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{3}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{3}}} }%
 }{
- \Gamma   \vdash   \ottnt{e_{{\mathrm{1}}}}  \ottsym{[}  \ottnt{e_{{\mathrm{2}}}}  \ottsym{]}  \ottsym{=} \, \ottnt{e_{{\mathrm{3}}}}  :  \ottnt{T_{{\mathrm{1}}}} \hspace{5pt}| _{       \ottnt{C_{{\mathrm{1}}}}  \cup  \ottnt{C_{{\mathrm{2}}}}    \cup  \ottnt{C_{{\mathrm{3}}}}    \cup    \ottsym{\{}  \ottnt{T_{{\mathrm{2}}}} \,  =  \, \ottkw{number}  \ottsym{\}}  \cup  \ottsym{\{}  \ottsym{[}  \ottnt{T_{{\mathrm{1}}}}  \ottsym{]} \,  \succeq_c  \, \ottnt{T_{{\mathrm{3}}}}  \ottsym{\}}     } \hspace{5pt}  \Gamma_{{\mathrm{3}}} }{%
+ \Gamma   \vdash   \ottnt{e_{{\mathrm{1}}}}  \ottsym{[}  \ottnt{e_{{\mathrm{2}}}}  \ottsym{]} \, \ottsym{=} \, \ottnt{e_{{\mathrm{3}}}}  :  \ottnt{T_{{\mathrm{1}}}} \hspace{5pt}| _{       \ottnt{C_{{\mathrm{1}}}}  \cup  \ottnt{C_{{\mathrm{2}}}}    \cup  \ottnt{C_{{\mathrm{3}}}}    \cup    \ottsym{\{}  \ottnt{T_{{\mathrm{2}}}} \,  =  \, \ottkw{number}  \ottsym{\}}  \cup  \ottsym{\{}  \ottsym{[}  \ottnt{T_{{\mathrm{1}}}}  \ottsym{]} \,  \succeq_c  \, \ottnt{T_{{\mathrm{3}}}}  \ottsym{\}}     } \hspace{5pt}  \Gamma_{{\mathrm{3}}} }{%
 {\ottdrulename{ArrayAssignType}}{}%
 }}
 
@@ -884,7 +1014,7 @@
 \ottpremise{ \Gamma_{{\mathrm{1}}}   \vdash   \ottnt{e_{{\mathrm{2}}}}  :  \ottnt{T_{{\mathrm{2}}}} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{2}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }%
 \ottpremise{ \Gamma_{{\mathrm{2}}}   \vdash   \ottnt{e_{{\mathrm{3}}}}  :  \ottnt{T_{{\mathrm{3}}}} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{3}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{3}}} }%
 }{
- \Gamma   \vdash   \ottnt{e_{{\mathrm{1}}}}  \ottsym{[}  \ottnt{e_{{\mathrm{2}}}}  \ottsym{]}  \ottnt{numOp}  \ottsym{=} \, \ottnt{e_{{\mathrm{3}}}}  :  \ottnt{T_{{\mathrm{1}}}} \hspace{5pt}| _{       \ottnt{C_{{\mathrm{1}}}}  \cup  \ottnt{C_{{\mathrm{2}}}}    \cup  \ottnt{C_{{\mathrm{3}}}}    \cup    \ottsym{\{}  \ottnt{T_{{\mathrm{2}}}} \,  =  \, \ottnt{T_{{\mathrm{1}}}}  \ottsym{\}}  \cup    \ottsym{\{}  \ottsym{[}  \ottnt{T_{{\mathrm{1}}}}  \ottsym{]} \,  =  \, \ottsym{[}  \ottkw{number}  \ottsym{]}  \ottsym{\}}  \cup  \ottsym{\{}  \ottnt{T_{{\mathrm{3}}}} \,  =  \, \ottkw{number}  \ottsym{\}}       } \hspace{5pt}  \Gamma_{{\mathrm{3}}} }{%
+ \Gamma   \vdash   \ottnt{e_{{\mathrm{1}}}}  \ottsym{[}  \ottnt{e_{{\mathrm{2}}}}  \ottsym{]} \, \ottnt{numOp}  \ottsym{=} \, \ottnt{e_{{\mathrm{3}}}}  :  \ottnt{T_{{\mathrm{1}}}} \hspace{5pt}| _{       \ottnt{C_{{\mathrm{1}}}}  \cup  \ottnt{C_{{\mathrm{2}}}}    \cup  \ottnt{C_{{\mathrm{3}}}}    \cup    \ottsym{\{}  \ottnt{T_{{\mathrm{2}}}} \,  =  \, \ottnt{T_{{\mathrm{1}}}}  \ottsym{\}}  \cup    \ottsym{\{}  \ottsym{[}  \ottnt{T_{{\mathrm{1}}}}  \ottsym{]} \,  =  \, \ottsym{[}  \ottkw{number}  \ottsym{]}  \ottsym{\}}  \cup  \ottsym{\{}  \ottnt{T_{{\mathrm{3}}}} \,  =  \, \ottkw{number}  \ottsym{\}}       } \hspace{5pt}  \Gamma_{{\mathrm{3}}} }{%
 {\ottdrulename{ArrayNumAssignType}}{}%
 }}
 
@@ -1087,7 +1217,7 @@
 \newcommand{\ottdruleDecTypable}[1]{\ottdrule[#1]{%
 \ottpremise{\ottnt{T} \, \ottkw{is} \, \ottkw{fresh}}%
 }{
- \Gamma   \vdash   \ottkw{var} \, \ottmv{id}  \hspace{5pt}| _{  \varnothing  } \hspace{5pt}   \Gamma  \cup  \ottsym{\{}  \ottmv{id}  \ottsym{:}  \ottkw{IllDefined} \, \ottsym{(}  \ottnt{T}  \ottsym{)}  \ottsym{\}}  }{%
+ \Gamma   \vdash    \epsilon   \hspace{5pt}| _{  \varnothing  } \hspace{5pt}   \Gamma  \cup  \ottsym{\{}  \ottmv{id}  \ottsym{:}  \ottkw{IllDefined} \, \ottsym{(}  \ottnt{T}  \ottsym{)}  \ottsym{\}}  }{%
 {\ottdrulename{DecTypable}}{}%
 }}
 
@@ -1096,15 +1226,15 @@
 \ottpremise{\ottnt{T'} \, \ottkw{is} \, \ottkw{fresh}}%
 \ottpremise{ \Gamma   \vdash   \ottnt{e}  :  \ottnt{T} \hspace{5pt}| _{  \ottnt{C}  } \hspace{5pt}  \Gamma' }%
 }{
- \Gamma   \vdash   \ottkw{var} \, \ottmv{id}  \ottsym{=}  \ottnt{e}  \hspace{5pt}| _{   \ottnt{C}  \cup  \ottsym{\{}  \ottnt{T'} \,  \preceq_c  \, \ottnt{T}  \ottsym{\}}   } \hspace{5pt}   \Gamma'  \cup  \ottsym{\{}  \ottmv{id}  \ottsym{:}  \ottnt{T'}  \ottsym{\}}  }{%
+ \Gamma   \vdash    \epsilon   \hspace{5pt}| _{   \ottnt{C}  \cup  \ottsym{\{}  \ottnt{T'} \,  \preceq_c  \, \ottnt{T}  \ottsym{\}}   } \hspace{5pt}   \Gamma'  \cup  \ottsym{\{}  \ottmv{id}  \ottsym{:}  \ottnt{T'}  \ottsym{\}}  }{%
 {\ottdrulename{DefTypable}}{}%
 }}
 
 
 \newcommand{\ottdruleMultiDecTypable}[1]{\ottdrule[#1]{%
-\ottpremise{  \Gamma   \vdash   \ottkw{var} \, \ottnt{vd_{{\mathrm{1}}}}  \hspace{5pt}| _{  \ottnt{C_{{\mathrm{1}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{1}}}   \hdots   \Gamma_{{\ottmv{k}-1}}   \vdash   \ottkw{var} \, \ottnt{vd_{\ottmv{k}}}  \hspace{5pt}| _{  \ottnt{C_{\ottmv{k}}}  } \hspace{5pt}  \Gamma_{\ottmv{k}}  }%
+\ottpremise{  \Gamma   \vdash    \epsilon   \hspace{5pt}| _{  \ottnt{C_{{\mathrm{1}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{1}}}   \hdots   \Gamma_{{\ottmv{k}-1}}   \vdash    \epsilon   \hspace{5pt}| _{  \ottnt{C_{\ottmv{k}}}  } \hspace{5pt}  \Gamma_{\ottmv{k}}  }%
 }{
- \Gamma   \vdash   \ottkw{var} \, \ottnt{vd_{{\mathrm{1}}}}  \ottsym{,} \, ... \, \ottsym{,}  \ottnt{vd_{\ottmv{k}}}  \hspace{5pt}| _{    \bigcup \limits_{ \ottmv{i} = \ottmv{i} }^ \ottmv{k}   \ottnt{C_{\ottmv{k}}}    } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }{%
+ \Gamma   \vdash    \epsilon   \hspace{5pt}| _{    \bigcup \limits_{ \ottmv{i} = \ottmv{i} }^ \ottmv{k}   \ottnt{C_{\ottmv{k}}}    } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }{%
 {\ottdrulename{MultiDecTypable}}{}%
 }}
 
@@ -1141,7 +1271,7 @@
 \ottall
 
 \begin{verbatim}
-Definition rules:        81 good    0 bad
-Definition rule clauses: 201 good    0 bad
+Definition rules:        89 good    0 bad
+Definition rule clauses: 227 good    0 bad
 \end{verbatim}
 \end{document}

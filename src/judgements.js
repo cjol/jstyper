@@ -413,7 +413,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 	this.left.parent = parent(this);
 
 	// all assignments involve checking RHS
-	// TODO: technically RHS should be checked last apparently
+	// FIXME: technically RHS should be checked last apparently
 	var j1 = this.right.check(gamma, dynamics);
 	var C = j1.C;
 	var W = j1.W;
