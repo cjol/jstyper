@@ -27,12 +27,12 @@
 \declaretheoremstyle[
   spaceabove=6pt, spacebelow=3pt,
   headfont=\normalfont\bfseries,
-  notefont=\scshape,
+  notefont=\scshape, headpunct={}, numbered=no,
   bodyfont=\normalfont,
   postheadspace=1em
 ]{subcasestyle}
-\declaretheorem[style=subcasestyle, name=case]{subcase}
 \declaretheorem[style=casestyle]{case}
+\declaretheorem[style=subcasestyle, name=case]{subcase}
 
 \begin{document}
 
@@ -77,12 +77,16 @@
 
 	$e$ is of the form $\mathtt{\{l_1: e_1,\ \dots,\ l_k: e_k\}}$, and we have $\typed{e_i}{T}$ for $1 \leq i \leq k$.
 	We can use the induction hypothesis to determine that each $e_i$ must
-	either be a value or reduces futher. If all $e_i$ are values, then $e$
-	itself is a value. If not, then $e_j$ must be further reducible, where
-	$j$ is the smalest index such that $e_j$ is not a value. Then $e$
-	itself must be further reducible by rule \textsc{Obj}. In either case,
-	$\indHypTwo$ is satisfied.
-
+	either be a value or reduces futher.
+	\begin{subcase}
+	  all $e_i$ are values. $e$ is itself a value, so $\indHypTwo$ is
+	  satisfied.
+  	\end{subcase}
+  	\begin{subcase}
+  	  some $e_j$ is further reducible, where $j$ is the smallest index such
+  	  that $e_j$ is not a value. $e$ itself must be further reducible by
+  	  rule \textsc{Obj}, and again $\indHypTwo$ is satisfied.
+	\end{subcase}
   \end{case}
 
   \begin{case}[V\_Arr]\label{v_arr}
@@ -118,14 +122,15 @@
 	$e$ is of the form $\mathtt{e_1.l}$. For this to be a valid type
 	judgement, $\typed{e_1}{T_1}$ must hold. From the induction
 	hypothesis, $e_1$ must be either a value or further reducible.
-
-	If it is further reducible, then the precondition for \textsc{Prop1} is
-	satisfied, and $e$ is further reducible under this rule.
-
-	If it is a value, it must be an object with property \texttt{\{l: v\}}
-	in order to satisfy $\{\{l:T\}\succeq T_1\}$. In this case, the rule
-	\textsc{Prop2} is applicable, and $e$ is further reducible.
-
+	\begin{subcase}
+	  $e_1$ is further reducible. The precondition for rule \textsc{Prop1} is
+	  satisfied, and $e$ is further reducible under this rule.
+  	\end{subcase}
+  	\begin{subcase}
+  	  $e_1$ is a value. It must be an object with property \texttt{\{l: v\}}
+	  in order to satisfy the constraint $\{\{l:T\}\succeq T_1\}$. In this case, the rule
+	  \textsc{Prop2} is applicable, and $e$ is further reducible.
+  	\end{subcase}
   \end{case}
 
   \begin{case}[ArrayType]\label{arraytype}
@@ -136,20 +141,24 @@
 	either values or reduce further.
 
 	\begin{subcase}
-	  If $e_1$ reduces further, then the preconditions for rule
+	  $e_1$ reduces further. Then the preconditions for rule
 	  \textsc{ArrGet1} are satisfied, and $e$ itself reduces further under
 	  this rule.
 	\end{subcase}
 
-	If $e_2$ reduces further, then the preconditions for rule
-	\textsc{ArrGet2} are satisfied, and $e$ itself reduces further under
-	this rule.
+	\begin{subcase}
+	  $e_2$ reduces further. Then the preconditions for rule
+	  \textsc{ArrGet2} are satisfied, and $e$ itself reduces further under
+	  this rule.
+  	\end{subcase}
 
-	If both $e_1$ and $e_2$ are values, then $e_1$ must be of the form 
-	$\mathtt{[v_1,\ \dots,\ v_k]}$, to satisfy the constraint $\{[T] \succeq T_1\}$,
-	and $e_2$ must be a number to satisfy the constraint $\{T_2=number\}$.
-	$e$ is then of the form $\mathtt{[v_1,\ \dots,\ v_k][n]}$, and we 
-	can use \textsc{ArrGet3} to reduce $e$ further.
+  	\begin{subcase}
+	  both $e_1$ and $e_2$ are values. Then $e_1$ must be of the form 
+	  $\mathtt{[v_1,\ \dots,\ v_k]}$, to satisfy the constraint $\{[T] \succeq T_1\}$,
+	  and $e_2$ must be a number to satisfy the constraint $\{T_2=number\}$.
+	  $e$ is then of the form $\mathtt{[v_1,\ \dots,\ v_k][n]}$, and we 
+	  can use \textsc{ArrGet3} to reduce $e$ further.
+  	\end{subcase}
 
   \end{case}
 
@@ -189,32 +198,72 @@
 	\texttt{TODO}
   \end{case}
 
-  \begin{case}[NumOpType]\label{numoptype}
-	\texttt{TODO}
-  \end{case}
+  \begin{case}[NumOpType, BoolOpType, CmpOpType, NumCmpOpType]\label{binoptype}
+  	$e$ is of the form $\mathtt{e_1\ op\ e_2}$. For this to be a valid
+  	judgement, $\typed{e_1}{T_1}$ and $\typed{e_1}{T_1}$ must both hold. From
+  	the induction hypothesis, both $e_1$ and $e_2$ must either reduce further
+  	or already be values.
 
-  \begin{case}[booloptype]\label{booloptype}
-	\texttt{TODO}
-  \end{case}
+  	\begin{subcase}
+  	  $e_1$ is further reducible. The precondition for rule \textsc{BinOp1} is
+  	  satisfied, and $e$ is further reducible under this rule. Hence
+  	  $\indHypTwo$ holds.
+ 	\end{subcase}
 
-  \begin{case}[CmpOpType]\label{cmpoptype}
-	\texttt{TODO}
-  \end{case}
+  	\begin{subcase}
+  	  $e_2$ is further reducible. The precondition for rule \textsc{BinOp2} is
+  	  satisfied, and $e$ is further reducible under this rule. Hence
+  	  $\indHypTwo$ holds.
+ 	\end{subcase}
 
-  \begin{case}[NumCmpOpType]\label{numcmpoptype}
-	\texttt{TODO}
+	\begin{subcase}
+	  $e_1$ and $e_2$ are both values. 
+		% To satisfy the constraints $\{T_1=number\}$
+		% and $\{T_2=number\}$, $e_1$ and $e_2$ must both be numbers.
+	  The precondition for rule \textsc{BinOp3} is thus satisfied, and $e$ is
+	  further reducible under this rule.
+	\end{subcase}
   \end{case}
 
   \begin{case}[NegType]\label{negtype}
-	\texttt{TODO}
+	$e$ is of the form $\mathtt{!e_1}$. For this to be a valid judgement,
+	$\typed{e_1}{T_1}$ must hold, and from the induction hypothesis $e_1$ must
+	either reduce further or already be a value.
+
+	\begin{subcase}
+	  $e_1$ is further reducible. Then the precondition for rule \textsc{UnOp1}
+	  is satisfied, and $e$ itself reduces further.
+	\end{subcase}
+
+	\begin{subcase}
+	  $e_1$ is a value. In order for the constraint $\{T_1=boolean\}$ to be
+	  satisfied, $e_1$ must be a boolean value. Hence 
+	  rule \textsc{BoolNeg} is applicable, and $e$ itself is further reducible.
+	\end{subcase}
   \end{case}
 
   \begin{case}[PreNumType]\label{prenumtype}
-	\texttt{TODO}
+	$e$ is of the form $\mathtt{preNum\ e_1}$. For this to be a valid judgement,
+	$\typed{e_1}{T_1}$ must hold, and from the induction hypothesis $e_1$ must
+	either reduce further or already be a value.
+	\begin{subcase} $preOp=-$. 
+	  \begin{subcase}
+	  	$e_1$ is further reducible. Then the precondition for rule \textsc{UnOp1}
+	  	is satisfied, and $e$ itself reduces further.
+	  \end{subcase}
+	  \begin{subcase}
+	  	$e_1$ is a value. In order to satisfy the constraint $\{T_1=number\}$,
+	  	$e_1$ must be a number. Rule \textsc{NumNeg} is immediately applicable
+	  	and $e$ itself reduces further.
+	  \end{subcase}
+	\end{subcase}
+	\begin{subcase} $preOp\neq-$. 
+	  \texttt{TODO}
+	\end{subcase}
   \end{case}
 
   \begin{case}[PostOpType]\label{postoptype}
-	\texttt{TODO}
+  	Similar to the subcase of \textsc{PreNumType} where $preOp\neq-$.
   \end{case}
 
 \end{proof}
