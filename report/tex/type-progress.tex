@@ -1,6 +1,5 @@
 
 % type-safety-proof.tex - Proof of progress and proof of preservation for my JavaScript subset
-
 \documentclass[a4paper]{article}
 
 \usepackage{times}
@@ -8,6 +7,8 @@
 \usepackage{fixltx2e}
 \usepackage{amsthm}
 \usepackage{thmtools}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
 \newtheoremstyle{dotless}{\topsep}{\topsep}{\itshape}{}{\bfseries}{}{5pt plus 1pt minus 1pt}{}
 \theoremstyle{dotless}
 \newtheorem{theorem}{Theorem}[section]
@@ -41,30 +42,36 @@
 \maketitle
 
 \section{Progress}
-\newcommand{\typable}[2][ ]{\Gamma{}\vdash#2\, |C#1\:\Gamma#1'}
-\newcommand{\typed}[2]{\Gamma{}\vdash#1: #2\,|_C\:\Gamma'}
+\newcommand{\typable}[2][ ]{\Gamma{}\vdash\mathtt{#2}\, |_C#1\:\Gamma#1'}
+\newcommand{\typed}[2]{\Gamma{}\vdash\mathtt{#1}: #2\,|_C\:\Gamma'}
 \newcommand{\transition}[6]{\langle{}#1,#2,#3\rangle{}\rightarrow{}\langle{}#4,#5,#6\rangle}
 \newcommand{\indHyp}{\Phi(\Gamma, m, C, \Gamma')}
 \newcommand{\indHypTwo}{\Psi(\Gamma, e, T, C, \Gamma')}
 \newcommand{\var}{\textbf{var}}
 \newcommand{\sub}[1]{\textsubscript{#1}}
 
+
 \begin{theorem}[Progress for expressions]\label{expProgress}
 
-  If $\typed{e}{T}$ and $dom(\Gamma) \subseteq dom(s)$ then either e is a
-  value or there exist $e'$, $s'$ such that $\transition{e}{s}{\theta}{e'}{s'}{\theta'}$
+  If $\typed{e}{T}$ and $\Gamma \vdash (s, \theta)$ then either e is a
+  value or there exist $e',s', \theta'$ such that $\transition{e}{s}{\theta}{e'}{s'}{\theta'}$
 
 \end{theorem}
 
-\begin{proof}\label{expProgressProof}
-  Take $$ \indHypTwo \stackrel{\text{def}}{=} \\
-  \forall s.  (dom(\Gamma) \subseteq\ dom(s)) \implies val(e) \vee
-  \exists e', s'. \transition{e}{s}{\theta}{e'}{s'}{\theta'} $$
+\begin{proof} \label{expProgressProof}
 
-  We show that for all $\Gamma$, $e$, $T$, $C$, $\Gamma'$, if
-  $\typed{e}{T}$ then $\indHypTwo$, by rule induction on the definition of
-  the type judgements. Since $\Psi$ is of the form $\forall s.dom(\Gamma) \subseteq\ dom(s)\implies\dots$, in all cases consider an arbitrary s
-  and assume $dom(\Gamma) \subseteq\ dom(s)$.
+  Take 
+  \begin{multline*}
+  	\indHypTwo \stackrel{\text{def}}{=} \\
+  	\forall s,\theta. (\Gamma \vdash (s,\theta))\implies e=\mathtt{v}\vee
+  	\exists e', s',\theta. \transition{e}{s}{\theta'}{e'}{s'}{\theta'}
+  \end{multline*}
+
+  We show that for all $\Gamma$, $e$, $T$, $C$, $\Gamma'$, if $\typed{e}{T}$
+  then $\indHypTwo$ is satisfied, by rule induction on the definition of the
+  type judgements. Since $\Psi$ is of the form
+  $\forall s,\theta.(\Gamma\vdash(s,\theta)\implies\dots$,
+  consider in all cases an arbitrary $s$ and $\theta$ and assume that $\Gamma\vdash(s,\theta)$.
 
   \begin{case}[V\_Num, V\_Bool, V\_String, V\_Undefined, V\_Null, V\_Closure]\label{values} 
 
@@ -79,11 +86,13 @@
 	We can use the induction hypothesis to determine that each $e_i$ must
 	either be a value or reduces futher.
 	\begin{subcase}
-	  all $e_i$ are values. $e$ is itself a value, so $\indHypTwo$ is
+	  all $e_i$ are values. 
+	  $e$ is itself a value, so $\indHypTwo$ is
 	  satisfied.
   	\end{subcase}
   	\begin{subcase}
-  	  some $e_j$ is further reducible, where $j$ is the smallest index such
+  	  some $e_j$ is further reducible,
+  	  where $j$ is the smallest index such
   	  that $e_j$ is not a value. $e$ itself must be further reducible by
   	  rule \textsc{Obj}, and again $\indHypTwo$ is satisfied.
 	\end{subcase}
@@ -97,24 +106,22 @@
 
   \end{case}
 
-  \begin{case}[Fun1]\label{fun1}
-	\texttt{TODO}
-  \end{case}
+  \begin{case}[AnonFun, AnonVoid, NamedFun, NamedVoid]\label{fun}
 
-  \begin{case}[Fun2]\label{fun2}
-	\texttt{TODO}
-  \end{case}
+	$e$ is of the form $\mathtt{function(x_1,\ \dots,\ x_2)\{m\}}$ or
+	$\mathtt{function\ id(x_1,\ \dots,\ x_2)\{m\}}$. A transition is thus
+	immediately available using rule \textsc{Func}.
 
-  \begin{case}[Fun3]\label{fun3}
-	\texttt{TODO}
-  \end{case}
-
-  \begin{case}[Fun4]\label{fun4}
-	\texttt{TODO}
   \end{case}
 
   \begin{case}[IDType]\label{idtype}
-	\texttt{TODO}
+
+	$e$ is of the form $\mathtt{id}$. For this to be a valid type judgement, we
+	must have $id \in dom(\Gamma)$. Since we have assumed that the store is
+	well-typed, we have that $dom(\Gamma) \subseteq dom(s)$, and in particular
+	$id \in dom(s)$.  The preconditions are thus satisfied for rule
+	\textsc{Deref}, and $e$ reduces further under this rule.
+
   \end{case}
 
   \begin{case}[PropType]\label{proptype}
@@ -123,11 +130,13 @@
 	judgement, $\typed{e_1}{T_1}$ must hold. From the induction
 	hypothesis, $e_1$ must be either a value or further reducible.
 	\begin{subcase}
-	  $e_1$ is further reducible. The precondition for rule \textsc{Prop1} is
+	  $e_1$ is further reducible.
+	  The precondition for rule \textsc{Prop1} is
 	  satisfied, and $e$ is further reducible under this rule.
   	\end{subcase}
   	\begin{subcase}
-  	  $e_1$ is a value. It must be an object with property \texttt{\{l: v\}}
+  	  $e_1$ is a value.
+  	  It must be an object with property \texttt{\{l: v\}}
 	  in order to satisfy the constraint $\{\{l:T\}\succeq T_1\}$. In this case, the rule
 	  \textsc{Prop2} is applicable, and $e$ is further reducible.
   	\end{subcase}
@@ -141,19 +150,22 @@
 	either values or reduce further.
 
 	\begin{subcase}
-	  $e_1$ reduces further. Then the preconditions for rule
+	  $e_1$ reduces further.
+	  Then the preconditions for rule
 	  \textsc{ArrGet1} are satisfied, and $e$ itself reduces further under
 	  this rule.
 	\end{subcase}
 
 	\begin{subcase}
-	  $e_2$ reduces further. Then the preconditions for rule
+	  $e_2$ reduces further. 
+	  Then the preconditions for rule
 	  \textsc{ArrGet2} are satisfied, and $e$ itself reduces further under
 	  this rule.
   	\end{subcase}
 
   	\begin{subcase}
-	  both $e_1$ and $e_2$ are values. Then $e_1$ must be of the form 
+	  both $e_1$ and $e_2$ are values.
+	  Then $e_1$ must be of the form 
 	  $\mathtt{[v_1,\ \dots,\ v_k]}$, to satisfy the constraint $\{[T] \succeq T_1\}$,
 	  and $e_2$ must be a number to satisfy the constraint $\{T_2=number\}$.
 	  $e$ is then of the form $\mathtt{[v_1,\ \dots,\ v_k][n]}$, and we 
@@ -163,55 +175,154 @@
   \end{case}
 
   \begin{case}[CallType]\label{calltype}
-	\texttt{TODO}
+
+  	$e$ is of the form $\mathtt{e_0(e_1,\ \dots,\ e_k)}$, and we have
+  	$\typed{e_i}{T_i}$ for $0\leq i \leq k$. From our induction hypothesis,
+  	each of these $e_i$ must either be a value or further reducible.
+
+  	\begin{subcase}
+	  $e_0$ is further reducible.
+	  The precondition for rule \textsc{Call1} is satisfied, so $e$ is further
+	  reducible under this rule.
+  	\end{subcase}
+
+  	\begin{subcase}
+	  $e_j$ is further reducible, 
+	  where $j$ is the smallest index such that $e_j$ is not a value.
+	  The precondition for rule \textsc{Call2} is satisfied, so $e$ is further
+	  reducible under this rule.
+  	\end{subcase}
+
+	\begin{subcase}
+	  $e_i$ are all values.
+	  To satisfy the constraint $\{T = \langle T_0,\ T_1,\ \dots,\ T_i \rightarrow T_k, \gamma\rangle\}$,
+	  $e_0$ must be a function closure, so \textsc{CallNamed} or \textsc{CallAnon} are
+	  applicable (\textsc{CallNamed} if the function is named, or \textsc{CallAnon} if
+	  it is anonymous). Thus $e$ is further reducible and $\indHypTwo$ holds.
+	\end{subcase}
+
   \end{case}
 
   \begin{case}[PropCallType]\label{propcalltype}
-	\texttt{TODO}
+
+	Similar to case \textsc{CallType}, but using rules \textsc{PropCallNamed}
+	and \textsc{PropCallAnon} instead of \textsc{CallNamed} and
+	\textsc{CallAnon} respectively in the final subcase.
+
+  \end{case}
+
+  \begin{case}[BodyType, VoidBodyType]\label{bodytype}
+
+	For both rules, $e$ is of the form $\mathtt{\langle @body\{m\},\ s', \theta\rangle}$, and for this
+	to be a valid type judgement, there must exist some $\gamma$ such that
+	$\gamma \vdash(s', \theta)$ and $\gamma\vdash m |_C\ \gamma'$.
+	Using the induction hypothesis we have that $m$ is either
+	a value, a return statement, or reduces further with the store $(s', \theta)$.
+
+	\begin{subcase}
+	  $m$ is a value.
+	  In this case, $e$ is of the right form to apply rule \textsc{FunBody2},
+	  so $e$ reduces further. 
+	\end{subcase}
+
+	\begin{subcase}
+	  $m$ is a return statement.
+	  In this case, $e$ is of the right form to apply rule \textsc{FunBody3} or
+	  \textsc{FunBody4} (\textsc{FunBody3} if $m$ is of the form
+	  $\mathtt{return\ v}$, or \textsc{FunBody4} otherwise). Thus $e$ is
+	  further reducible and $\indHypTwo$ holds.
+	\end{subcase}
+
+	\begin{subcase}
+	  $m$ reduces further with store s'.
+	  In other words, $\exists m', s'', \theta'. \transition{m}{s'}{\theta}{m'}{s''}{\theta'}$.
+	  In this case, $e$ is of the right form to apply rule \textsc{FunBody3},
+	  and the preconditions are satisfied, so $e$ reduces further. 
+	\end{subcase}
+
   \end{case}
 
   \begin{case}[AssignType]\label{assigntype}
-	\texttt{TODO}
+
+	$e$ is of the form $\mathtt{e_0 = e_1}$, and for this rule to be satisfied
+	we must have that $\typed{e_0}{T_0}$ and $\typed{e_1}{T_1}$. Using the
+	induction hypothesis, we have that $e_0$ and $e_1$ are both either values
+	or further reducible. Syntactically, however, $e_0$ cannot be a value ---
+	it can reduce no further once it has the form $\mathtt{vRef}$.
+
+	\begin{subcase}
+	  $e_0$ reduces further and is not of the form $\mathtt{vRef}$. 
+	  The precondition for rule \textsc{Assign1} is thus satisfied, and $e$
+	  itself reduces further.
+	\end{subcase}
+
+	\begin{subcase}
+	  $e_0$ is of the form $\mathtt{vRef}$ and $e_1$ reduces further. 
+	  The precondition for rule \textsc{Assign2} is thus satisfied, and $e$
+	  itself reduces further.
+	\end{subcase}
+
+	\begin{subcase}
+	  $e_0$ is of the form vRef and $e_1$ is a value.
+	  The only rule we can use to reduce $e$ here is \textsc{Assign}. For this
+	  to be possible, we need to show that $(e_0, s, \theta) \in dom(addr)$.
+	  We have assumed that the store $(s,\theta)$ is well-typed, which tells us
+	  that, since $\typed{e_0}{T_0}$, we can deduce that $addr(e_0,s,\theta)$
+	  is indeed well-defined. Thus \textsc{Assign} is applicable, and $e$
+	  reduces further.  
+	\end{subcase}
+
   \end{case}
 
   \begin{case}[AssignTypeUndef]\label{assigntypeundef}
-	\texttt{TODO}
-  \end{case}
 
-  \begin{case}[PropAssignType]\label{propassigntype}
-	\texttt{TODO}
-  \end{case}
+	$e$ is of the form $\mathtt{id = e_1}$, but $id \not\in dom(\Gamma)$, so we
+	cannot simply deduce that $id \in dom(s)$. Instead, we consider both cases.
 
-  \begin{case}[ArrayAssignType]\label{arrayassigntype}
-	\texttt{TODO}
+	\begin{subcase}
+	  $id \in dom(s)$.
+	  In this case, $addr(id, s, \theta)$ is clearly well defined, and so $e$
+	  can reduce under rule \textsc{Assign}.
+	\end{subcase}
+
+  	\begin{subcase}
+	  $id \not\in dom(\Gamma)$. 
+	  In this case, the preconditions for \textsc{AssignUndef} are satisfied,
+	  and $e$ reduces further under that rule.
+	\end{subcase}
+
   \end{case}
 
   \begin{case}[NumAssignType]\label{numassigntype}
-	\texttt{TODO}
-  \end{case}
 
-  \begin{case}[PropNumAssignType]\label{propnumassigntype}
-	\texttt{TODO}
-  \end{case}
+  	$e$ is of the form $\mathtt{e_0 numOp= e_1}$. The proof proceeds as for case
+  	\textsc{AssignType} except in the final subcase. 
 
-  \begin{case}[ArrayNumAssignType]\label{arraynumassigntype}
-	\texttt{TODO}
+  	\begin{subcase}
+	  $e_0$ is of the form vRef, and $e_1$ is a value.
+	  In this case $e$ is of the right form to apply rule \textsc{AssignNum},
+	  which has no preconditions. Hence $e$ reduces further under this rule.
+  	\end{subcase}
+
   \end{case}
 
   \begin{case}[NumOpType, BoolOpType, CmpOpType, NumCmpOpType]\label{binoptype}
+
   	$e$ is of the form $\mathtt{e_1\ op\ e_2}$. For this to be a valid
   	judgement, $\typed{e_1}{T_1}$ and $\typed{e_1}{T_1}$ must both hold. From
   	the induction hypothesis, both $e_1$ and $e_2$ must either reduce further
   	or already be values.
 
   	\begin{subcase}
-  	  $e_1$ is further reducible. The precondition for rule \textsc{BinOp1} is
+  	  $e_1$ is further reducible.
+  	  The precondition for rule \textsc{BinOp1} is
   	  satisfied, and $e$ is further reducible under this rule. Hence
   	  $\indHypTwo$ holds.
  	\end{subcase}
 
   	\begin{subcase}
-  	  $e_2$ is further reducible. The precondition for rule \textsc{BinOp2} is
+  	  $e_2$ is further reducible.
+  	  The precondition for rule \textsc{BinOp2} is
   	  satisfied, and $e$ is further reducible under this rule. Hence
   	  $\indHypTwo$ holds.
  	\end{subcase}
@@ -226,51 +337,244 @@
   \end{case}
 
   \begin{case}[NegType]\label{negtype}
+
 	$e$ is of the form $\mathtt{!e_1}$. For this to be a valid judgement,
 	$\typed{e_1}{T_1}$ must hold, and from the induction hypothesis $e_1$ must
 	either reduce further or already be a value.
 
 	\begin{subcase}
-	  $e_1$ is further reducible. Then the precondition for rule \textsc{UnOp1}
+	  $e_1$ is further reducible.
+	  Then the precondition for rule \textsc{UnOp1}
 	  is satisfied, and $e$ itself reduces further.
 	\end{subcase}
 
 	\begin{subcase}
-	  $e_1$ is a value. In order for the constraint $\{T_1=boolean\}$ to be
+	  $e_1$ is a value.
+	  In order for the constraint $\{T_1=boolean\}$ to be
 	  satisfied, $e_1$ must be a boolean value. Hence 
 	  rule \textsc{BoolNeg} is applicable, and $e$ itself is further reducible.
 	\end{subcase}
   \end{case}
 
   \begin{case}[PreNumType]\label{prenumtype}
+
 	$e$ is of the form $\mathtt{preNum\ e_1}$. For this to be a valid judgement,
 	$\typed{e_1}{T_1}$ must hold, and from the induction hypothesis $e_1$ must
 	either reduce further or already be a value.
-	\begin{subcase} $preOp=-$. 
+
+	\begin{subcase}
+	  $preOp=-$. 
+
 	  \begin{subcase}
-	  	$e_1$ is further reducible. Then the precondition for rule \textsc{UnOp1}
+	  	$e_1$ is further reducible.
+	  	Then the precondition for rule \textsc{UnOp1}
 	  	is satisfied, and $e$ itself reduces further.
 	  \end{subcase}
+
 	  \begin{subcase}
-	  	$e_1$ is a value. In order to satisfy the constraint $\{T_1=number\}$,
+	  	$e_1$ is a value.
+	  	In order to satisfy the constraint $\{T_1=number\}$,
 	  	$e_1$ must be a number. Rule \textsc{NumNeg} is immediately applicable
 	  	and $e$ itself reduces further.
 	  \end{subcase}
+
 	\end{subcase}
-	\begin{subcase} $preOp\neq-$. 
-	  \texttt{TODO}
+
+	\begin{subcase}
+	  $preOp\neq-$. 
+	  Syntactically, $preOp$ must be $\mathtt{--}$ or $\mathtt{++}$, and $e_1$
+	  must be an assignment target (i.e.\ an expression which will reduce down
+	  to a value reference).
+
+	  \begin{subcase}
+		$e_1$ reduces further. 
+		The precondition for rule \textsc{UnOp1} is satisfied, and $e$ itself
+		reduces further.
+	  \end{subcase}
+
+	  \begin{subcase}
+		$e_1$ is of the form $\mathtt{vRef}$.
+		We have assumed that the store is well-typed, so since
+		$\typed{vRef}{T}$, we can deduce that $addr(\mathtt{vRef}, s, \theta)$
+		is well-defined, which is all that is required for rule \textsc{PreInc}
+		(if $preOp = ++$) or \textsc{PreDec} (if $preOp=--$)
+	  \end{subcase}
+
 	\end{subcase}
+
   \end{case}
 
   \begin{case}[PostOpType]\label{postoptype}
+
   	Similar to the subcase of \textsc{PreNumType} where $preOp\neq-$.
+
   \end{case}
 
 \end{proof}
 
+\begin{theorem}[Progress for Statements]\label{statProgress}
 
+  If $\typable{m}$ and $\Gamma \vdash (s, \theta)$ then either m is a
+  value, a return statement, or there exist $m',s', \theta'$ such that
+  $\transition{m}{s}{\theta}{m'}{s'}{\theta'}$
 
-\section*{Preservation}
+\end{theorem}
+
+\begin{proof}\label{statProgressProof}
+
+  Take 
+  \begin{multline*}
+  	\indHyp \stackrel{\text{def}}{=} 
+  	\forall s,\theta. (\Gamma \vdash (s,\theta))\implies \\
+  	m=\mathtt{v} \vee m=\mathtt{return\ v; m'} \vee
+  	\exists m', s',\theta. \transition{m}{s}{\theta'}{m'}{s'}{\theta'}
+  \end{multline*}
+
+  We show that for all $\Gamma$, $m$, $C$, $\Gamma'$, if $\typable{m}$
+  then $\indHyp$ is satisfied, by rule induction on the definition of the
+  type judgements. Since $\Phi$ is of the form
+  $\forall s,\theta.(\Gamma\vdash(s,\theta)\implies\dots$,
+  consider in all cases an arbitrary $s$ and $\theta$ and assume that $\Gamma\vdash(s,\theta)$.
+
+  \begin{case}[ExpTypable]\label{expTypable}
+
+	$m$ is of the form $e$. For this to be a valid type judgement, we must have
+	$\typed{e}{T}$. From Theorem~\ref{expProgress}, we know that $e$ must be a
+	value or reduce further, and so $\indHyp$ is satisfied.
+
+  \end{case}
+
+  \begin{case}[FunDef]\label{funDef}
+
+	$m$ is of the form $\mathtt{@def\ function\ id(x_1, \dots, x_i)\{m\}}$. There
+	is a transition immediately possible using rule \textsc{FuncDef}, so $\indHyp$
+	is satisfied.
+
+  \end{case}
+
+  \begin{case}[RetTypable1]\label{retTypable1}
+
+  	$m$ is of the form $\mathtt{return}$, and there is a transition immediately
+  	possible using rule \textsc{Ret2}, so $\indHyp$ is satisfied. 
+
+  \end{case}
+
+  \begin{case}[RetTypable2, RetTypable3, RetTypable4]\label{retTypable}
+
+  	$m$ is of the form $\mathtt{return\ e}$, and we have $\typed{e}{T}$. From
+  	Theorem \ref{expProgress}, we know that $e$ is either a value or reduces
+  	further.
+  
+  	\begin{subcase}
+  	  $e$ reduces further.
+  	  The preconditions are satisfied for rule \textsc{Ret1}, so $m$ reduces
+  	  further and $\indHyp$ is satisfied.  
+  	\end{subcase}
+  	
+  	\begin{subcase}
+  	  $e$ is a value.
+  	  In this case, $m$ is an irreducible return statement, and $\indHyp$ is
+  	  satisfied.
+	\end{subcase}  
+
+  \end{case}
+
+  \begin{case}[SeqTypable]\label{seqtypable}
+
+	$m$ is of the form $m_1; \dots; m_i$, and for each $i$ we have
+	$\typable{m_i}$. Using the induction hypothesis, $m_1$ in particular is
+	either a value, a return statement, or reduces further.
+
+	\begin{subcase}
+	  $m_1$ is a value.
+	  $m$ is of the right format to apply rule \textsc{Seq1}, and $m$ reduces
+	  further. 
+	\end{subcase}
+
+	\begin{subcase}
+	  $m_1$ is a return statement.
+	  In this case, $m$ itself is also an irreducible return statement, so
+	  $\indHyp$ is satisfied. 
+	\end{subcase}
+
+	\begin{subcase}
+	  $m_1$ reduces further.
+	  The preconditions are satisfied for rule \textsc{Seq2}, so $m$ reduces
+	  further and $\indHyp$ is satisfied.
+	\end{subcase}
+
+  \end{case}
+
+  \begin{case}[IfTypable]\label{iftypable}
+	
+	$m$ is of the form $\mathtt{if\ (e)\ \{m_1\}\ else\ \{m_2\}}$, and we have
+	that $\typed{e}{T}$. Using Theorem~\ref{expProgress}, we know that $e$ is
+	either a value or reduces further.
+
+	\begin{subcase}
+		$e$ reduces further. 
+		The preconditions are satisfied for \textsc{If1}, so $m$ reduces
+		further and $\indHyp$ is satsfied.
+	\end{subcase}
+
+	\begin{subcase}
+	  $e$ is a value.
+	  In order to satisfy the constraint $\{T_0 = boolean\}$, $e$ must be either
+	  $\mathtt{true}$ or $\mathtt{false}$. If it is true, $m$ is of the right
+	  form to apply rule \textsc{If2} and reduce further. If $e$ is false, $m$
+	  is of the right form to reduce under rule \textsc{If3}. Either way,
+	  $\indHyp$ is satisfied.
+	\end{subcase}
+
+  \end{case}
+	
+  \begin{case}[IfTypable2]\label{iftypable2}
+
+	$m$ is of the form $\mathtt{if\ (e)\ \{m_1\}}$. $m$ can immediately reduce
+	further using rule \textsc{If4}, so $\indHyp$ is satisfied.
+
+  \end{case}
+
+  \begin{case}[WhileTypable, ForTypable]\label{looptypable}
+
+  	For both of these type judgements, $m$ is immediately of the right form to
+  	reduce into an if-expression. For \textsc{WhileTypable}, the transition is
+  	described by rule \textsc{While}, and for \textsc{ForTypable}, the
+  	transition is described by \textsc{For}. Since $m$ reduces further,
+  	$\indHyp$ is satisfied.
+  	
+  \end{case}
+
+  \begin{case}[DecTypable, MultiDecTypable]\label{dectypable}
+
+	Similar to the case for \textsc{WhileTypable}, reducing under rules
+	\textsc{Var1} and \textsc{Var4} for \textsc{DecTypable} and
+	\textsc{MultiDecTypable} respectively.
+
+  \end{case}
+	
+
+  \begin{case}[DefTypable]\label{deftypable}
+
+	$m$ is of the form $\mathtt{var\ id=e}$, where $\typed{e}{T}$. Using
+	Theorem~\ref{expProgress}, $e$ is either a value or reduces further. 
+	
+	\begin{subcase}
+	  $e$ reduces further.
+	  The preconditions for rule \textsc{Var2} are satisfied, and $m$ reduces
+	  further under this rule.
+	\end{subcase}
+
+	\begin{subcase}
+		$e$ is a value. 
+		$m$ is of the right form to reduce under rule \textsc{Var3}, and so
+	\end{subcase}
+
+  \end{case}
+
+\end{proof}
+
+\section{Preservation}
 
 We want to show that typability is preserved by all possible transitions
 in the language. We can show this by structural induction over the

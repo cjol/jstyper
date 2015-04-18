@@ -1,0 +1,78 @@
+% spec-addons.tex -- Extra bits of specification which I don't want to include in ott
+\documentclass[a4paper]{article}
+
+\usepackage{times}
+\usepackage{amsmath, amssymb}
+\usepackage{fixltx2e}
+\usepackage{amsthm}
+\usepackage{thmtools}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\newtheoremstyle{dotless}{\topsep}{\topsep}{\itshape}{}{\bfseries}{}{5pt plus 1pt minus 1pt}{}
+\theoremstyle{dotless}
+\newtheorem{theorem}{Theorem}[section]
+\usepackage{etoolbox}
+\usepackage{proof}
+\makeatletter
+\patchcmd{\@thm}{\trivlist}{\list{}{ \leftmargin=1.5em}}{}{}
+\patchcmd{\@endtheorem}{\endtrivlist}{\endlist}{}{}
+\makeatother
+
+\declaretheoremstyle[
+  spaceabove=6pt, spacebelow=6pt,
+  headfont=\normalfont\bfseries, numbered=no,
+  notefont=\scshape, headpunct={\\}, notebraces={}{},
+  bodyfont=\normalfont,
+  postheadspace=1em
+]{casestyle}
+\declaretheoremstyle[
+  spaceabove=6pt, spacebelow=3pt,
+  headfont=\normalfont\bfseries,
+  notefont=\scshape, headpunct={}, numbered=no,
+  bodyfont=\normalfont,
+  postheadspace=1em
+]{subcasestyle}
+\declaretheorem[style=casestyle]{case}
+
+\begin{document}
+
+\title{ Extra Specification }
+\author{Christopher Little}
+\maketitle
+
+\section{Functions}
+\begin{definition}[addr]\label{addr}
+
+  The function $addr(vRef, s, \Theta)$ determines the address of the value $vRef$ using the scope $s$ and the heap $\Theta$.
+  \begin{equation}\label{addr-eqn}
+  	addr(vRef, s, \Theta) = 
+  	\begin{cases}
+  	  s(id)& \text{if $vRef = id$}, \\
+  	  \Theta(addr(e, s, \Theta))(l) & \text{if $vRef = e.l$}, \\
+  	  \Theta(addr(e, s, \Theta))(n) & \text{if $vRef = e[n]$}, \\
+  	  undefined & \text{otherwise.}
+  	\end{cases}
+  \end{equation}
+  % Optionally could include inference rules which determine whether addr(vRef, s, \Theta) is defined
+\end{definition}
+
+\begin{definition}[Well-typed store]\label{typed-store}
+  We will say that the store $(s,\Theta)$ is well-typed under $\Gamma$ if all typable value
+  references are well-defined within the store, and the value itself has
+  the right type.
+
+  Let $\Gamma \vdash (s, \Theta)$ if 
+  \begin{equation} \label{typed-store-eqn}
+  	\begin{split}
+  	  dom(\Gamma) \subseteq dom(s) \land\ & \\
+  	  \Gamma \vdash vRef:T|_C\ \Gamma' \implies & addr(vRef,s, \Theta)\textrm{ is defined}\ \land \\
+  	  & \Gamma\vdash\Theta(addr(vRef,s,\Theta)):T'|_{C'}\ \Gamma''\ \land \\
+  	  & T \succeq T'
+  	\end{split}
+  \end{equation}
+\end{definition}
+
+\begin{definition}[Merge]\label{merge}
+  TODO 
+\end{definition}
+\end{document}

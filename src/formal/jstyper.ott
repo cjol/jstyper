@@ -1,7 +1,7 @@
-% v1.1.0
+% v1.2.0
 % Version numbering: (project_goals_met?1:0).(added syntax).(refined spec)
 metavar termvar, x, y, z, id, l, this, return ::=  
-indexvar index, i, j, k ::= 
+indexvar index, i, j, k, o ::= 
 
 
 grammar
@@ -17,7 +17,7 @@ v :: 'v_' ::=                                   {{ com Values }}
 	| obj ::  :: ObjVal											{{ com ObjVal }}
 	| arr ::  :: ArrVal											{{ com ArrVal }}
 	| < func , s >	::  :: FuncClosure							{{ com FuncClosure }} 
-																	{{ tex \langle [[func]], [[s]] \rangle }}
+																	{{ tex [\![ [[func]], [[s]] ]\!] }}
 	| h ( a ) :: :: GetStore		 							{{ com GetStore }}
 
 obj :: 'obj_' ::=
@@ -44,6 +44,8 @@ e :: 'e_' ::=                                   {{ com Expression }}
 	| [ e1 , .. , e2 ] ::  :: ArrayExp 							{{ com ArrayExp }}
 	| assignTarget ::  :: assignTargetExp
 	| func 		::  :: Func
+	| < @body { m } , s , h > ::  :: BodyClosure
+																{{ tex [\![ @body\{[[m]]\}, [[s]], [[h]] ]\!] }}
 
 Ass :: 'ass_' ::=	                                {{ com Assignments }}
 				                                	{{ tex \approx }}
@@ -68,6 +70,7 @@ m :: 'm_' ::=                                   {{ com Statement }}
 	| for ( e1 ; e2 ; e3 ) { m1 } ::  :: ForStatement1 			{{ com ForStatement1 }} 
 	| for ( varDec ; e2 ; e3 ) { m1 } ::  :: ForStatement2 		{{ com ForStatement2 }} 
 	| eps  		::  :: EmptyStatement							{{ com EmptyStatement }}
+																{{ tex \epsilon }}
 
 vd :: 'vd_' ::=                                 {{ com VariableDeclaration }}
 	| id        ::  :: Declaration 								{{ com Declaration }}
@@ -75,7 +78,6 @@ vd :: 'vd_' ::=                                 {{ com VariableDeclaration }}
 
 varDec :: 'vd_' ::=
 	| var vd1 , ... , vdk   ::  :: VarDeclaration 				{{ com VarDeclaration }}
-																{{ tex \epsilon }}
 ret :: 'ret_' ::=
 	| return e 	::  :: ReturnExp								{{ com ReturnExp }}
 	| return 	::  :: Return 									{{ com Return }}
@@ -144,7 +146,7 @@ a :: 'a_' ::= 									{{ com Heap Addresses }}
 
 s :: 's_' ::=                                   {{ com Store }}
 	| s1 + s2 	::  :: StoreUnion 				       			{{ com StoreUnion }}  
-																	{{ tex [[s1]] \oplus [[s2]] }}
+																	{{ tex [[s1]] \cup [[s2]] }}
 	| { id1 : a1 , .. , idi : ai } ::  :: LiteralStore 			{{ com LiteralStore }}
 
 h {{ tex \Theta}} :: 'h_' ::= 									{{ com Heap }} 
@@ -165,14 +167,16 @@ T :: 'Tval_' ::=				                {{ com Value Type }}
 	| undefined ::  :: undefined 								{{ com undefined }}
 	| null      ::  :: null 									{{ com null }}
 	| { l1 : T1 , .. , li : Ti } ::  :: ObjType					{{ com ObjType }}
-	| ( T1 , ... , Ti -> Tj ) ::   :: FunType					{{ com FunType }}
+	| T1 , ... , Ti -> Tj ::  :: FunctionType					{{ com FunctionType }}
+	| < T , G > ::  :: ClosureType								{{ com ClosureType }}
+																	{{tex [\![ [[T]], [[G]], ]\!]}}
 	| [ T1 ]    ::  :: ArrayType								{{ com ArrayType }}
 	| G ["return"] :: :: GammaType 								{{ com GammaType }} 
 	| IllDefined ( T )  :: M:: IllDefinedType 					{{ com IllDefinedType }}
 	| pending 	:: M:: PendingType								{{ com Pending }} 
 	| T1 ~> T2  ::  :: DerivedType 								{{ com DerivedType }}
 
-G {{ tex \Gamma }} :: 'G_' ::= 					{{ com Context }}
+G {{ tex \Gamma}} , g {{ tex \gamma }} :: 'te_' ::= 					{{ com Context }}
 	| \{}		::  :: EmptyContext								{{ com EmptyContext }}
 	| { G }		::  :: SingletonContext							{{ com SingletonContext }}
 	| G u G'	::  :: UnionContext								{{ com UnionContext }}
@@ -212,7 +216,6 @@ const :: 'const_' ::=
 terminals :: 'terminals_' ::=
 	| ->        ::  :: rightarrow 									{{ tex \rightarrow }}
 	| ~>        ::  :: Rightarrow 									{{ tex \Rightarrow }}
-	| G         ::  :: Gamma                						{{ tex \Gamma }}
 	| |-        ::  :: Entails              						{{ tex \vdash }}
 	| ;         ::  :: semicolon
 	| var       ::  :: var
@@ -222,7 +225,7 @@ maps :: 'maps_' ::=
 	| G 		::  :: Gamma
 	| h 		::  :: heap
 	| s 		::  :: store
-	| maps1 + maps2 :: :: MapUnion {{ tex [[maps1]] \oplus [[maps2]] }}
+	| addr 		::  :: Addr
 
 sv :: 'sv_' ::= 								{{ com SetVar }}
 	| C 		::  :: ConstraintSet						    {{ com ConstraintSet }}
@@ -237,8 +240,10 @@ fv :: 'fv_' ::= 								{{ com FormulaVar }}
 	| T 		::  :: TypeFormulaVar							{{ com TypeFormulaVar }}
 	| id 		::  :: IDFormulaVar								{{ com IDFormulaVar }}
 	| func  	::  :: FuncFormulaVar							{{ com FuncFormulaVar }}
-	| e 		::  :: ExpFormulaVar                            {{ com ExpFormulaVar }}
+	| m 		::  :: StatmentFormulaVar                       {{ com ExpFormulaVar }}
 	| a 		::  :: address
+	| maps 		::  :: maps
+	| ( fv1 , .. , fvi ) :: :: compound
 
 n :: 'n_' ::=
 	| 0			::  :: Zero
@@ -282,9 +287,9 @@ formula :: formula_ ::=
 	| T is fresh                 		::  :: Fresh 			{{ com Fresh }} 
 	| T1 , .. , Ti are fresh 			::  :: Freshs 			{{ com Freshs }} 
 	| a is fresh 						::  :: FreshA 			{{ com FreshAddress }} 
-	| a1, .., ai are fresh 				::  :: FreshAs 			{{ com FreshAddresses }} 
-
-
+	| a1, .., ak are fresh 				::  :: FreshAs 			{{ com FreshAddresses }} 
+	| sv1 < sv2 						::  :: Subset 			{{ com Subset }}
+																	{{ tex [[sv1]] \subseteq [[sv2]] }}
 
 defns
 Jop :: '' ::=
@@ -301,13 +306,14 @@ Jop :: '' ::=
 		----------------------------              		            ::   Seq2
 		<m1;m2; ..; mi, s, h> -> <m1'; m2; ..; mi, s', h'>
 
+		e != assignTarget
 		<e, s, h> -> <e', s', h'>
 		----------------------------                 		        ::   Assign1
-		<assignTarget Ass e, s, h> -> <assignTarget Ass e', s', h'>
+		<e Ass e1, s, h> -> <e' Ass e1, s', h'>
 
 		<e, s, h> -> <e', s', h'>
 		----------------------------                 		        ::   Assign2
-		<e Ass e1, s, h> -> <e' Ass e1, s', h'>
+		<assignTarget Ass e, s, h> -> <assignTarget Ass e', s', h'>
 
 		----------------------------                 		        ::   AssignNum
 		<assignTarget numOp= v, s, h> -> <assignTarget = assignTarget numOp v, s, h>
@@ -331,7 +337,7 @@ Jop :: '' ::=
 		% ----------------------------
 		% addr(id, s, h) = s(id)
 
-		% (assignTarget, s, h) in addr
+		(assignTarget, s, h) in dom(addr)
 		---------------------------------            		        ::   Assign
 		<assignTarget = v, s, h> -> <v, s, h + {addr(assignTarget, s, h): v}>
 
@@ -378,9 +384,21 @@ Jop :: '' ::=
 		-------------------------------                             ::   BinOp2
 		<v op e2, s, h> -> <v op e2', s', h'>
 
-		n1 op n2 = n
-		-----------------------                                     ::   BinOp3
-		<n1 op n2, s, h> -> <n, s, h>
+		n1 numOp n2 = n
+		-----------------------                                     ::   NumOp
+		<n1 numOp n2, s, h> -> <n, s, h>
+
+		n1 numcmpOp n2 = b
+		-----------------------                                     ::   NumCmpOp
+		<n1 numcmpOp n2, s, h> -> <b, s, h>
+
+		v1 cmpOp v2 = b
+		-----------------------                                     ::   CmpOp
+		<v1 cmpOp v2, s, h> -> <b, s, h>
+
+		b1 boolOp b2 = b
+		-----------------------                                     ::   BoolOp
+		<b1 boolOp b2, s, h> -> <b, s, h>
 
 		!b1 = b2
 		-----------------------                                     ::   BoolNeg
@@ -390,29 +408,29 @@ Jop :: '' ::=
 		-----------------------                                     ::   NumNeg
 		<~n1, s, h> -> <n, s, h>
 
-		id in dom(s)
-		s(id) in dom(h)
-		h(s(id)) + 1 = v
+		(assignTarget, s, h) in dom(addr)
+		a = addr(assignTarget, s, h)
+		h(a) + 1 = v
 		-----------------------------                               ::   PostInc
-		<id++, s, h> -> <id, s, h + {s(id) : v}>
+		<assignTarget++, s, h> -> <h(a), s, h + {a: v}>
 
-		id in dom(s)
-		s(id) in dom(h)
-		h(s(id)) + 1 = v
+		(assignTarget, s, h) in dom(addr)
+		a = addr(assignTarget, s, h)
+		h(a) + 1 = v
 		-----------------------------                               ::   PreInc
-		<++id, s, h> -> <id+1, s, h + {s(id) : v}>
+		<++assignTarget, s, h> -> <v, s, h + {a: v}>
 
-		id in dom(s)
-		s(id) in dom(h)
-		h(s(id)) - 1 = v
+		(assignTarget, s, h) in dom(addr)
+		a = addr(assignTarget, s, h)
+		h(a) - 1 = v
 		-----------------------------                               ::   PostDec
-		<id--, s, h> -> <id, s, h + {s(id) : v}>
+		<assignTarget--, s, h> -> <h(a), s, h + {a: v}>
 
-		id in dom(s)
-		s(id) in dom(h)
-		h(s(id)) - 1 = v
+		(assignTarget, s, h) in dom(addr)
+		a = addr(assignTarget, s, h)
+		h(a) - 1 = v
 		-----------------------------                               ::   PreDec
-		<--id, s, h> -> <id+1,s, h + {s(id) : v}>
+		<--assignTarget, s, h> -> <v,s, h + {a: v}>
 
 		<e, s, h> -> <e', s', h'>
 		--------------------------------------------------------    ::	 If1
@@ -459,6 +477,7 @@ Jop :: '' ::=
 		---------------------------------------------				::   Arr4
 		<[v1, .., vj][k], s, h> -> <vk, s, h>
 
+		e != v.l
 		<e, s, h> -> <e', s', h'>
 		----------------------- 									::   Call1
 		< e(e1,..,ei), s, h> -> <e'(e1,..,ei), s', h'>
@@ -467,25 +486,51 @@ Jop :: '' ::=
 		----------------------- 									::   Call2
 		< v(v1,..,vi,e1,e2,..,ej), s, h> -> <v(v1,..,vi,e1',e2,..,ej), s', h'>
 
-		% TODO: Call3/4 don't fit on the page
+		a is fresh
+		a0 is fresh
+		a1, .., ai are fresh
+		s'o = s'+{id:a, this:a0, x1:a1, .., xi:ai}
+		ho = h+{a:<function id(x1, .., xi){m},s'>, a0:undefined, a1:v1, .., ai:vi}
+		-------------------------- 									:: 	 CallNamed
+		< <function id(x1, .., xi){m},s'>(v1, .., vi), s, h> -> <<@body{m}, s'o, ho>, s,ho>
+
+		a0 is fresh
+		a1, .., ai are fresh
+		s'o = s'+{this:a0, x1:a1, .., xi:ai}
+		ho = h+{a0:undefined, a1:v1, .., ai:vi}
+		-------------------------- 									:: 	 CallAnon
+		< <function(x1, .., xi){m},s'>(v1, .., vi), s, h> -> <<@body{m}, s'o, ho>, s,ho>
 
 		a is fresh
-		----------------------------------------------------------- :: Call3
-		<<function id(x1, .., xi){m}, s>(v1, .., vi), s, h> -> <<function(x1, .., xi){m}, s>(v1, .., vi), s+{id:a}, h+{a:<function id(x1, .., xi){m}, s>}>
-
+		a0 is fresh
 		a1, .., ai are fresh
-		----------------------------------------------------------- :: Call4
-		<<function(x1, .., xi){m}, s>(v1, .., vi), s, h> -> <<function(){m}, s+{x1:a1, .., xi:ai}>(), s, h+{a1:v1, .., ai:vi}>
+		<v0.l, s, h> -> <<function id(x1, .., xi){m}, s'>, s'', h'>
+		s'o = s'+{id:a, this:a0, x1:a1, .., xi:ai}
+		h'o = h'+{a:<function id(x1, .., xi){m},s'>, a0:v0, a1:v1, .., ai:vi}
+		-------------------------- 									:: 	 PropCallNamed
+		< v0.l(v1, .., vi), s, h> -> <<@body{m}, s'o, ho>, s'',h'o>
 
+		a0 is fresh
+		a1, .., ai are fresh
+		<v0.l, s, h> -> <<function(x1, .., xi){m}, s'>, s'', h'>
+		s'o = s'+{this:a0, x1:a1, .., xi:ai}
+		h'o = h+{a0:v0, a1:v1, .., ai:vi}
+		-------------------------- 									:: 	 PropCallAnon
+		< v0.l(v1, .., vi), s, h> -> <<@body{m}, s'o, h'o>, s,h'o>
+
+		m != return v; m'
 		<m, s', h> -> <m', s'', h'>
-		------------------------------------------------------------ :: Call5
-		<<function(){m}, s'>(), s, h> -> <<function(){m'}, s''>(), s, h'>
+		------------------------------------------------ 			:: 	 CallBody1
+		<<@body{m},s', h>,s,h> -> <<@body{m'}, s'', h'>, s, h'>
 
-		------------------------------------------------------------ :: Call6
-		<<function(){eps}, s'>(), s, h> -> <undefined, s, h>
+		------------------------------------------------ 			:: 	 CallBody2
+		<<@body{v},s', h>,s,h> -> <undefined, s, h>
 
-		------------------------------------------------------------ :: Call7
-		<<function(){return v}, s'>(), s, h> -> <v, s, h>
+		------------------------------------------------ 			:: 	 CallBody3
+		<<@body{return v; m},s',h>,s,h> -> <v, s, h>
+
+		------------------------------------------------ 			:: 	 CallBody4
+		<<@body{return; m},s',h>,s,h> -> <undefined, s, h'>
 
 	% Note: Only expressions have a type - the more general statements do not
 	defn
@@ -512,6 +557,15 @@ Jop :: '' ::=
 
 		--------------------------                          		:: V_Null
 		G |- null : null |\{} G
+
+
+
+
+		dom(g) < dom(s)
+		g |- func : <T, g> |C g'
+		------------------------									:: V_Closure
+		G |- <func, s> : <T, g> |C G
+
 
 
 
@@ -543,39 +597,41 @@ Jop :: '' ::=
 
 		% Function types:
 
-		% still pending after analysis means there were no returns anywhere
-		
-		T, T0, T1, .., Ti are fresh
-		G u {this: T0, x1:T1, .., xi:Ti} |- m1; ..; mj |C G'
-		G'["return"] = pending
-		----------------------------------------------------------------------- :: V_Fun1
-		G |- function (x1, .., xi) { m1; ..; mj } : (T0, T1, .., Ti -> T) |C u {T = undefined} G
-
 		% if the return is not ill-defined, we use its type for the function
 		
 		T, T0, T1, .., Ti are fresh
-		G u {this: T0, x1:T1, .., xi:Ti} |- m1; ..; mj |C G'
+		G u {this: T0, x1:T1, .., xi:Ti, return:pending} |- m1; ..; mj |C G'
 		G'["return"] = Tk
 		Tk != IllDefined(Tk')
-		----------------------------------------------------------------------- :: V_Fun2
-		G |- function (x1, .., xi) { m1; ..; mj } : (T0, T1, .., Ti -> T) |C u {T = Tk} G
+		----------------------------------------------------------------------- :: AnonFun
+		G |- function (x1, .., xi) { m1; ..; mj } : <T0, T1, .., Ti -> T, G> |C u {T = Tk} G
+
+		% still pending after analysis means there were no returns anywhere
+		
+		T, T0, T1, .., Ti are fresh
+		G u {this: T0, x1:T1, .., xi:Ti, return:pending} |- m1; ..; mj |C G'
+		G'["return"] = pending
+		----------------------------------------------------------------------- :: AnonVoid
+		G |- function (x1, .., xi) { m1; ..; mj } : <T0, T1, .., Ti -> T, G> |C u {T = undefined} G
 
 		% NB the case IllDefined(T) is not covered, as this is illegal
 
 		% 3 and 4 just add 'id' to the inner type environment (otherwise like 1 and 2)
 
 		T, T0, T1, .., Ti are fresh
-		G u {this: T0, x1:T1, .., xi:Ti, id:(T0, T1, .., Ti -> T)} |- m1; ..; mj |C G'
-		G'["return"] = IllDefined(pending)
-		----------------------------------------------------------------------- :: V_Fun3
-		G |- function id(x1, .., xi) { m1; ..; mj } : (T0, T1, .., Ti -> T) |C u {T = undefined} G
-
-		T, T0, T1, .., Ti are fresh
-		G u {this: T0, x1:T1, .., xi:Ti, id:(T0, T1, .., Ti -> T)} |- m1; ..; mj |C G'
+		Go = G u {this: T0, x1:T1, .., xi:Ti, id:<T0, T1, .., Ti -> T, G>, return:pending}
+		Go |- m1; ..; mj |C G'
 		G'["return"] = Tk
 		Tk != IllDefined(Tk')
-		----------------------------------------------------------------------- :: V_Fun4
-		G |- function id(x1, .., xi) { m1; ..; mj } : (T0, T1, .., Ti -> T) |C u {T = Tk} G
+		----------------------------------------------------------------------- :: NamedFun
+		G |- function id(x1, .., xi) { m1; ..; mj } : <T0, T1, .., Ti -> T, G> |C u {T = Tk} G
+
+		T, T0, T1, .., Ti are fresh
+		Go = G u {this: T0, x1:T1, .., xi:Ti, id:<T0, T1, .., Ti -> T, G>, return:pending}
+		Go |- m1; ..; mj |C G'
+		G'["return"] = IllDefined(pending)
+		----------------------------------------------------------------------- :: NamedVoid
+		G |- function id(x1, .., xi) { m1; ..; mj } : <T0, T1, .., Ti -> T, G> |C u {T = undefined} G
 
 
 
@@ -596,8 +652,8 @@ Jop :: '' ::=
 	
 		% NB in JSTyper we don't allow string-keyed array accesses
 		T is fresh
-		G  |- e1 : T1 |C1 G1
-		G1 |- e  : T2 |C2 G2
+		G  |- e  : T1 |C1 G1
+		G1 |- e1 : T2 |C2 G2
 		---------------------------------------------------------   :: ArrayType
 		G |- e[e1] : T |(C1 u C2) u ({[T] > T2} u {T1 = number}) G2
 	
@@ -612,7 +668,7 @@ Jop :: '' ::=
 		T0,T1,..,Ti,Tk,Tk' are fresh
 		G  |- e  : T   |C0 G0
 		G0 |- e1 : T1' |C1 G1   ---   Gi-1 |- ei : Ti' |Ci Gi
-		C' = ({T0 = undefined} u (U j=1-i {Tj >c Tj'})) u ({Tk <c Tk'} u {T=(T0, T1, .., Ti -> Tk)})
+		C' = ({T0 = undefined} u (U j=1-i {Tj >c Tj'})) u ({Tk <c Tk'} u {T=<T0, T1, .., Ti -> Tk, g>})
 		-------------------------------------------------- 			:: CallType
 		G |- e(e1,..,ei) : Tk' |(U j=0-i Cj) u C' Gi
 
@@ -620,9 +676,23 @@ Jop :: '' ::=
 		G  |- e.l : T   |C0 G0
 		G  |- e   : T0' |C' G'
 		G0 |- e1  : T1' |C1 G1   ---   Gi-1 |- ei : Ti' |Ci Gi
-		C' = ({T0 >c T0'} u (U j=1-i {Tj >c Tj'})) u ({Tk <c Tk'} u {T=(T0, T1, .., Ti -> Tk)})
+		C' = ({T0 >c T0'} u (U j=1-i {Tj >c Tj'})) u ({Tk <c Tk'} u {T=<T0, T1, .., Ti -> Tk, g>})
 		-------------------------------------------------- 			:: PropCallType
 		G |- e.l(e1,..,ei) : Tk' |(U j=0-i Cj) u C' Gi
+
+		T is fresh
+		g u {return:pending} |- m |C g'
+		g |- (s,h)
+		g'["return"] = pending
+		----------------------------------------- 					:: FunBody
+		G |- <@body{m}, s, h>: T |C u {T=undefined} G
+
+		g u {return:pending} |- m |C g'
+		g |- (s,h)
+		g'["return"] = Tk
+		Tk != IllDefined(Tk')
+		----------------------------------------- 					:: VoidBody
+		G |- <@body{m}, s, h>: T |C u {T=Tk} G
 
 
 
@@ -741,7 +811,7 @@ Jop :: '' ::=
 		G |- e |C G'
 
 		G |- function id(x1, .., xi) { m1; ..; mj } : T |C G'
-		----------------------------------------------------------------------- :: V_FunDef
+		-----------------------------------------------------------------     :: FunDef
 		G |- @def function id(x1, .., xi) { m1; ..; mj } |C G' u {id: T}
 
 		G |- return undefined |C G'
@@ -810,3 +880,5 @@ Jop :: '' ::=
 		G |- var vd1 |C1 G1 --- Gk-1 |- var vdk |Ck Gk
 		---------------------------------------            		    :: MultiDecTypable
 		G |- var vd1,...,vdk |(U i=i-k Ck) G2
+	
+	defn G |- (s, h) :: M:: store ::'' {{tex \Gamma \vdash (s, \Theta) }} by	
