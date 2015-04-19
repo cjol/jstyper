@@ -19,6 +19,8 @@ v :: 'v_' ::=                                   {{ com Values }}
 	| < func , s >	::  :: FuncClosure							{{ com FuncClosure }} 
 																	{{ tex [\![ [[func]], [[s]] ]\!] }}
 	| h ( a ) :: :: GetStore		 							{{ com GetStore }}
+	| v1 u v2 :: :: ObjUnion									{{ com ObjUnion }}
+																	{{ tex [[v1]] \cup [[v2]]}}
 
 obj :: 'obj_' ::=
 	| { l1 : v1 , .. , li : vi } ::  :: ObjVal					{{ com ObjVal }}
@@ -33,9 +35,10 @@ func :: 'func_' ::=
 e :: 'e_' ::=                                   {{ com Expression }}
 	| v         ::  :: Value 									{{ com Value }}
 	| id        ::  :: Deref 									{{ com Deref }}
-	| e1 Ass e2  ::  :: Assign									{{ com Assign }}
+	| assignTarget Ass e2  ::  :: Assign						{{ com Assign }}
 	| e op e'   ::  :: BinExp 									{{ com BinExp }}
-	| e postOp  ::  :: PostExp 									{{ com PostExp }}
+	| assignTarget postAssign  ::  :: PostAssign				{{ com PostAssign }}
+	| preAssign assignTarget   ::  :: PreAssign 				{{ com PreAssign }}
 	| preOp e   ::  :: PreExp 									{{ com PreExp }}
 	| { l1 : e1 , .. , li : ei } ::  :: ObjExp					{{ com ObjExp }}
 	| e . l 	::  :: PropExp									{{ com PropExp }} 
@@ -46,16 +49,20 @@ e :: 'e_' ::=                                   {{ com Expression }}
 	| func 		::  :: Func
 	| < @body { m } , s , h > ::  :: BodyClosure
 																{{ tex [\![ @body\{[[m]]\}, [[s]], [[h]] ]\!] }}
-
 Ass :: 'ass_' ::=	                                {{ com Assignments }}
 				                                	{{ tex \approx }}
 	| = 		::  :: PlainAssign                              {{ com PlainAssign }}
 	| numOp =	::  :: NumAssign 								{{ com NumAssign }}
 
+vRef :: 'vref_' ::=
+	| id 		::  :: IdRef
+	| vRef . l 	::  :: ObjRef
+	| vRef [ n ] :: :: ArrRef
+
 assignTarget :: 'asst_' ::= 						{{ com Assignment Targets }} 
-	| obj . l 	::  :: DotAssign 								{{ com DotAssign }}
-	| arr [ n ]	::  :: ArrAssign 								{{ com ArrAssign }}
-	| id 		::  :: IDAssign 								{{ com IDAssign }}
+	| vRef 		::  :: valueReference
+	| assignTarget [ e ] :: :: ExpRef
+	| assignTarget . l 	::  :: DotRef 							
 
 m :: 'm_' ::=                                   {{ com Statement }}
 	| e         ::  :: Expression 								{{ com Expression }}
@@ -117,19 +124,18 @@ boolOp :: 'bop_' ::=
 	| && 		::  :: BooleanAnd                               {{ com BooleanAnd }}
 
 preOp :: 'preop_' ::=                           {{ com PrefixOperation }}
-	| preNum 	::  :: PreNum 									{{ com PreNum }}
+	| ~ 		::  :: Negation                                 {{ com Negation }}
+																	{{ tex -\! }}
 	| !			::  :: BoolNegation                             {{ com BoolNegation }}
 																	{{ tex !\! }}
 
-preNum :: 'prenum_' ::=                           {{ com PreNum }}
-	| ~ 		::  :: Negation                                 {{ com Negation }}
-																	{{ tex -\! }}
+preAssign :: 'preAssign_' ::=					{{ com PreAssign }}														
 	| --		::  :: PreDecrement                             {{ com PreDecrement }}
 																	{{ tex -\!\!-\!\! }}
 	| ++		::  :: PreIncrement                             {{ com PreIncrement }}
 																	{{ tex +\!\!+\!\! }}
 
-postOp :: 'postop_' ::=                         {{ com PostfixOperation }}
+postAssign :: 'postAssign_' ::=                         {{ com PostAssign }}
 	| --		::  :: PostDecrement                             {{ com PostDecrement }}
 																	{{ tex \!\!\!-\!\!- }}
 	| ++		::  :: PostIncrement                             {{ com PostIncrement }}
@@ -299,162 +305,23 @@ Jop :: '' ::=
 	{{ tex \langle [[m]], [[s]], [[h]] \rangle [[->]] \langle [[m']], [[s']], [[h']] \rangle }}
 	by
 
-		-------------------                        		            ::   Seq1
-		<v; m1; ..; mi, s, h> -> <m1; ..; mi, s, h>
-
-		<m1, s, h> -> <m1', s', h'>
-		----------------------------              		            ::   Seq2
-		<m1;m2; ..; mi, s, h> -> <m1'; m2; ..; mi, s', h'>
-
-		e != assignTarget
-		<e, s, h> -> <e', s', h'>
-		----------------------------                 		        ::   Assign1
-		<e Ass e1, s, h> -> <e' Ass e1, s', h'>
+		------------------------------------------------- 			::   Func
+		<func, s, h> -> <<func, s>, s, h>
 
 		<e, s, h> -> <e', s', h'>
-		----------------------------                 		        ::   Assign2
-		<assignTarget Ass e, s, h> -> <assignTarget Ass e', s', h'>
+		---------------------------------------------				::   Obj
+		< {l1: v1, .., lj: vj, l: e, l1': e1, .., lj': ej}, s, h> -> <{l1: v1, .., lj: vj, l: e', l1': e1, .., lj': ej}, s', h>
 
-		----------------------------                 		        ::   AssignNum
-		<assignTarget numOp= v, s, h> -> <assignTarget = assignTarget numOp v, s, h>
-
-		id !in dom(s)
-		a is fresh
-		--------------------------------------------				:: 	AssignUndef
-		<id = v, s, h> -> <v, s + {id: a}, h+{a: v}>
-
-		% addr definition:
-		% 
-		% l in dom(h(addr(e,s,h)))
-		% ----------------------------
-		% addr(e.l, s, h) = h(addr(e, s, h))(l)
-		% 
-		% n in dom(h(addr(e,s,h)))
-		% ----------------------------
-		% addr(e[n], s, h) = h(addr(e, s, h))(l)
-		% 
-		% id in dom(s)
-		% ----------------------------
-		% addr(id, s, h) = s(id)
-
-		(assignTarget, s, h) in dom(addr)
-		---------------------------------            		        ::   Assign
-		<assignTarget = v, s, h> -> <v, s, h + {addr(assignTarget, s, h): v}>
+		<e, s, h> -> <e', s', h'>
+		---------------------------------------------				::   Arr
+		<[v1, .., vj, e, e1, .., ek], s, h> -> <[v1, .., vj, e', e1, .., ek], s', h'>
 
 		id in dom(s)
 		s(id) in dom(h)
 		--------------------------                  		        ::   Deref
 		<id, s, h> -> <h(s(id)), s, h>
 
-		a is fresh
-		-----------------------------                		        ::   Var1
-		<var id, s, h> -> <eps, s + {id: a}, h + {a: undefined}>
-
-		<e, s, h> -> <e', s', h'>
-		-----------------------------------               		    ::   Var2
-		<var id = e, s, h> -> <var id = e', s, h'>
-
-		a is fresh
-		----------------------------------------       		        ::   Var3
-		<var id = v, s, h> -> <eps, s + {id: a}, h + {a: v}>
-
-		----------------------------------------- 			        ::   Var4
-		<var vd, vd', s, h> -> <var vd; var vd', s, h>
-
-		------------------------------------------------- 			::   Func
-		<func, s, h> -> <<func, s>, s, h>
-
-		a is fresh
-		------------------------------------------------- 			::   FuncDef
-		<@def function x(y1,..,yi) {m}, s, h> -> <eps, s + {x: a}, h  + {a: <function (y1,..,yi) {m}, s>}> 
-
-		<e, s, h> -> <e', s', h'>
-		--------------------------------                            ::   UnOp1
-		<preOp e1, s, h> -> <preOp e1', s', h'>
-
-		<e, s, h> -> <e', s', h'>
-		--------------------------------                            ::   UnOp2
-		<e1 postOp, s, h> -> <e1' postOp, s', h'>
-
-		<e1, s, h> -> <e1', s', h'>
-		--------------------------------                            ::   BinOp1
-		<e1 op e2, s, h> -> <e1' op e2, s', h'>
-
-		<e2, s, h> -> <e2', s', h'>
-		-------------------------------                             ::   BinOp2
-		<v op e2, s, h> -> <v op e2', s', h'>
-
-		n1 numOp n2 = n
-		-----------------------                                     ::   NumOp
-		<n1 numOp n2, s, h> -> <n, s, h>
-
-		n1 numcmpOp n2 = b
-		-----------------------                                     ::   NumCmpOp
-		<n1 numcmpOp n2, s, h> -> <b, s, h>
-
-		v1 cmpOp v2 = b
-		-----------------------                                     ::   CmpOp
-		<v1 cmpOp v2, s, h> -> <b, s, h>
-
-		b1 boolOp b2 = b
-		-----------------------                                     ::   BoolOp
-		<b1 boolOp b2, s, h> -> <b, s, h>
-
-		!b1 = b2
-		-----------------------                                     ::   BoolNeg
-		<!b1, s, h> -> <b2, s, h>
-
-		~n1 = n
-		-----------------------                                     ::   NumNeg
-		<~n1, s, h> -> <n, s, h>
-
-		(assignTarget, s, h) in dom(addr)
-		a = addr(assignTarget, s, h)
-		h(a) + 1 = v
-		-----------------------------                               ::   PostInc
-		<assignTarget++, s, h> -> <h(a), s, h + {a: v}>
-
-		(assignTarget, s, h) in dom(addr)
-		a = addr(assignTarget, s, h)
-		h(a) + 1 = v
-		-----------------------------                               ::   PreInc
-		<++assignTarget, s, h> -> <v, s, h + {a: v}>
-
-		(assignTarget, s, h) in dom(addr)
-		a = addr(assignTarget, s, h)
-		h(a) - 1 = v
-		-----------------------------                               ::   PostDec
-		<assignTarget--, s, h> -> <h(a), s, h + {a: v}>
-
-		(assignTarget, s, h) in dom(addr)
-		a = addr(assignTarget, s, h)
-		h(a) - 1 = v
-		-----------------------------                               ::   PreDec
-		<--assignTarget, s, h> -> <v,s, h + {a: v}>
-
-		<e, s, h> -> <e', s', h'>
-		--------------------------------------------------------    ::	 If1
-		<if (e) {m1} else {m2}, s, h> -> <if (e') {m1} else {m2}, s', h'>
-
-		--------------------------------------		                ::	 If2
-		<if (true) {m1} else {m2}, s, h> -> <m1, s, h>
-
-		--------------------------------------		                ::	 If3
-		<if (false) {m1} else {m2}, s, h> -> <m2, s, h>
-		
-		--------------------------------------------------------    ::	 If4
-		<if (e) {m1}, s, h> -> <if (e) {m1} else {}, s, h>
-
-		--------------------------------------------------------    ::	 While
-		<while (e) {m1}, s, h> -> <if (e) {m1; while (e) {m1}}, s, h>
-
-		--------------------------------------------------------    ::	 For
-		<for (e1; e2; e3) {m1}, s, h> -> <e1; if (e2) {m1;e3; while (e2) {m1;e3}}, s, h>
-
-		<e, s, h> -> <e', s', h'>
-		---------------------------------------------				::   Obj
-		< {l1: v1, .., lj: vj, l: e, l1': e1, .., lj': ej}, s, h> -> <{l1: v1, .., lj: vj, l: e', l1': e1, .., lj': ej}, s', h>
-
+		e != assignTarget
 		<e, s, h> -> <e', s', h'>
 		----------------------- 									::   Prop1
 		<e.l, s, h> -> <e'.l, s', h'>
@@ -462,19 +329,16 @@ Jop :: '' ::=
 		----------------------- 									::   Prop2
 		< {l1: v1, .., lj: vj, l: v, l1': v1', .., lj': vj'}.l, s, h> -> <v, s', h'>
 
+		e != assignTarget
 		<e, s, h> -> <e', s', h'>
-		---------------------------------------------				::   Arr
-		<[v1, .., vj, e, e1, .., ek], s, h> -> <[v1, .., vj, e', e1, .., ek], s', h'>
-
-		<e, s, h> -> <e', s', h'>
-		---------------------------------------------				::   Arr2
+		---------------------------------------------				::   ArrGet1
 		<e[e2], s, h> -> <e'[e2], s', h'>
 
 		<e, s, h> -> <e', s', h'>
-		---------------------------------------------				::   Arr3
+		---------------------------------------------				::   ArrGet2
 		<v[e], s, h> -> <v[e'], s', h'>
 
-		---------------------------------------------				::   Arr4
+		---------------------------------------------				::   ArrGet3
 		<[v1, .., vj][k], s, h> -> <vk, s, h>
 
 		e != v.l
@@ -532,6 +396,169 @@ Jop :: '' ::=
 		------------------------------------------------ 			:: 	 CallBody4
 		<<@body{return; m},s',h>,s,h> -> <undefined, s, h'>
 
+		-------------------                        		            ::   Seq1
+		<v; m1; ..; mi, s, h> -> <m1; ..; mi, s, h>
+
+		<m1, s, h> -> <m1', s', h'>
+		----------------------------              		            ::   Seq2
+		<m1;m2; ..; mi, s, h> -> <m1'; m2; ..; mi, s', h'>
+
+		assignTarget != vRef
+		<assignTarget, s, h> -> <assignTarget', s', h'>
+		----------------------------                 		        ::   Assign1
+		<assignTarget Ass e1, s, h> -> <assignTarget' Ass e1, s', h'>
+
+		<e, s, h> -> <e', s', h'>
+		----------------------------                 		        ::   Assign2
+		<vRef Ass e, s, h> -> <vRef Ass e', s', h'>
+
+		(vRef, s, h) in dom(addr)
+		---------------------------------            		        ::   Assign3
+		<vRef = v, s, h> -> <v, s, h + {addr(vRef, s, h): v}>
+
+		assignTarget != vRef
+		<assignTarget, s, h> -> <assignTarget, s', h'>
+		---------------------------------------------------			:: AssignTarget1
+		<assignTarget.l, s, h> -> <assignTarget'.l, s', h'>
+
+		assignTarget != vRef
+		<assignTarget, s, h> -> <assignTarget', s', h'>
+		----------------------------------------------- 			:: AssignTarget2
+		<assignTarget[e], s, h> -> <assignTarget'[e], s', h'>
+
+		<e, s, h> -> <e', s', h'>
+		-------------------------------------- 						:: AssignTarget3
+		<vRef[e], s, h> -> <vRef[e'], s', h'>
+
+		id !in dom(s)
+		a is fresh
+		--------------------------------------------				:: 	AssignUndef
+		<id = v, s, h> -> <v, s + {id: a}, h+{a: v}>
+
+		(vRef.l, s, h) in dom(addr)
+		(vRef, s, h) in dom(addr)
+		a = addr(vRef, s, h)
+		----------------------------------------------- 			::  PropAdd
+		<vRef.l = v, s, h> -> <v,s, h+{a:h(a) u {l:v}}>
+
+		----------------------------                 		        ::   AssignNum
+		<vRef numOp= v, s, h> -> <vRef = vRef numOp v, s, h>
+
+		<e1, s, h> -> <e1', s', h'>
+		--------------------------------                            ::   BinOp1
+		<e1 op e2, s, h> -> <e1' op e2, s', h'>
+
+		<e2, s, h> -> <e2', s', h'>
+		-------------------------------                             ::   BinOp2
+		<v op e2, s, h> -> <v op e2', s', h'>
+
+		n1 numOp n2 = n
+		-----------------------                                     ::   NumOp
+		<n1 numOp n2, s, h> -> <n, s, h>
+
+		b1 boolOp b2 = b
+		-----------------------                                     ::   BoolOp
+		<b1 boolOp b2, s, h> -> <b, s, h>
+
+		v1 cmpOp v2 = b
+		-----------------------                                     ::   CmpOp
+		<v1 cmpOp v2, s, h> -> <b, s, h>
+
+		n1 numcmpOp n2 = b
+		-----------------------                                     ::   NumCmpOp
+		<n1 numcmpOp n2, s, h> -> <b, s, h>
+
+		<e, s, h> -> <e', s', h'>
+		--------------------------------                            ::   PreOp
+		<preOp e1, s, h> -> <preOp e1', s', h'>
+
+		!b1 = b2
+		-----------------------                                     ::   BoolNeg
+		<!b1, s, h> -> <b2, s, h>
+
+		~n1 = n
+		-----------------------                                     ::   NumNeg
+		<~n1, s, h> -> <n, s, h>
+
+		assignTarget != vRef
+		<assignTarget, s, h> -> <assignTarget', s', h'>
+		--------------------------------                            ::   PreAssign
+		<preAssign assignTarget, s, h> -> <preAssign assignTarget', s', h'>
+
+		assignTarget != vRef
+		<assignTarget, s, h> -> <assignTarget', s', h'>
+		--------------------------------                            ::   PostAssign
+		<assignTarget postAssign, s, h> -> <assignTarget' postAssign, s', h'>
+
+		(vRef, s, h) in dom(addr)
+		a = addr(vRef, s, h)
+		h(a) + 1 = v
+		-----------------------------                               ::   PostInc
+		<vRef++, s, h> -> <h(a), s, h + {a: v}>
+
+		(vRef, s, h) in dom(addr)
+		a = addr(vRef, s, h)
+		h(a) + 1 = v
+		-----------------------------                               ::   PreInc
+		<++vRef, s, h> -> <v, s, h + {a: v}>
+
+		(vRef, s, h) in dom(addr)
+		a = addr(vRef, s, h)
+		h(a) - 1 = v
+		-----------------------------                               ::   PostDec
+		<vRef--, s, h> -> <h(a), s, h + {a: v}>
+
+		(vRef, s, h) in dom(addr)
+		a = addr(vRef, s, h)
+		h(a) - 1 = v
+		-----------------------------                               ::   PreDec
+		<--vRef, s, h> -> <v,s, h + {a: v}>
+
+		a is fresh
+		-----------------------------                		        ::   Var1
+		<var id, s, h> -> <eps, s + {id: a}, h + {a: undefined}>
+
+		<e, s, h> -> <e', s', h'>
+		-----------------------------------               		    ::   Var2
+		<var id = e, s, h> -> <var id = e', s, h'>
+
+		a is fresh
+		----------------------------------------       		        ::   Var3
+		<var id = v, s, h> -> <eps, s + {id: a}, h + {a: v}>
+
+		----------------------------------------- 			        ::   Var4
+		<var vd, vd', s, h> -> <var vd; var vd', s, h>
+
+		a is fresh
+		------------------------------------------------- 			::   FuncDef
+		<@def function x(y1,..,yi) {m}, s, h> -> <eps, s + {x: a}, h  + {a: <function (y1,..,yi) {m}, s>}> 
+
+		<e, s, h> -> <e',s',h'>
+		------------------------------------- 						:: Return1
+		<return e, s, h> -> <return e',s',h'>
+
+		------------------------------------------					:: Return2
+		<return, s, h> -> <return undefined, s, h>
+
+		<e, s, h> -> <e', s', h'>
+		--------------------------------------------------------    ::	 If1
+		<if (e) {m1} else {m2}, s, h> -> <if (e') {m1} else {m2}, s', h'>
+
+		--------------------------------------		                ::	 If2
+		<if (true) {m1} else {m2}, s, h> -> <m1, s, h>
+
+		--------------------------------------		                ::	 If3
+		<if (false) {m1} else {m2}, s, h> -> <m2, s, h>
+		
+		--------------------------------------------------------    ::	 If4
+		<if (e) {m1}, s, h> -> <if (e) {m1} else {}, s, h>
+
+		--------------------------------------------------------    ::	 While
+		<while (e) {m1}, s, h> -> <if (e) {m1; while (e) {m1}}, s, h>
+
+		--------------------------------------------------------    ::	 For
+		<for (e1; e2; e3) {m1}, s, h> -> <e1; if (e2) {m1;e3; while (e2) {m1;e3}}, s, h>
+
 	% Note: Only expressions have a type - the more general statements do not
 	defn
 	G |- e : T | C G' :: ::expType::''
@@ -561,14 +588,6 @@ Jop :: '' ::=
 
 
 
-		dom(g) < dom(s)
-		g |- func : <T, g> |C g'
-		------------------------									:: V_Closure
-		G |- <func, s> : <T, g> |C G
-
-
-
-
 
 
 		% Object types simply depend on their expressions
@@ -579,10 +598,6 @@ Jop :: '' ::=
 		---------------------------------------------------------   :: V_Obj
 		G |- {l1: e1, .., lk: ek} : {l1: T1, .., lk: Tk} |C Gk
 
-
-
-
-
 		% Array types simply depend on their expressions too (but all constrained to one)
 
 		T is fresh
@@ -591,6 +606,10 @@ Jop :: '' ::=
 		---------------------------------------------------------   :: V_Arr
 		G |- [e1, .., ek] : [T] |C Gk
 
+		dom(g) < dom(s)
+		g |- func : <T, g> |C g'
+		------------------------									:: V_Closure
+		G |- <func, s> : <T, g> |C G
 
 
 
@@ -650,7 +669,6 @@ Jop :: '' ::=
 		---------------------------------------------------------   :: PropType
 		G |- e.l : T |C u {{l:T} > T1} G1
 	
-		% NB in JSTyper we don't allow string-keyed array accesses
 		T is fresh
 		G  |- e  : T1 |C1 G1
 		G1 |- e1 : T2 |C2 G2
@@ -684,14 +702,14 @@ Jop :: '' ::=
 		g u {return:pending} |- m |C g'
 		g |- (s,h)
 		g'["return"] = pending
-		----------------------------------------- 					:: FunBody
+		----------------------------------------- 					:: FunBodyType
 		G |- <@body{m}, s, h>: T |C u {T=undefined} G
 
 		g u {return:pending} |- m |C g'
 		g |- (s,h)
 		g'["return"] = Tk
 		Tk != IllDefined(Tk')
-		----------------------------------------- 					:: VoidBody
+		----------------------------------------- 					:: VoidBodyType
 		G |- <@body{m}, s, h>: T |C u {T=Tk} G
 
 
@@ -704,10 +722,10 @@ Jop :: '' ::=
 		% style of constraint solving (discarding used constraints), I need to
 		% update gamma, so might as well update it in the formal system too.
 
-		G(id) = T
-		G  |- e' : T1 |C1 G1
+		G  |- assignTarget : T1 |C1 G1
+		G1 |- e' : T2 |C2 G2
 		------------------------------------------------------	 	:: AssignType 
-		G  |- id = e' : T1 |C1 u { T >c T1 } G1 u {id: T1}
+		G  |- assignTarget = e' : T2 |C1 u { T1 >c T2 } G2 u {id: T1}
 
 		T is fresh
 		id !in dom(G)
@@ -726,27 +744,10 @@ Jop :: '' ::=
 		------------------------------------------------------	 	:: PropAssignType
 		G  |- id.l1.lk.l = e' : T' |(U j=0-i Cj) u (C' u C) G1
 
-		G  |- e1 : T1 |C1 G1
-		G1 |- e2 : T2 |C2 G2
-		G2 |- e3 : T3 |C3 G3
-		------------------------------------------------------	 	:: ArrayAssignType 
-		G  |- e1[e2] = e3 : T1 |((C1 u C2) u C3) u ({T2=number} u {[T1] >c T3}) G3
-
-		G1 |- id : T1 |C1 G1
+		G1 |- assignTarget : T1 |C1 G1
 		G  |- e' : T2 |C2 G2
 		------------------------------------------------------	 	:: NumAssignType
-		G  |- id numOp= e' : T1 |(C1 u C2) u ({ T2 = T1 } u {T1 = number}) G2
-
-		G  |- e  : T1 |C1 G1
-		G1 |- e' : T2 |C2 G2
-		------------------------------------------------------	 	:: PropNumAssignType
-		G  |- e.l numOp= e' : T2 |(C1 u C2) u ({ {l:number} > T1 } u {T2 = number}) G2
-
-		G  |- e1 : T1 |C1 G1
-		G1 |- e2 : T2 |C2 G2
-		G2 |- e3 : T3 |C3 G3
-		------------------------------------------------------	 	:: ArrayNumAssignType 
-		G  |- e1[e2] numOp= e3 : T1 |((C1 u C2) u C3) u ({T2=T1} u ({[T1] = [number]} u {T3=number})) G3
+		G  |- assignTarget numOp= e' : T1 |(C1 u C2) u ({ T2 = T1 } u {T1 = number}) G2
 
 
 
@@ -786,18 +787,20 @@ Jop :: '' ::=
 		% Unary Operation
 
 		G |- e : T1 |C G'
-		------------------------------------------- 	:: NegType
+		------------------------------------------- 	:: NegBoolType
 		G |- !e : boolean |C u {T1 = boolean} G'
 
 		G |- e : T1 |C G'
-		------------------------------------------- 	:: PreNumType
-		G |- preNum e : number |C u {T1 = number} G'
+		------------------------------------------- 	:: NegNumType
+		G |- ~e : number |C u {T1 = number} G'
 
-		% all post-ops are for numbers
+		G |- assignTarget : T1 |C G'
+		------------------------------------------- 	:: PreOpType
+		G |- preAssign assignTarget : number |C u {T1 = number} G'
 
-		G |- e : T1 |C G'
+		G |- assignTarget : T1 |C G'
 		------------------------------------------- 	:: PostOpType
-		G |- e postOp : number |C u {T1 = number} G'
+		G |- assignTarget postAssign : number |C u {T1 = number} G'
 
 
 	defn
@@ -811,7 +814,7 @@ Jop :: '' ::=
 		G |- e |C G'
 
 		G |- function id(x1, .., xi) { m1; ..; mj } : T |C G'
-		-----------------------------------------------------------------     :: FunDef
+		-----------------------------------------------------------------     :: FuncDefTypable
 		G |- @def function id(x1, .., xi) { m1; ..; mj } |C G' u {id: T}
 
 		G |- return undefined |C G'
