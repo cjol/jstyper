@@ -13,6 +13,7 @@
 \newtheorem{theorem}{Theorem}[section]
 \usepackage{etoolbox}
 \usepackage{proof}
+\usepackage{braket}
 \makeatletter
 \patchcmd{\@thm}{\trivlist}{\list{}{ \leftmargin=1.5em}}{}{}
 \patchcmd{\@endtheorem}{\endtrivlist}{\endlist}{}{}
@@ -33,7 +34,6 @@
   postheadspace=1em
 ]{subcasestyle}
 \declaretheorem[style=casestyle]{case}
-
 \begin{document}
 
 \title{ Extra Specification }
@@ -72,7 +72,51 @@
   \end{equation}
 \end{definition}
 
-\begin{definition}[Merge]\label{merge}
-  TODO 
+\begin{definition}[Constraints]\label{constraintsDefn}
+
+  A constraint may be of the form $\{T_1 = T_2\}$ or $\{T_1 \succeq T_2\}$.
+
+  A constraint of the form $\{T_1 = T_2\}$ is satisfied iff $T_1 = T_2$.
+
+  A constraint of the form $\{T_1 \succeq T_2\}$ is satisfied if $T_1$ and
+  $T_2$ are non-objects and $T_1 = T_2$, or if $T_1$ and $T_2$ are both
+  objects and $T_1$ is a supertype of $T_2$. That is, for each property
+  $\{l:T\} \in T_1$, there must be an equivalent property $\{l: T'\} \in T_2$ such
+  that $\{T \succeq T'\}$ is satisfied.
+
+\end{definition}
+
+\begin{definition}[$\cap$]\label{typeIntersect}
+
+  Given two types $T_1$ and $T_2$, the intersection $T_1\cap T_2$ is defined by:
+  \begin{equation}\label{intersect-eqn}
+  	T_1\cap T_2 = 
+  	\begin{cases}
+  	  T_1 & \text{if $T_1 = T_2$}, \\
+  	  \Set{(l:T_1'\cap T_2') | (l:T_1') \in T_1 \land (l:T_2') \in T_2} & \text{if $T_1$ and $T_2$ are objects}, \\
+  	  undefined & \text{otherwise.}
+  	\end{cases}
+  \end{equation}
+
+\end{definition}
+
+\begin{definition}[merge]\label{merge}
+  The function $merge(\Gamma_0, \Gamma_1, \Gamma_2)$ merges two derivative type environments $\Gamma_1$ and $\Gamma_2$ back into the original type environment $\Gamma_0$.
+  \begin{equation} \label{merge-eqn}
+	merge (\Gamma_0, \Gamma_1, \Gamma_2) = \Set{ \Gamma_1(x) \cap \Gamma_2(x) | (x: T) \in \Gamma_0 }
+  \end{equation}
+\end{definition}
+
+\begin{definition}[$\sqsubseteq$]
+  I impose a partial order on type environments, such that
+  \begin{equation} \label{less-typed-eqn}
+  	\begin{split}
+	\Gamma_1 \sqsubseteq \Gamma_2 \iff &\\
+		\big(( \Gamma_1 &\vdash e : T_1\ |_C\ \Gamma_1' \implies\\
+			&\Gamma_2 \vdash e : T_2\ |_C\ \Gamma_2' \land \Gamma_1' \sqsubseteq \Gamma_2' \land T_1 \succeq T_2 )\ \land\\
+		( \Gamma_1 &\vdash m\ |_C\ \Gamma_1' \implies\\
+			&\Gamma_2 \vdash m\ |_C\ \Gamma_2' \land \Gamma_1' \sqsubseteq \Gamma_2' \land T_1 \succeq T_2 ) \big)\\
+  	\end{split}
+  \end{equation}
 \end{definition}
 \end{document}

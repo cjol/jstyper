@@ -884,7 +884,6 @@ UglifyJS.AST_Block.prototype.check = function(gamma, dynamics) {
 };
 
 // handy functions for if, while and for (which have isolated branches)
-// create a cloned (SEPARATE!) environment for the branches
 // we will then have to merge changes back into the original
 function getCommonAncestor(T1, T2) {
 	// trace both paths up to the root, and then go back up both, finding the
@@ -938,19 +937,6 @@ function flattenObj(o1, o2, limit, C) {
 		}
 		o = Classes.Type.store[o.originalObj];
 	}
-
-	// then flatten o2
-	// o = o2;
-	// while (o !== undefined && o.memberTypes !== undefined && o.id !== limit.id) {
-	// 	for (l in o.memberTypes) {
-	// 		var t1 = objectGetProperty(o1, l);
-	// 		if (t1 === null) {
-	// 			memberTypes[l] = o.memberTypes[l];
-	// 			Classes.Type.store[memberTypes[l]].illDefined = true;
-	// 		}
-	// 	}
-	// 	o = Classes.Type.store[o.originalObj];
-	// }
 
 	var flat = new Classes.ObjectType({
 		memberTypes: memberTypes
