@@ -112,10 +112,10 @@
   \begin{equation} \label{less-typed-eqn}
   	\begin{split}
 	\Gamma_1 \sqsubseteq \Gamma_2 \iff &\\
-		\big(( \Gamma_1 &\vdash e : T_1\ |_C\ \Gamma_1' \implies\\
-			&\Gamma_2 \vdash e : T_2\ |_C\ \Gamma_2' \land \Gamma_1' \sqsubseteq \Gamma_2' \land T_1 \succeq T_2 )\ \land\\
-		( \Gamma_1 &\vdash m\ |_C\ \Gamma_1' \implies\\
-			&\Gamma_2 \vdash m\ |_C\ \Gamma_2' \land \Gamma_1' \sqsubseteq \Gamma_2' \land T_1 \succeq T_2 ) \big)\\
+		\big(\forall e, T_1, C, \Gamma_1' . ( \Gamma_1 &\vdash e : T_1\ |_C\ \Gamma_1' \implies\\
+			\exists T_2, \Gamma_2' . &\Gamma_2 \vdash e : T_2\ |_C\ \Gamma_2' \enspace \land\enspace  \Gamma_1' \sqsubseteq \Gamma_2' \enspace \land\enspace  T_1 \succeq T_2 )\ \quad\land\\
+		\forall m, C, \Gamma_1' . ( \Gamma_1 &\vdash m\ |_C\ \Gamma_1' \implies\\
+			\exists \Gamma_2' . &\Gamma_2 \vdash m\ |_C\ \Gamma_2' \enspace\land\enspace \Gamma_1' \sqsubseteq \Gamma_2' \enspace\land\enspace T_1 \succeq T_2 ) \big)\\
   	\end{split}
   \end{equation}
 \end{definition}

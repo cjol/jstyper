@@ -7,6 +7,7 @@
 \usepackage{fixltx2e}
 \usepackage{amsthm}
 \usepackage{thmtools}
+\usepackage{color}
 \theoremstyle{definition}
 \newtheorem{definition}{Definition}[section]
 \newtheoremstyle{dotless}{\topsep}{\topsep}{\itshape}{}{\bfseries}{}{5pt plus 1pt minus 1pt}{}
@@ -613,14 +614,16 @@
 \begin{proof}
 
   The proof is again by induction, over all typing judgements, though most cases are uninteresting.
-  In all cases, begin by assuming 
-	$merge(\Gamma_0, \Gamma_1, \Gamma_2) \vdash \mathtt{e} : T\ |_C\ \Gamma'$
+  In all cases, let $\Gamma_m = merge(\Gamma_0, \Gamma_1, \Gamma_2)$ and begin by assuming 
+	$\Gamma_m \vdash \mathtt{e} : T\ |_C\ \Gamma'$.
   \begin{case}[IdType]
 	TODO (from pad)
 
   \end{case}
   \begin{case}[V\_String]
-  	Trivially, $\Gamma_1 \vdash \mathtt{e} : \mathtt{string}\ |_C\ \Gamma_1$.
+  	Under this type judgement, $e=\mathtt{str}$, $T=\mathtt{string}$, $C=\varnothing$, $\Gamma_m'=\Gamma_m$.
+  	Trivially, $\Gamma_1 \vdash \mathtt{e} : T\ |_C\ \Gamma_1$, so the only
+  	thing to show is that $\Gamma_m\sqsubseteq\Gamma_1$. \textcolor{red}{How?}
   \end{case}
 
 	All other cases are similar to V\_Obj or V\_String
