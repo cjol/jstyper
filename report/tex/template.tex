@@ -1,0 +1,116 @@
+% Template for a Computer Science Tripos Part II project dissertation
+\documentclass[12pt,a4paper,twoside,openright]{report}
+\usepackage[pdfborder={0 0 0}]{hyperref}    % turns references into hyperlinks
+\usepackage[margin=25mm]{geometry}  % adjusts page layout
+\usepackage{graphicx}  % allows inclusion of PDF, PNG and JPG images
+\usepackage{verbatim}
+\usepackage{docmute}   % only needed to allow inclusion of proposal.tex
+\usepackage[super]{nth}
+
+\raggedbottom
+\sloppy
+\clubpenalty1000%
+\widowpenalty1000%
+
+\renewcommand{\baselinestretch}{1.1}    % adjust line spacing to make
+                                        % more readable
+
+\begin{document}
+
+\bibliographystyle{plain}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Title
+
+
+\pagestyle{empty}
+
+\rightline{\LARGE \textbf{Christopher J.~O.~Little}}
+
+\vspace*{60mm}
+\begin{center}
+  \Huge
+  \textbf{Building a Gradual Type System for JavaScript} \\[5mm]
+  Computer Science Tripos -- Part II \\[5mm]
+  Emmanuel College \\[5mm]
+  \today  % today's date
+\end{center}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Proforma, table of contents and list of figures
+
+\pagestyle{plain}
+
+\chapter*{Proforma}
+
+{\large
+  \begin{tabular}{ll}
+	Name:               & \bf Christopher J.~O.~Little             \\
+	College:            & \bf Emmanuel College                      \\
+	Project Title:      & \bf Building a Gradual Type System for JavaScript  \\
+	Examination:        & \bf Computer Science Tripos -- Part II, May 2015  \\
+	Word Count:         & \bf \input{|"detex diss.tex | tr -cd '0-9A-Za-z ' | wc -w"}\footnotemark[1] \\
+	Project Originator: & Christopher J.~O.~Little 			\\
+	Supervisor:         & Dr Kathryn Gray                   \\ 
+  \end{tabular}
+}
+\footnotetext[1]{This word count was computed
+  by \texttt{detex diss.tex | tr -cd '0-9A-Za-z ' | wc -w}
+}
+\stepcounter{footnote}
+
+
+\section*{Original Aims of the Project}
+TODO
+
+
+\section*{Work Completed}
+TODO
+
+
+\section*{Special Difficulties}
+
+
+\newpage
+\section*{Declaration}
+
+I, Christopher Little of Emmanuel College, being a candidate for Part II of the
+Computer Science Tripos, hereby declare that this dissertation and the work
+described in it are my own work, unaided except as may be specified below, and
+that the dissertation does not contain material that has already been used to
+any substantial extent for a comparable purpose.
+
+\bigskip
+\leftline{Signed }
+
+\medskip
+\leftline{Date }
+
+\tableofcontents
+
+\listoffigures
+
+\newpage
+\section*{Acknowledgements}
+TODO
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% now for the chapters
+
+\pagestyle{headings}
+\input{diss}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% the bibliography
+\addcontentsline{toc}{chapter}{Bibliography}
+\bibliography{bib}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% the appendices
+\appendix
+
+\chapter{Project Proposal}
+
+\input{proposal}
+
+\end{document}

@@ -6,3 +6,10 @@ node_modules
 *.pdf
 *.synctex.gz
 *.sublime-workspace
+*.out
+*.toc
+*.lof
+*.swp
+*-blx.bib
+*.bbl
+*.blg

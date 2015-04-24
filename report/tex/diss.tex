@@ -1,54 +1,110 @@
 % Draft #1
-
-\documentclass{article}
-\usepackage[T1]{fontenc}
+\documentclass[12pt,a4paper,twoside,openright]{report}
+\usepackage[pdfborder={0 0 0}]{hyperref}    % turns references into hyperlinks
+\usepackage[margin=25mm]{geometry}  % adjusts page layout
+\usepackage{graphicx}  % allows inclusion of PDF, PNG and JPG images
+\usepackage{verbatim}
+\usepackage{docmute}   % only needed to allow inclusion of proposal.tex
 \usepackage[super]{nth}
-\usepackage[all]{nowidow}
+\usepackage[sorting=none,backend=bibtex]{biblatex}
+\bibliography{mybib}
+\raggedbottom
+\sloppy
+\clubpenalty1000%
+\widowpenalty1000%
+
+\renewcommand{\baselinestretch}{1.1}    % adjust line spacing to make
+                                        % more readable
 \begin{document}
 
-	\vfil 
-	\centerline{\Large Building a Gradual Type System for JavaScript }
-	\vspace{0.4in}
-	\centerline{\large Christopher J.O. Little, Emmanuel College}
+\chapter{Introduction}\label{introduction}
 
-	\section{Introduction}\label{introduction}
-		\subsection{Why is type-checking interesting?}
-		\subsection{What's interesting about JavaScript?}
-		\subsection{Others' approaches to type-checking JavaScript}
-		\subsection{Introduction to gradual typing}
-	\section{Preparation}\label{preparation}
-		\subsection{Foundations of typing (background reading) --- Milner, Pierce}
-		\subsection{Separation of tasks --- splitting language features and development phases}
-		\subsection{Selection of dev tools (why JavaScript, which AST generator)}
-	\section{Implementation}\label{implementation}
+JavaScript is a high-level programming language which was originally designed
+for little more than validating forms on websites. Today the language is an
+essential part of everyday computing, powering demanding online applications
+such as image editors, IDEs and online games. Even the execution context of the
+language has changed, moving from the browser to the server, and even now being
+targeted by compilers of other languages. As the scale of JavaScript
+applications has increased, so too has the complexity of development projects.
+Assurance that a program is bug-free has become more critical, and development
+tools have accordingly become more powerful. JavaScript's weak typing
+discipline, however, makes it harder to reason about a program's correctness,
+and limits the information available to development tools.
 
-		For each of these sections, I will discuss a few relevant/interesting
-		cases. Some of the problems may have had implications in several
-		phases of the the implementation, so I'll have to decide where to talk
-		about those. 
+\textit{Types} are a way of grouping together values which support similar
+operations. For example, \texttt{number} might be a type representing values
+which support addition and subtraction. \texttt{string} might represent a
+sequence of characters which doesn't support addition or subtraction, but does
+support concatenation. A program cannot subtract a \texttt{number} from a
+\texttt{string}, and an attempt to do so is known as a \textit{type error}. We
+say that a language is \textit{strongly} typed if such attempts will always
+generate some kind of error, whereas a \textit{weakly} typed language may allow
+the operation to execute, with sometimes unpredictable consequences. Under
+\textit{dynamic} typing, checking for type errors happens at the very last
+minute -- during program execution itself. Using a \textit{static} type
+checker, the program code can be analysed in advance to identify type errors
+before the program ever runs.
 
-	
-		\subsection{Formal Definition of Type System}
-		\subsection{Constraint Generation}
-		\subsection{Constraint solving}
-		\subsection{Gradual typing}
-		Some problems to discuss: \\
-			Object Property addition \\
-			Recursive `this' \\
-			Solving constraints iteratively (rather than in one pass at the end) \\
-			Solving substructure constraints (several times\ldots) \\
-			distinction between `dynamic' and `import' \\
-	\section{Evaluation}\label{evaluation}
-		\subsection{Proof of Safety}
-		\subsection{`Sanity Check': visual inspection of my test cases}
-		\subsection{Correctness tests comparing output of code with and without gradual typing}
-		\subsection{Speed Overhead}
-		\subsection{Memory overhead}
-	\section{Conclusions}
-		\subsection{Things still to do for maximum usefulness}
-			Arrays, Prototypal Inheritance, Strings as objects, functions as objects \\
-			Auto-detect imported vars by scope analysis \\
-			Fine-grained object modification by control flow analysis
+Static type checking catches potential bugs earlier in the development cycle,
+and can allow programs to run faster, without needing to check types before
+every operation. However, it is impossible for a static type checker to
+precisely identify all potential type errors, because it cannot know precisely
+what the program will do when it runs. % Could mention the halting problem
+Instead, a conservative approximation is made, and some programs which would
+never actually exhibit a type error will fail a static type check. This
+approximation can be frustrating for developers, who will need to satisfy the
+type checker by rewriting their before it will run.
 
+Although it is often languages which are described as being statically or
+dynamically-typed, in reality it is compilers and interpreters which enforce a
+particular discipline. A compiler for a traditionally statically-typed language
+could skip the static type checking phase and insert dynamic type checks
+instead. In the other direction, it is sometimes possible to perform static
+analysis of a program's code in order to avoid reliance on delayed runtime
+checks.
+
+Several such attempts have been made to perform static analysis on JavaScript,
+which is typically a dynamically-typed language. In 2000, Microsoft extended
+JScript, their implementation of JavaScript, and introduced JScript.NET -- a
+superset of JavaScript designed for use outside the browser, which supported
+type annotations~\cite{jscript}.
+\printbibliography
+\section{What's interesting about JavaScript?}
+\section{Others' approaches to type-checking JavaScript}
+\section{Introduction to gradual typing}
+
+\chapter{Preparation}\label{preparation}
+\section{Foundations of typing (background reading) --- Milner, Pierce}
+\section{Separation of tasks --- splitting language features and development phases}
+\section{Selection of dev tools (why JavaScript, which AST generator)}
+\chapter{Implementation}\label{implementation}
+
+For each of these sections, I will discuss a few relevant/interesting
+cases. Some of the problems may have had implications in several
+phases of the the implementation, so I'll have to decide where to talk
+about those. 
+
+
+\section{Formal Definition of Type System}
+\section{Constraint Generation}
+\section{Constraint solving}
+\section{Gradual typing}
+Some problems to discuss: \\
+Object Property addition \\
+Recursive `this' \\
+Solving constraints iteratively (rather than in one pass at the end) \\
+Solving substructure constraints (several times\ldots) \\
+distinction between `dynamic' and `import' \\
+\chapter{Evaluation}\label{evaluation}
+\section{Proof of Safety}
+\section{`Sanity Check': visual inspection of my test cases}
+\section{Correctness tests comparing output of code with and without gradual typing}
+\section{Speed Overhead}
+\section{Memory overhead}
+\chapter{Conclusions}
+\section{Things still to do for maximum usefulness}
+Prototypal Inheritance, Strings as objects, functions as objects \\
+Auto-detect imported vars by scope analysis \\
+Fine-grained object modification by control flow analysis
 
 \end{document}
