@@ -41,7 +41,7 @@ say that a language is \textit{strongly} typed if such attempts will always
 generate some kind of error, whereas a \textit{weakly} typed language may allow
 the operation to execute, with sometimes unpredictable consequences. Under
 \textit{dynamic} typing, checking for type errors happens at the very last
-minute -- during program execution itself. Using a \textit{static} type
+minute -- during program execution itself. Using a \textit{static} type %chktex 8
 checker, the program code can be analysed in advance to identify type errors
 before the program ever runs.
 
@@ -49,13 +49,15 @@ Static type checking catches potential bugs earlier in the development cycle,
 and can allow programs to run faster, without needing to check types before
 every operation. However, it is impossible for a static type checker to
 precisely identify all potential type errors, because it cannot know precisely
-what the program will do when it runs. % Could mention the halting problem
-Instead, a conservative approximation is made, and some programs which would
-never actually exhibit a type error will fail a static type check. This
-approximation can be frustrating for developers, who will need to satisfy the
-type checker by rewriting their before it will run.
+what the program will do when it runs. If such a type checker existed, it could
+be used to determine whether any given program will terminate or not -- which %chktex 8
+would violate the undecidability of the halting problem. Instead, a
+conservative approximation is made, and some programs which would never
+actually exhibit a type error will fail a static type check. This approximation
+can be frustrating for developers, who will need to satisfy the type checker by
+rewriting their before it will run.
 
-Although it is often languages which are described as being statically or
+Although languages are often described as being statically or
 dynamically-typed, in reality it is compilers and interpreters which enforce a
 particular discipline. A compiler for a traditionally statically-typed language
 could skip the static type checking phase and insert dynamic type checks
@@ -65,10 +67,16 @@ checks.
 
 Several such attempts have been made to perform static analysis on JavaScript,
 which is typically a dynamically-typed language. In 2000, Microsoft extended
-JScript, their implementation of JavaScript, and introduced JScript.NET -- a
+JScript, their implementation of JavaScript, and introduced JScript.NET -- a %chktex 8
 superset of JavaScript designed for use outside the browser, which supported
-type annotations~\cite{jscript}.
-\printbibliography
+type annotations~\cite{jscript}. The language was not terribly successful, due
+to its lack of compatibility with existing JavaScript interpreters, and was not
+further developed. ECMAScript 4~\cite{es4}, a proposed extension to the JavaScript
+standard featured optional type annotations, but the proposal was never
+finalised, and the annotations are not present in later versions of the
+standard.
+
+\printbibliography{}
 \section{What's interesting about JavaScript?}
 \section{Others' approaches to type-checking JavaScript}
 \section{Introduction to gradual typing}
