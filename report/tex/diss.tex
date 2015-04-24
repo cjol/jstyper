@@ -22,9 +22,9 @@
 JavaScript is a high-level programming language which was originally designed
 for little more than validating forms on websites. Today the language is an
 essential part of everyday computing, powering demanding online applications
-such as image editors, IDEs and online games. Even the execution context of the
-language has changed, moving from the browser to the server, and even now being
-targeted by compilers of other languages. As the scale of JavaScript
+such as image editors, IDEs and online games. The execution context of the
+language has also changed, moving from the browser to the server, and now even
+being targeted by compilers of other languages. As the scale of JavaScript
 applications has increased, so too has the complexity of development projects.
 Assurance that a program is bug-free has become more critical, and development
 tools have accordingly become more powerful. JavaScript's weak typing
@@ -66,25 +66,152 @@ analysis of a program's code in order to avoid reliance on delayed runtime
 checks.
 
 Several such attempts have been made to perform static analysis on JavaScript,
-which is typically a dynamically-typed language. In 2000, Microsoft extended
-JScript, their implementation of JavaScript, and introduced JScript.NET -- a %chktex 8
-superset of JavaScript designed for use outside the browser, which supported
-type annotations~\cite{jscript}. The language was not terribly successful, due
-to its lack of compatibility with existing JavaScript interpreters, and was not
-further developed. ECMAScript 4~\cite{es4}, a proposed extension to the JavaScript
-standard featured optional type annotations, but the proposal was never
-finalised, and the annotations are not present in later versions of the
-standard.
+which is typically a dynamically-typed language~\cite{jscript}. ECMAScript
+4~\cite{es4}, a proposed extension to the JavaScript standard featured
+optional type annotations, but the proposal was never finalised and the
+annotations are not present in later versions of the standard.
+TypeScript~\cite{ts}, a source-to-source compiler, extends JavaScript syntax
+with similar annotations such that all JavaScript programs are valid TypeScript
+programs. These approaches have depended on programmer-inserted type
+annotations, which limits their utility for legacy codebases. Some projects
+have attempted to use Hindley-Milner style analysis to infer the types of
+program expressions automatically~\cite{anderson06, tajs}, including the most
+recent contribution, Flow~\cite{flow}. 
 
-\printbibliography{}
-\section{What's interesting about JavaScript?}
-\section{Others' approaches to type-checking JavaScript}
-\section{Introduction to gradual typing}
+Any static analysis, however, will struggle to offer reliable results because
+of the inherently dynamic nature of the language. Many traditional JavaScript
+programming idioms are legitimately inherently untypable. Flow and TypeScript
+allow for this using a special `any' type, which will never trigger a static
+type error. The obvious disadvantage here is that the static analysis can no
+longer make any guarantees about the soundness of the program, as certain parts
+of it have effectively not been checked.
+% maybe include a JS example here.
+% 
+%
+%
+%
+%
+Additionally, JavaScript code rarely operates in isolation in modern web
+applications. Even if a program passes the static type checker, some external
+piece of code may introduce a type error by, for example, passing data of the
+incorrect type to a well-typed function.
 
-\chapter{Preparation}\label{preparation}
-\section{Foundations of typing (background reading) --- Milner, Pierce}
-\section{Separation of tasks --- splitting language features and development phases}
-\section{Selection of dev tools (why JavaScript, which AST generator)}
+Gradual typing is a technique used to make safety guarantees about code which
+integrates both static and dynamic typing. The idea was independently presented
+by four sets of authors between September 2006 and January 2007~\cite{gradSiek,
+gradTobin, gradMatthews, gradGronski}. Since static analysis cannot guarantee
+that the program is free of dynamic type errors, we instead guarantee that only
+dynamic properties of the code are able to cause runtime errors -- that the
+well-typed code ``can't be blamed''~\cite{cantblame} for any type errors which
+arise. This is achieved by protecting the boundaries between the type-safe and
+type-unsafe `worlds'. Conversions are made from dynamic types to static types,
+and although this conversion process may generate an error (for example trying
+to convert a \texttt{number} to a \texttt{string}), the type safety of the
+well-typed world is provably preserved.
+
+In this project I have combined the type inference and gradual typing ideas
+introduced above to create a type checker and source-to-source compiler for a
+subset of JavaScript. The static analysis allows dynamic modification of
+object types by assignment to previously undefined properties. Parts of the
+source code which are type-safe are statically analysed, allowing safe
+interface with untyped code through declared `dynamic' variables.
+
+\chapter{Preparation}\label{preparation} \section{Background}
+% Should I cite the lecture notes?
+Before development could begin, an understanding of the theoretical
+underpinnings of the project was required. Several of the undergraduate courses
+offered as part of the Tripos were a valuable introduction, notably the Part IB
+course \textit{Semantics of Programming Languages}, and the Part II course
+\textit{Types}. \textit{Semantics of Programming Languages} introduced the
+proof techniques necessary for proving type soundness, but the example language
+used was insufficiently complex to cover all strategies required to prove
+safety of a more complete language. Pierce's \textit{Types and Programming
+Languages}~\cite{pierce} bridged this gap sufficiently that I was able to look
+at recent work defining the operational semantics of real dynamic programming
+languages\cite{pythonOpSem}. The \textit{Types} course similarly introduced the
+Hindley--Damas--Milner algorithm for type inference, and Pierce's book helped
+develop those ideas further. Neither course touched on the topic of gradual
+typing, which is very much a topic of current research interest. Fortunately my
+supervisor has some expertise in the area, and was able to suggest papers by
+Siek~\cite{gradSiek, gradSiek2} and herself~\cite{gradGray} to explore the
+area.
+
+In relation to JavaScript itself, I began the project with a strong informal
+grasp of the language. The ECMAScript 5 specification~\cite{ecmaSpec} offered a
+more rigorous definition, which would be required in defining my own
+operational semantics. Finally, it was educational to look at
+TypeScript~\cite{ts,understandingTS}, both to learn from solutions the
+TypeScript team had already found, and to fully understand the limitations of
+their solution. I also attended a talk on Flow by one of the authors, with
+similar ambitions.
+
+\section{Development Tasks}
+
+The project consisted of four discrete tasks: designing a formal specification
+to describe the operational semantics and type judgements for my subset,
+proving that the subset as specified was sound and implementing both the type
+inference system and the gradual typing compiler. Orthogonally to this, the
+language was divided into discrete features, such as if-statements, binary
+operations and loops. This division meant the project lent itself to an
+incremental build model, whereby each build increment introduces a new language
+feature to the specification, proof and implementations. This allowed
+development to proceed systematically, offering sensible opportunities for
+regression testing after each iteration. Fixing bugs highlighted by the
+regression testing was also simplified, since only relatively small changes
+were introduced in each iteration. This strategy also offered the advantage
+that, should my initial ambitions have proven too great, I could cease
+development at the end of any iteration and still have a successful system,
+albeit supporting fewer features.
+
+Within each iteration, I began with the specification, as a kind of
+requirements analysis. The iteration would be considered complete when each of
+the other components conformed to the specification. For the two development
+tasks, I proceeded in a test-driven manner, whereby I would first write tests
+involving the new language feature expecting them to fail. Development would
+then be aiming to make these failing test-cases pass. My collection of tests
+available for regression testing (and later for benchmarking) thus grew
+consistently across the project life-cycle, and by the end of the project 86
+such tests had been produced.
+
+Many developers view theoretical computer science as carrying little practical
+benefit for them, when the truth is that concrete implementations of the theory
+can bring huge practical benefits. It was thus important to me to integrate
+smoothly within the existing JavaScript ecosystem rather than enforce a
+non-standard workflow for JavaScript developers, such that the barrier to entry
+be reduced and the benefits of static typing more easily discoverable.
+Languages like OCaml, although commonly used for this kind of project within
+the academic community, are unlikely to be present on a web developer's
+computer. Indeed, this is a problem Chaudhuri mentioned having for Flow, which
+has been released as an open source project but suffers from a lack of
+contributors because the project's main users are not able to understand or
+make meaningful contributions to the type checker's code. Instead, I decided to
+write the type inference system in JavaScript, thus ensuring it could run on
+any system. This decision also potentially opened the door for writing a
+self-hosting compiler, which could type-check and compile its own source code.
+Unfortunately, in practice my implementation relied too much on object
+inheritance, which was a feature not planned for implementation.
+
+As an interpreted language, JavaScript is not compiled prior to execution, but
+it is often compressed to speed download times to client computers. To aid with
+this, a number of static analysis tools do already exist, performing mainly
+control-flow analyses to, for example, eliminate unused variables from the
+source code (known as \textit{minification}). Although I was not interested in
+such analyses, it seemed sensible to integrate with a standard abstract syntax
+tree (AST) format, and use existing parsing and code-generation solutions.
+UglifyJS~\cite{uglify} is one of the most-used minification libraries for
+JavaScript, and has separate components for parsing and code generation but
+uses a custom (albeit well-documented) AST format. Esprima~\cite{esprima} is
+another JavaScript parser which is marginally faster and uses the SpiderMonkey
+AST format standardised by Mozilla. Various analysis tools and code generators
+exist for this format, but I decided that the UglifyJS format was actually more
+useful for my purposes, and parse speeds was not a priority. For example, the
+SpiderMonkey AST has a single representation of any unary expression, when in
+practice it can be useful to distinguish between prefix and suffix expressions.
+Additionally, UglifyJS uses object inheritance to define its node types, where
+Esprima prefers plain objects. Inheritance made it straightforward to define
+type judgements once for multiple related nodes, though retrospectively it is a
+shame that this may have prevented my compiler from being self-hosting.
+
 \chapter{Implementation}\label{implementation}
 
 For each of these sections, I will discuss a few relevant/interesting
