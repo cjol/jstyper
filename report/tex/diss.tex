@@ -24,9 +24,10 @@
 \makeatletter
 \newcommand\fs@plainruled{\def\@fs@cfont{\rmfamily}\let\@fs@capt\floatc@plain%
 \def\@fs@pre{}%
-  \def\@fs@mid{\kern2pt\hrule\vspace\abovecaptionskip\relax}%
-  \def\@fs@post{}%
-  \let\@fs@iftopcapt\iffalse}
+\def\@fs@mid{\kern2pt\hrule\vspace\abovecaptionskip\relax}%
+\def\@fs@post{}%
+\let\@fs@iftopcapt\iffalse
+}
 \makeatother
 \floatstyle{plain}
 
@@ -359,9 +360,9 @@ important, else we could end up with assignments of the form \texttt{5 = 6;}
 which make little sense. This simplification has the consequence of deeming
 some valid JavaScript assignments illegal, such as the following expression:
 \begin{program}[H]
-	\begin{minted}{js}
-	  (function(){ return {}; }).x = 5;
-	\end{minted}
+  \begin{minted}{js}
+	(function(){ return {}; }).x = 5;
+  \end{minted}
 \end{program}
 Although this is a valid JavaScript assignment, it would be difficult to use in
 our operational semantics, since the object returned by the function has no
@@ -392,7 +393,7 @@ point in the object's life cycle~\cite{JSBehaviour}, and so potential types are
 not a good model for dynamic objects.
 
 \begin{program}[h]
-	\begin{minted}[numbersep=-12pt,linenos]{js}
+  \begin{minted}[numbersep=-12pt,linenos]{js}
 	function f(x) {
 	  x.foo = 5;
 	  return x.bar;
@@ -444,6 +445,17 @@ and
   T_1\orig T_1'\enspace \succeq \enspace T_2 \iff T_1\succeq T_2 \land T_1' \succeq T_2
 \end{equation}
 
+\begin{figure}
+  % TODO: add example code listing which would result in this structure
+  \begin{center}
+  	\resizebox{3in}{!}{
+  	  \def\svgwidth{200pt}
+  	  \import{../res/}{origin.pdf_tex}
+  	}
+  \end{center}
+  \caption{Chain of origin objects}
+  \label{fig:origin}
+\end{figure}
 This system allows the constraint to propagate along the origin chain, finally
 enforcing it on the root object. \textsc{PropType} describes this for any chain of
 object value references. Note that a a full object chain is created (as
@@ -453,15 +465,6 @@ at other levels are correctly passed through. \textsc{PropType} does not allow a
 properties to value references which include array types, because adding a
 property to one object in an array will not change any of the other objects,
 and so the type of the array itself cannot be modified in this way.
-\begin{figure}
-\begin{center}
-  \resizebox{3in}{!}{
-  \def\svgwidth{200pt}
-  \import{../res/}{origin.pdf_tex}}
-\end{center}
-\caption{Something}
-\label{fig:origin}
-\end{figure}
 
 These origin chains are largely orthogonal to the rest of the typing rules,
 except for those involving interesting control flow (i.e.~rules for
