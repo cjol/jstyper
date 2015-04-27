@@ -1,4 +1,5 @@
 {
 	"success": true,
-	"types": {}
+	"types": {},
+	"evaluate": true
 }

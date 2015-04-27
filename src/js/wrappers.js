@@ -1,5 +1,21 @@
+var counts;
+function resetCounters() {
+	counts = {
+		mimic:0,
+		guard:0,
+		mimicReadProp:0,
+		mimicWriteProp:0,
+		mimicFunCall:0,
+		guardReadProp:0,
+		guardWriteProp:0,
+		guardFunCall:0
+	};
+}
+resetCounters();
+
 // TODO: How can I deal with infinite recursion here?
 function mimic(t, obj) {
+	if (doCount) counts.mimic++;
 	// console.log("Made mimic for ", obj);
 	// obj is untrusted, but the context is safe
 	if (t.kind === "function") {
@@ -8,6 +24,7 @@ function mimic(t, obj) {
 		// f is a type-safe version of obj, which can be used in the typed world
 		var f = function() {
 
+			if (doCount) counts.mimicFunCall++;
 			// +1 is because of 'this'
 			if (arguments.length + 1 !== t.argTypes.length) {
 				throw new Error("function has the wrong number of parameters");
@@ -47,9 +64,11 @@ function mimic(t, obj) {
 			Object.defineProperty(x, propName, {
 				enumerable: prop.enumerable,
 				get: function() {
+					if (doCount) counts.mimicReadProp++;
 					return mimic(t.memberTypes[propName], obj[propName]);
 				},
 				set: function(y) {
+					if (doCount) counts.mimicWriteProp++;
 					obj[propName] = guard(t.memberTypes[propName], y);
 				}
 			});
@@ -83,10 +102,12 @@ function mimic(t, obj) {
 function guard(t, obj) {
 	// console.log("Made guard for ", obj);
 	// obj is safe and needs protecting from the context around it
+	if (doCount) counts.guard++;
 
 	if (t.kind === "function") {
 
 		var f = function() {
+			if (doCount) counts.guardFunCall++;
 			// +1 is because of 'this'
 			if (arguments.length + 1 !== t.argTypes.length) {
 				throw new Error("function has the wrong number of parameters");
@@ -121,9 +142,11 @@ function guard(t, obj) {
 			Object.defineProperty(x, propName, {
 				enumerable: prop.enumerable,
 				get: function() {
+					if (doCount) counts.guardReadProp++;
 					return guard(t.memberTypes[propName], obj[propName]);
 				},
 				set: function(y) {
+					if (doCount) counts.guardWriteProp++;
 					obj[propName] = mimic(t.memberTypes, y);
 				}
 			});
