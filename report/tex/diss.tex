@@ -18,6 +18,8 @@
 \clubpenalty1000%
 \widowpenalty1000%
 
+\usemintedstyle{friendly}
+\newcommand*{\js}{\mintinline{javascript}}
 \newcommand*{\orig}{\ensuremath{\!\multimapinv\!}}
 
 \usepackage{float}
@@ -42,32 +44,36 @@
 
 \chapter{Introduction}\label{introduction}
 
-JavaScript is a high-level programming language which was originally designed
-for little more than validating forms on websites. Today the language is an
-essential part of everyday computing, powering demanding online applications
-such as image editors, IDEs and online games. The execution context of the
-language has also changed, moving from the browser to the server, and now even
-being targeted by compilers of other languages. As the scale of JavaScript
-applications has increased, so too has the complexity of development projects.
-Assurance that a program is bug-free has become more critical, and development
-tools have accordingly become more powerful. JavaScript's weak typing
-discipline, however, makes it harder to reason about a program's correctness,
-and limits the information available to development tools.
-% Maybe mention JavaScript's annoying implicit type coercions.
-
-\textit{Types} are a way of grouping together values which support similar
-operations. For example, \texttt{number} might be a type representing values
-which support addition and subtraction. \texttt{string} might represent a
-sequence of characters which doesn't support addition or subtraction, but does
-support concatenation. A program cannot subtract a \texttt{number} from a
+Types are a way of grouping together values which support similar operations.
+For example, \texttt{number} might be a type representing values which support
+addition and subtraction. \texttt{string} might represent a sequence of
+characters which supports concatenation, but doesn't support addition or
+subtraction. A program cannot subtract a \texttt{number} from a
 \texttt{string}, and an attempt to do so is known as a \textit{type error}. We
 say that a language is \textit{strongly} typed if such attempts will always
 generate some kind of error, whereas a \textit{weakly} typed language may allow
 the operation to execute, with sometimes unpredictable consequences. Under
 \textit{dynamic} typing, checking for type errors happens at the very last
-minute -- during program execution itself. Using a \textit{static} type %chktex 8
-checker, the program code can be analysed in advance to identify type errors
+minute -- during program execution itself. Using a \textit{static} type %chktex
+8 checker, the program code can be analysed in advance to identify type errors
 before the program ever runs.
+
+JavaScript is a high-level, dynamically-typed programming language which was
+originally designed for little more than validating forms on websites. Today
+the language is an essential part of everyday computing, powering demanding
+online applications such as image editors, IDEs and online games. The execution
+context of the language has also changed, moving from the browser to the
+server, and now even being targeted by compilers of other languages~\cite{asm}.
+As the scale of JavaScript applications has increased, so too has the
+complexity of development projects.  Assurance that a program is bug-free has
+become more critical, and development tools have accordingly become more
+powerful. JavaScript's weak typing discipline, however, makes it hard to
+reason about a program's correctness, and limits the information available to
+development tools. This problem is exacerbated by JavaScript's type
+\textit{coercion}, which permits expressions which would normally be deemed
+untypable by, for example, converting any object to the value \js{true}
+when placed in a context expecting a boolean. This can result in silent
+propagation of type errors, providing no errors to the developer.
 
 Static type checking catches potential bugs earlier in the development cycle,
 and can allow programs to run faster, without needing to check types before
@@ -79,7 +85,7 @@ would violate the undecidability of the halting problem. Instead, a
 conservative approximation is made, and some programs which would never
 actually exhibit a type error will fail a static type check. This approximation
 can be frustrating for developers, who will need to satisfy the type checker by
-rewriting their before it will run.
+rewriting their code before it will run.
 
 Although languages are often described as being statically or
 dynamically-typed, in reality it is compilers and interpreters which enforce a
@@ -90,38 +96,56 @@ analysis of a program's code in order to avoid reliance on delayed runtime
 checks.
 
 Several such attempts have been made to perform static analysis on JavaScript,
-which is typically a dynamically-typed language~\cite{jscript}. ECMAScript
-4~\cite{es4}, a proposed extension to the JavaScript standard featured
-optional type annotations, but the proposal was never finalised and the
-annotations are not present in later versions of the standard.
-TypeScript~\cite{ts}, a source-to-source compiler, extends JavaScript syntax
-with similar annotations such that all JavaScript programs are valid TypeScript
-programs. These approaches have depended on programmer-inserted type
-annotations, which limits their utility for legacy codebases. Some projects
+which is typically a dynamically-typed language. ECMAScript~4~\cite{es4},
+% dubious citation of JScript...
+a proposed extension to the JavaScript standard, featured optional type
+annotations, but the proposal was never finalised and the annotations are not
+present in later versions of the standard. TypeScript~\cite{ts}, uses a
+superset of JavaScript syntax with similar annotations, and compiles this back
+into JavaScript. These approaches have depended on programmer-inserted type
+annotations, which limit their utility for legacy codebases. Some projects
 have attempted to use Hindley-Milner style analysis to infer the types of
-program expressions automatically~\cite{anderson06, tajs}, including the most
+program expressions automatically~\cite{anderson06, tajs, guha}, including the most
 recent contribution, Flow~\cite{flow}. 
 
 Any static analysis, however, will struggle to offer reliable results because
 of the inherently dynamic nature of the language. Many traditional JavaScript
-programming idioms are legitimately inherently untypable. Flow and TypeScript
-allow for this using a special `any' type, which will never trigger a static
-type error. The obvious disadvantage here is that the static analysis can no
-longer make any guarantees about the soundness of the program, as certain parts
-of it have effectively not been checked.
-% maybe include a JS example here.
-% 
-%
-%
-%
-%
+programming idioms are legitimately untypable. JavaScript has no
+mechanism for overloading functions, for example, so many developers write
+functions expecting different parameter types from call-to-call, and use manual
+type checks to handle them (see listing~\ref{lst:dynamicIdiom}).  Flow and
+TypeScript allow for untypable functions using a special `any' type, which will
+never trigger a static type error. The obvious disadvantage here is that the
+static analysis can no longer make any guarantees about the soundness of the
+program, as certain parts of it have effectively not been checked.
+\begin{program}[t]
+  \begin{minted}[linenos,numbersep=-12pt]{javascript}
+  	// adapted from the Prototype library
+  	function serialize(val) {
+	  	switch (typeof val) {
+		  	case "undefined":
+		  	case "function":
+		  	case "object":
+			  	return false;
+		  	case "boolean":
+			  	return val ? "true" : "false";
+		  	case "number":
+			  	return "" + val;
+		  	case "string":
+			  	return val;
+	  	}
+  	}	
+  \end{minted}
+  \label{lst:dynamicIdiom}
+  \caption{Dynamic idioms in JavaScript}
+\end{program}
 Additionally, JavaScript code rarely operates in isolation in modern web
 applications. Even if a program passes the static type checker, some external
 piece of code may introduce a type error by, for example, passing data of the
 incorrect type to a well-typed function.
 
 Gradual typing is a technique used to make safety guarantees about code which
-integrates both static and dynamic typing. The idea was independently presented
+combines both static and dynamic typing. The idea was independently presented
 by four sets of authors between September 2006 and January 2007~\cite{gradSiek,
 gradTobin, gradMatthews, gradGronski}. Since static analysis cannot guarantee
 that the program is free of dynamic type errors, we instead guarantee that only
@@ -147,18 +171,17 @@ underpinnings of the project was required. Several of the undergraduate courses
 offered as part of the Tripos were a valuable introduction, notably the Part IB
 course \textit{Semantics of Programming Languages}, and the Part II course
 \textit{Types}. \textit{Semantics of Programming Languages} introduced the
-proof techniques necessary for proving type soundness, but the example language
-used was insufficiently complex to cover all strategies required to prove
-safety of a more complete language. Pierce's \textit{Types and Programming
-Languages}~\cite{pierce} bridged this gap sufficiently that I was able to look
-at recent work defining the operational semantics of real dynamic programming
-languages\cite{pythonOpSem}. The \textit{Types} course similarly introduced the
-Hindley--Damas--Milner algorithm for type inference, and Pierce's book helped
-develop those ideas further. Neither course touched on the topic of gradual
-typing, which is very much a topic of current research interest. Fortunately my
-supervisor has some expertise in the area, and was able to suggest papers by
-Siek~\cite{gradSiek, gradSiek2} and herself~\cite{gradGray} to explore the
-area.
+proof techniques necessary for proving type soundness, but for an
+insufficiently complex example language to cover all strategies required.
+Pierce's \textit{Types and Programming Languages}~\cite{pierce} bridged this
+gap sufficiently that I was able to look at recent work defining the
+operational semantics of real dynamic programming languages~\cite{pythonOpSem}.
+The \textit{Types} course similarly introduced the Hindley--Damas--Milner
+algorithm for type inference, and Pierce's book helped develop those ideas
+further. Neither course touched on the topic of gradual typing, which is very
+much a topic of current research interest. A few papers by Siek~\cite{gradSiek,
+gradSiek2} and Gray~\cite{gradGray} proved sufficiently accessible, however,
+for me to explore the area.
 
 In relation to JavaScript itself, I began the project with a strong informal
 grasp of the language. The ECMAScript 5 specification~\cite{ecmaSpec} offered a
@@ -168,7 +191,7 @@ language will result in false negatives, where a safe statement is incorrectly
 deemed unsafe. This is preferable to a false positive in terms of guaranteeing
 safe operation of the program, but still frustrating for the developer. It can
 be important, therefore, to understand the manner in which a language is
-actually used. There is little benefit to devising solutions to the problem of
+actually used. There is little benefit in devising solutions to the problem of
 typing dynamic idioms which are hardly ever used, and so I looked through the
 results of Richards, Lebresne, Burg and Vitek~\cite{JSBehaviour}, who have
 analysed the dynamic behaviour of real JavaScript programs in operation on the
@@ -186,22 +209,21 @@ proving that the subset as specified was sound and implementing both the type
 inference system and the gradual typing compiler. Orthogonally to this, the
 language was divided into discrete features, such as if-statements, binary
 operations and loops. This division meant the project lent itself to an
-incremental build model, whereby each build increment introduces a new language
+incremental build model, whereby each build increment introduced a new language
 feature to the specification, proof and implementations. This allowed
 development to proceed systematically, offering sensible opportunities for
 regression testing after each iteration. Fixing bugs highlighted by the
 regression testing was also simplified, since only relatively small changes
-were introduced in each iteration. This strategy also offered the advantage
-that, should my initial ambitions have proven too great, I could cease
-development at the end of any iteration and still have a successful system,
-albeit supporting fewer features.
+were introduced in each iteration. This strategy also minimised development
+risk by allowing me to cease development at the end of any iteration and still
+have a successful system, albeit supporting fewer features than planned.
 
 Within each iteration, I began with the specification, as a kind of
 requirements analysis. The iteration would be considered complete when each of
 the other components conformed to the specification. For the two development
 tasks, I proceeded in a test-driven manner, whereby I would first write tests
-involving the new language feature expecting them to fail. Development would
-then be aiming to make these failing test-cases pass. My collection of tests
+involving the new language feature, expecting them to fail. Development 
+then aimed to make these failing test-cases pass. My collection of tests
 available for regression testing (and later for benchmarking) thus grew
 consistently across the project life-cycle, and by the end of the project 86
 such tests had been produced.
@@ -210,8 +232,8 @@ Many developers view theoretical computer science as carrying little practical
 benefit for them, when the truth is that concrete implementations of the theory
 can bring huge practical benefits. It was thus important to me to integrate
 smoothly within the existing JavaScript ecosystem rather than enforce a
-non-standard workflow for JavaScript developers, such that the barrier to entry
-be reduced and the benefits of static typing more easily discoverable.
+non-standard workflow for JavaScript developers, thereby reducing the barriers
+to entry and making the benefits of static typing more easily discoverable.
 Languages like OCaml, although commonly used for this kind of project within
 the academic community, are unlikely to be present on a web developer's
 computer. Indeed, this is a problem Chaudhuri mentioned having for Flow, which
@@ -221,16 +243,14 @@ make meaningful contributions to the type checker's code. Instead, I decided to
 write the type inference system in JavaScript, thus ensuring it could run on
 any system. This decision also potentially opened the door for writing a
 self-hosting compiler, which could type-check and compile its own source code.
-Unfortunately, in practice my implementation relied too much on object
-inheritance, which was a feature not planned for implementation.
 
 As an interpreted language, JavaScript is not compiled prior to execution, but
-it is often compressed to speed download times to client computers. To aid with
-this, a number of static analysis tools do already exist, performing mainly
-control-flow analyses to, for example, eliminate unused variables from the
-source code (known as \textit{minification}). Although I was not interested in
-such analyses, it seemed sensible to integrate with a standard abstract syntax
-tree (AST) format, and use existing parsing and code-generation solutions.
+it is often compressed to speed up download times to client computers. A number
+of static analysis tools exist to aid with this, performing mainly control-flow
+analyses to, for example, eliminate unused variables from the source code
+(known as \textit{minification}). Although I was not interested in such
+analyses, it seemed sensible to integrate with a standard abstract syntax tree
+(AST) format, and use existing parsing and code-generation solutions.
 UglifyJS~\cite{uglify} is one of the most-used minification libraries for
 JavaScript, and has separate components for parsing and code generation but
 uses a custom (albeit well-documented) AST format. Esprima~\cite{esprima} is
@@ -241,47 +261,43 @@ useful for my purposes, and parse speeds was not a priority. For example, the
 SpiderMonkey AST has a single representation of any unary expression, when in
 practice it can be useful to distinguish between prefix and suffix expressions.
 Additionally, UglifyJS uses object inheritance to define its node types, where
-Esprima prefers plain objects. Inheritance made it straightforward to define
-type judgements once for multiple related nodes, though retrospectively it is a
-shame that this may have prevented my compiler from being self-hosting.
+Esprima prefers plain objects. 
 
 \chapter{Implementation}\label{implementation}
 
-\section{Specification}
-The specification of my JavaScript subset has two components -- a definition of
-the operational semantics, and a definition of the typing judgement used. These
-definitions are used for two halves of a proof of \textit{type soundness} -- a
-proof of \textit{progress}, and a proof of type \textit{preservation}.
-Evaluation of a program is modelled as a series of transitions from one
-configuration to another. The proof of progress ensures that, if the program is
-deemed `well-typed', there must be a transition available unless the program
-has in fact reduced down to a single value representing the result of the
-computation -- so the program will never get stuck in a well-typed
-configuration. The proof of type preservation roughly shows that, if a
-statement $m$ is deemed well-typed and is reducible to some expression $m'$,
-then $m'$ must also be well-typed. The result of this is that, as long as we
-can verify that the program is well-typed to start off with, we know that all
-subsequent configurations must be well-typed and hence that there must be
-further transitions available. The verification of the program in the first
-place is what the implementation of the type inference system achieves.
+\section{Specification} The specification of my JavaScript subset has two
+components -- a definition of the operational semantics, and a definition of
+the typing judgement used. These definitions are used for two halves of a proof
+of \textit{type soundness} -- a proof of \textit{progress}, and a proof of type
+\textit{preservation}.  Evaluation of a program is modelled as a series of
+transitions from one configuration to another. The proof of progress ensures
+that, if the program is deemed `well-typed', there must be some transition
+available (unless the program has already reduced down to the single result of
+the computation) -- so the program will never get stuck in a well-typed
+configuration. The proof of type preservation shows amongst other things that,
+if a statement $m$ is deemed well-typed and is reducible to another expression
+$m'$, then $m'$ must also be well-typed. The result of this is that, as long as
+we can verify that the program is well-typed to start off with, we know that
+all subsequent configurations must be well-typed and hence that the program
+will never get stuck. The initial verification of the program is what the
+implementation of the type inference system achieves.
 
 The operational semantics takes the form of about 60 inductive rules describing
 all possible transitions from one step of computation to another. A step of
-computation is described by a configuration triple of the form $$\langle m,
-s,\theta\rangle$$
-
+computation is described by a configuration triple of the form $$\langle m,s,\theta\rangle.$$
 $m$ is the program code remaining to be executed, $s$ represents the current
 scope (the set of variables accessible at this program point); and $\theta$
-represents the heap, where variable values are stored.  Concretely, $s$ is a
+represents the heap, where variable values are stored. Concretely, $s$ is a
 function from variable identifiers to heap addresses, and $\theta$ is a
 function from heap addresses to values -- which may either be primitive values
 (such as numbers or function closures), or themselves be functions from
-property names to values (in the case of objects and arrays).  Many operational
-semantics do not distinguish between the scope and the heap, combining both
-into a single entity normally known as the store. The separation is needed
-here, however, because JavaScript is not a \textit{pure} language.  When a
-function is called, it may have side-effects which must be recorded, but which
-should not affect the calling scope (listing \ref{lst:sideEffects}).
+property names or numbers to heap addresses (in the case of objects and arrays
+respectively).  Many operational semantics do not distinguish between the scope
+and the heap, combining both into a single entity normally known as the store.
+The separation is needed here, however, because JavaScript is not a
+\textit{pure} language.  When a function is called, it may have side-effects
+which must be recorded, but which should not affect the calling scope (listing
+\ref{lst:sideEffects}).
 \begin{program}[h]
   \begin{minted}[numbersep=-12pt,linenos]{javascript}
 	function makeCounter(n) {
@@ -297,12 +313,11 @@ should not affect the calling scope (listing \ref{lst:sideEffects}).
 	var count = makeCounter(10);
 	count(); // i is now 9, but the current scope is unchanged
   \end{minted}
-  \label{lst:sideEffects}
-  \caption{A function call with side effects}
+  \caption{A function call with side effects}\label{lst:sideEffects}
 \end{program}
 % Example code having side effects (probably a counter)
-The only way to achieve this is to have a separate heap (which is modified by
-the function call) and scope (which is not).
+The only way to achieve this is to separate the heap (which is modified by
+the function call) from the scope (which is not).
 
 % include transition rule Seq2
 A transition rule is described by a series of premises, which, if true,
@@ -323,9 +338,9 @@ expression. $C$ is a set of constraints which must be satisfied for the type
 judgement to be considered valid. Constraints will either be straight equality
 ($T = number$) or subtype constraints ($T_1 \succeq T_2$). $T_2$ is a valid
 subtype of $T_1$ if both types are object types, and if every property of $T_1$
-is also present in $T_2$. For example, a \texttt{shape} type may have
-properties for \texttt{area} and \texttt{colour}. Any other type which has both
-\texttt{area} and \texttt{colour} may be a valid subtype of \texttt{shape},
+is also present in $T_2$. For example, a \js{shape} type may have
+properties for \js{area} and \js{colour}. Any other type which has both
+\js{area} and \js{colour} may be a valid subtype of \js{shape},
 regardless of which other properties it has. Finally, evaluating the expression
 may result in changes to the type store (for example introducing a new
 variable), and these changes are reflected in $\Gamma'$, which will be used for
@@ -337,10 +352,10 @@ $T$:
 $$\Gamma \vdash m\ |_C\ \Gamma'$$
 
 The structure of the inductive rules is the same as for the operational
-semantics. For example, rule \textsc{PropType} indicates that \texttt{e.l} only
-has a valid type if \texttt{e} does, and if the type of \texttt{e} is a subtype
-of the type $\{l: T\}$ (i.e.~if the type of \texttt{e} has at least the property
-\texttt{l}).
+semantics. For example, rule \textsc{PropType} indicates that \js{e.l} only
+has a valid type if \js{e} does, and if the type of \js{e} is a subtype
+of the type $\{l: T\}$ (i.e.~if the type of \js{e} has at least the property
+\js{l}).
 
 Most of the judgements follow reasonably closely an intuitive understanding of
 the operation of JavaScript, but a few merit closer attention. Legal assignment
@@ -349,14 +364,14 @@ by whether or not expressions resolve to a reference. For my specification, I
 have simplified this in order to make a decision about whether an assignment is
 valid on the basis of syntax alone. I have done this by specifying that the
 only valid left hand side of an assignment is a value reference (\textit{vRef})
-or an expression which will reduce down to a value reference (an
-\textit{assignTarget}). A value reference represents a value stored on the
-heap. A variable identifier \texttt{x}, for example, is a valid value
+or an expression which will reduce down to a value reference
+(\textit{assignTarget}). A value reference represents a value stored on the
+heap. A variable identifier \js{x}, for example, is a valid value
 reference. The value on the heap may be an object or array pointing to other
-values, and so \texttt{x.l} and \texttt{x[n]} are value references. Although
-value references share a syntactical similarity to dereferencable expressions,
+values, and so \js{x.l} and \js{x[n]} are also value references. Although
+value references share a syntactic similarity to dereferencable expressions,
 they are distinct and do not reduce down to the value itself. This is
-important, else we could end up with assignments of the form \texttt{5 = 6;}
+important, else we could end up with assignments of the form \js{5 = 6;}
 which make little sense. This simplification has the consequence of deeming
 some valid JavaScript assignments illegal, such as the following expression:
 \begin{program}[H]
@@ -371,61 +386,75 @@ a direct relation between a value reference and a location in the store,
 defined by the function $addr(vRef, s, \theta)$.
 
 One area where I deliberately deviate from the ECMAScript specification is in
-disallowing assignments of different types. If a variable \texttt{x} contains a
+disallowing assignments of different types. If a variable \js{x} contains a
 number, it should not be possible to assign a string to it, as this makes it
-unclear whether \texttt{x} should be considered a string or a number
-henceforth, especially without some sort of control flow analysis to
-disambiguate cases where it is not clear whether or not the assignment will
-take place. In practice this is not a great problem in most cases, since most
-programmers will intuitively follow a kind of static typing discipline
-themselves, even when programming in a dynamic language. It's rarely the case
-that a single variable is used for both a string and a number.
+unclear whether \js{x} should be considered a string or a number
+henceforth, especially without some sort of control flow analysis. In practice
+this is often not a great problem, since programmers will mostly follow a
+fairly static typing discipline themselves, even when programming in a dynamic
+language. It's rarely the case that a single variable is used for both a string
+and a number.
 % This is something Avik mentioned for flow, would be good to get some stats
 
 The exception to this is the case of objects. It is very common to add
-properties to an object after its initialisation. Some approaches to typing
-JavaScript make the assumption that all objects have a larger `true' type than
-they are initialised with, with uninitialised properties known as
-`\textit{potential}' types which will be added later during some initialisation
-phase~\cite{anderson05}. Analysis of JavaScript's dynamic behaviour in
-practice, however, suggests that adding properties is likely to happen at any
-point in the object's life cycle~\cite{JSBehaviour}, and so potential types are
-not a good model for dynamic objects.
-
-\begin{program}[h]
-  \begin{minted}[numbersep=-12pt,linenos]{js}
+properties to an object after its creation. Some approaches to typing
+JavaScript make the assumption that all objects have a larger `potential' type
+than they are created with, and uninitialised properties will be added during
+an extended initialisation phase~\cite{anderson05}. Analysis of JavaScript's
+dynamic behaviour in practice, however, suggests that adding properties is
+likely to happen at any point in the object's life cycle~\cite{JSBehaviour},
+and so potential types are not a good model for dynamic objects.
+\begin{program}[ht]
+  \centering
+  \begin{minipage}[b]{0.45\linewidth}
+  	\begin{minted}[numbersep=-12pt,linenos]{js}
 	function f(x) {
-	  x.foo = 5;
-	  return x.bar;
-	}
-  \end{minted}
-  \caption{property addition}\label{lst:propAdd}
+	  x.b.c.d2 = true;
+	  x.b.c.d += 1;
+	  return x;
+	}	
+  	\end{minted}
+  	\vspace{23mm}
+  \end{minipage}
+  \quad
+  \begin{minipage}[b]{0.45\linewidth}
+  	\resizebox{3in}{!}{
+  	  \def\svgwidth{200pt}
+  	  \import{../res/}{origin.pdf_tex}
+  	}
+  \end{minipage}
+  \caption{Property addition}\label{lst:propAdd}
 \end{program}
 
 Instead, one must consider two object types -- one where the new property is
 present, and one where it is not. Listing~\ref{lst:propAdd} illustrates one
 situation in which two distinct types are needed. At the start of the function,
-\texttt{x} must have type $\mathtt{\{bar:T\}}$, otherwise line 3 will involve
-an undefined property access. At the end of the function, \texttt{x} should
-have type $\mathtt{\{foo:number, bar:T\}}$ after adding the property
-\texttt{foo}.  When determining the type of \texttt{f}, we must have access to
+\js{x} must have type $\mathtt{\{b:\{c:\{d:\ number\}\}\}}$, otherwise line 3 will involve
+an undefined property access. At the end of the function, \js{x} should
+have type $\mathtt{\{b:\{c:\{d:\ number, d2:\ boolean\}\}\}}$ after adding the property
+\js{foo}. When determining the type of \js{f}, we must have access to
 both of these types in order to construct the correct function type:
-$\mathtt{\{bar:T\} \rightarrow \{foo:number, bar:T\}}$. Let the initial type of
-\texttt{x} be $T_x$, and let the type of \texttt{x} after the property addition
-be $T_x'$. It would be nice to simply replace $T_x$ with $T_x'$ in the type
-store after the property addition, but sadly this is insufficient. The reason
-for this is the access to the property \texttt{bar} on line 3.  This is only a
-valid operation if \texttt{x} is of a type which has a property \texttt{bar},
-and indeed the type judgement for this statement will generate a constraint of
-the form 
+$\mathtt{\{b:\{c:\{d:\ number\}\}\} \rightarrow \{b:\{c:\{d:\ number,\ d2:\ boolean\}\}\}}$.
+
+Let the initial type of \js{x} be $T_x$, and let the type of \js{x}
+after the property addition be $T_x'$. It would be nice to simply replace $T_x$
+with $T_x'$ in the type store after the property addition, but sadly this is
+insufficient. The reason for this is the property access on line 3.  This is
+only a valid operation if \js{x} has a property \js{b}, which has a
+property \js{c} with property \js{d}. Indeed the type judgement for
+this statement will generate constraints of the form 
 \begin{equation}
+  \begin{split}
   \label{eq:barC}
-  \{bar:T\} \succeq T_x'.
+  \{b:T_b\} \succeq T_x' \\
+  \{c:T_c\} \succeq T_b \\
+  \{d:number\} \succeq T_c \\
+\end{split}
 \end{equation}
 
-The problem is that the constraint is on $T_x'$, and not on $T_x$. $T_x$ is
-left essentially unconstrained, and \texttt{f} is incorrectly given the type
-$\mathtt{(\{\} \rightarrow \mathtt{\{foo:number, bar:t\}})}$. In order to
+The problem is that these only constrain $T_x'$, and not $T_x$. $T_x$ is
+left essentially unconstrained, and \js{f} is incorrectly given the type
+$\mathtt{(\mathtt{\{\} \rightarrow \{b:\{c:\{d:\ number,\ d2:\ boolean\}\}\}})}$. In order to
 correctly judge the type of this function, we need constraint~\eqref{eq:barC}
 to pass through $T_x'$ to $T_x$. I do this by attaching $T_x$ as the
 \textit{origin} of $T_x'$. I represent this by $T_x'\orig T_x$.  When a
@@ -445,17 +474,6 @@ and
   T_1\orig T_1'\enspace \succeq \enspace T_2 \iff T_1\succeq T_2 \land T_1' \succeq T_2
 \end{equation}
 
-\begin{figure}
-  % TODO: add example code listing which would result in this structure
-  \begin{center}
-  	\resizebox{3in}{!}{
-  	  \def\svgwidth{200pt}
-  	  \import{../res/}{origin.pdf_tex}
-  	}
-  \end{center}
-  \caption{Chain of origin objects}
-  \label{fig:origin}
-\end{figure}
 This system allows the constraint to propagate along the origin chain, finally
 enforcing it on the root object. \textsc{PropType} describes this for any chain of
 object value references. Note that a a full object chain is created (as
@@ -468,28 +486,72 @@ and so the type of the array itself cannot be modified in this way.
 
 These origin chains are largely orthogonal to the rest of the typing rules,
 except for those involving interesting control flow (i.e.~rules for
-\texttt{if}, \texttt{while} and \texttt{for}). This is due to the possibility
+\js{if}, \js{while} and \js{for}). This is due to the possibility
 of a branch not being taken, and so we cannot be certain whether or not a
 certain property has been added. Instead, we merge together the different
-potential type environments. 
+potential type environments, essentially taking the intersection of the
+possible types.
 
 The final interesting part of the specification is function closures.
 JavaScript uses a lexical rather than dynamic scope, meaning that the scope
-available during a function call is that surrounding the function definition
+available during a function call is the one surrounding the function definition
 rather than the call site. In order to model this, transition rule
 \textsc{Func} reduces a function into a \textit{function closure} which
 captures both the function itself and the current scope. When this function is
-eventually called (e.g.~ in rule \textsc{CallNamed}), this scope is used for
+eventually called (e.g.~in rule \textsc{CallNamed}), this scope is used for
 further reductions (as in rule \textsc{CallBody1}). An analogous process
 happens in the typing rules, capturing the type environment in a closure type.
-Note in particular that we assert that, when using the closure's type
+Note in particular that, when using the closure's type
 environment, we must first assert that the captured store is well-typed under
 this type environment ($\gamma \vdash (s, \theta)$). This is necessary for our
 proof of progress, discussed in the next section.
 
 \section{Proof}
+TBC
 
 \section{Inference Implementation}
+As mentioned earlier, the purpose of the implementation is to verify that the
+original source code is well-typed according to the type judgements. Once this
+is verified, we have proven that the program will not get stuck. The structure
+of the implementation closely follows the structure of my specification. 
+
+\begin{program}[t]
+  \begin{minted}[linenos,numbersep=-12pt]{javascript}
+   // Rule IdType
+   UglifyJS.AST_Symbol.prototype.check = function(gamma) {
+     var T = gamma.get(this.name);
+ 
+     if (T === null || T === undefined || T.illDefined === true) {
+       // we are reading this variable but it is ill-defined
+       throw new Error("Reading from '" + this.name +
+                               "' but it is ill-defined");
+     }
+
+	 this.tee = T;
+	 return new Classes.Judgement(T, [], gamma);
+   };
+  \end{minted}
+  \caption{The implementation of \textsc{IdType}}\label{lst:idimpl}
+\end{program}
+
+UglifyJS parses the input code and creates an abstract syntax tree. Each node
+in the tree inherits from a base prototype object representing the node type.
+For example, the expression \js{x.l = 5} is represented by an AST\_Assign node
+containing an AST\_Dot and an AST\_Number node. This inheritance made it easy
+to implement the type checks by adding a \js{check(gamma)} method to the
+prototype object for each node type. The parameter for the method is the type
+environment to use to check the node, and the method returns a judgement object
+containing the type (if the node was an expression node), an array of
+constraints, and a modified type environment. The inferred type is also
+attached to the node, so that future tools can build on the inference
+performed. With a well-defined specification governing the typing rules, writing the type
+checks to generate a set of constraints was easy. The real implementation
+challenge came in solving this set of constraints.
+
+Pierce~\cite{pierce} presents a unification algorithm based on Hindley and
+Milner's ideas to calculate a solution to a set of equality constraints.
+
+
 Recursive `this' \\
 Solving constraints iteratively (rather than in one pass at the end) \\
 Solving substructure constraints (several times\ldots) \\

@@ -1,6 +1,7 @@
 // for reading tests
 var fs = require("fs");
 var memwatch = require("memwatch");
+var util = require('util');
 
 // for type-checking and compilation
 var jstyper = require("../jstyper");
@@ -32,7 +33,7 @@ var evalResults = [];
 var wrapperFunctions = fs.readFileSync("./js/wrappers.js");
 testDir('custom', "Custom Test");
 testDir('sunspider', "Sunspider Test");
-console.log(evalResults);
+console.log(util.inspect(evalResults, false, null));
 
 function testDir(dir, name) {
 
@@ -112,22 +113,7 @@ function testDir(dir, name) {
 					}
 
 					if (expected.evaluate === true) {
-						var start = process.hrtime();
-						eval(src);
-						var origTime = process.hrtime(start);
-						start = process.hrtime();
-						// run once without counting accesses so as not to skew timings
-						var doCount = false;
-						eval(wrapperFunctions + "; " + result.src);
-						var newTime = process.hrtime(start);
-						doCount = true;
-						eval(wrapperFunctions + "; " + result.src);
-						evalResults.push({
-							compiled: newTime, 
-							original: origTime,
-							diff: newTime[0] - origTime[0] + (newTime[1] - origTime[1])/1000000000,
-							stats: counts
-						});
+						fs.writeFileSync("./tests/" + dir + "/compiled/" + file, result.src);					
 					}
 					// TODO: Further tests to check gradual typing is correct
 					// Further tests to check execution
@@ -135,7 +121,6 @@ function testDir(dir, name) {
 				}
 			});
 		});
-
 	});
 }
 
@@ -184,4 +169,17 @@ function compareTypes(actual, expected) {
 				throw new Error("Unexpected expectation type: " + expected.type);
 		}
 	}
+}
+
+function profile(src) {
+	memwatch.gc();
+	var start = process.hrtime();
+	var hd = new memwatch.HeapDiff();
+	eval(src);
+	var memDiff = hd.end();
+	var time = process.hrtime(start);
+	return {
+		time: time,
+		memory: memDiff.change
+	};
 }

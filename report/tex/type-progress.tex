@@ -579,52 +579,79 @@
   The intersection of two types is a supertype to both types.
 \end{lemma}
 \begin{proof}
-  The proof is by induction over the two well-defined cases according to the
+  The proof is by induction over the well-defined cases according to the
   definition of $\cap$. Let 
   \begin{equation*}
 	\varphi(T_1, T_2) = 
-		T_1\cap T_2 \succeq T_1
- 			\enspace \land \enspace
- 		T_1\cap T_2 \succeq T_2
+	T_1\cap T_2 \succeq T_1
+ 	\enspace \land \enspace
+ 	T_1\cap T_2 \succeq T_2
   \end{equation*}
-  \begin{case}[$T_1 = T_2$]
+  \begin{case}[$T_1$ and $T_2$ are not objects, and $T_1 = T_2$]
 
 	In this base case, $T_1 \cap T_2 = T_1$, so trivially 
 	$T_1 \cap T_2 \succeq T_1$, and indeed since $T_1 = T_2$, we have 
 	$T_1 \cap T_2 \succeq T_2$.
 
-  	\end{case}
-  	\begin{case}[$T_1 \textrm{ and } T_2 \textrm{ are objects}$]
-	Let $T = T_1\cap T_2$. Each property of $T$ has the form $\{l : T_1' \cap T_2' \}$,
-	where $\{l:T_1'\} \in T_1$ and $\{l:T_2'\} \in T_2$. Assuming that
-	$\varphi$ holds for $T_1'$ and $T_2'$, $T_1' \cap T_2'$ is a supertype of
-	both $T_1$ and $T_2$. $T$ must therefore be a supertype of $T_1$
-	since each property of $T$ is present in $T_1$ and $T.l \succeq T_1.l$.
-	Similarly, $T\succeq T_2$
+  \end{case}
+  \begin{case}[$T_1 \textrm{ and } T_2 \textrm{ are objects}$]
+
+	Let $T = T_1\cap T_2$. Each property of $T$ has the form $\{l : T_1' \cap
+	T_2' \}$, where $\{l:T_1'\}$ appears in $T_1$ or its ancestors, and
+	$\{l:T_2'\}$ appears in $T_2$ or its ancestors.
+	
+	Assuming that $\varphi$ holds for $T_1'$ and $T_2'$, then $T_1' \cap T_2'$ is a
+	supertype of both $T_1$ and $T_2$. $T$ must therefore be a supertype of
+	$T_1$ since each property of $T$ is present in $T_1$ and $T.l \succeq
+	T_1.l$. A similar process shows that $T\succeq T_2$
 
   \end{case}
 
 \end{proof}
 
 \begin{lemma}\label{mergeEnv}
-	$merge(\Gamma, \Gamma_1, \Gamma_2) \sqsubseteq \Gamma_1$ and 
-	$merge(\Gamma, \Gamma_1, \Gamma_2) \sqsubseteq \Gamma_2$
+	$merge(\Gamma_0, \Gamma_1, \Gamma_2) \sqsubseteq \Gamma_1$ and 
+	$merge(\Gamma_0, \Gamma_1, \Gamma_2) \sqsubseteq \Gamma_2$
 \end{lemma}
 \begin{proof}
 
   The proof is again by induction, over all typing judgements, though most cases are uninteresting.
   In all cases, let $\Gamma_m = merge(\Gamma_0, \Gamma_1, \Gamma_2)$ and begin by assuming 
-	$\Gamma_m \vdash \mathtt{e} : T\ |_C\ \Gamma'$.
-  \begin{case}[IdType]
-	TODO (from pad)
+  \begin{equation}
+	\label{mergeHyp}
+	\Gamma_m \vdash \mathtt{e} : T\ |_C\ \Gamma'.
+  \end{equation}
 
+  \begin{case}[IdType]
+  	
+  	In order to satisfy~\eqref{mergeHyp}, we must have that
+  	$\Gamma_m(id) = T$. For the definition of merge to be possible, we must
+  	have that, $\Gamma_1(id)$ and $\Gamma_2(id)$ must be defined, so it is
+  	valid to claim that 
+  	\begin{equation}
+		\Gamma_1 \vdash id : T_1\ |_\varnothing\ \Gamma_1
+  	\end{equation}
+
+  	Again from the definition of merge, we have that
+  	$T=\Gamma_1(id)\cap\Gamma_2(id)$, and by Lemma~\ref{typeIntersect} we have
+  	that $T\succeq T_1$ and $T\succeq T_2$.  All that remains is to show that
+  	the result type-environments are related by $\sqsubseteq$.
+  	\textcolor{red}{How?} I guess I need to use another assumption but I can't
+  	figure out what that should be. Clearly assuming $\Gamma_m \sqsubseteq
+  	\Gamma_1$ directly as required is no good -- that's what I'm trying to
+  	prove!
+  
   \end{case}
   \begin{case}[V\_String]
-  	Under this type judgement, $e=\mathtt{str}$, $T=\mathtt{string}$, $C=\varnothing$, $\Gamma_m'=\Gamma_m$.
-  	Trivially, $\Gamma_1 \vdash \mathtt{e} : T\ |_C\ \Gamma_1$, so the only
-  	thing to show is that $\Gamma_m\sqsubseteq\Gamma_1$. \textcolor{red}{How?}
+  	
+  	Under this type judgement, $e=\mathtt{str}$,
+  	$T=\mathtt{string}$, $C=\varnothing$, $\Gamma_m'=\Gamma_m$.  Trivially,
+  	$\Gamma_1 \vdash \mathtt{e} : T\ |_C\ \Gamma_1$, so the only thing to show
+  	is that $\Gamma_m\sqsubseteq\Gamma_1$. \textcolor{red}{Same problem}.
   \end{case}
 
+  \begin{case}[V\_Obj]
+  \end{case}
 	All other cases are similar to V\_Obj or V\_String
 \end{proof}
 \section{Preservation}
