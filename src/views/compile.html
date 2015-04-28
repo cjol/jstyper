@@ -100,6 +100,7 @@
 			window.clearTimeout(compileTimeout);
 			compileTimeout = window.setTimeout(function() {
 				origCode = from.getValue();
+				localStorage.lastCompiled = origCode;
 				compile(from.getValue(), function(result) {
 					compCode = result;
 					to.setValue(result);
@@ -107,8 +108,14 @@
 			},1000);
 		});
 		$(document).ready(function() {
+			<%- serverjs %>
 			origCode = document.getElementById("from").innerText;
 			compCode = document.getElementById("to").innerText;
 		});
+		function reloadFromStorage() {
+			if (localStorage.lastCompiled !== undefined) {
+				from.setValue(localStorage.lastCompiled);
+			}
+		}
 	</script>
 </body>

@@ -159,8 +159,15 @@ function compareTypes(actual, expected) {
 				compareTypes(actual.returnType, expected.returnType);
 				break;
 			case "array":
-				expect(actual.type).toEqual("array");
-				compareTypes(actual.innerType, expected.innerType);
+				// expect(actual.type).toEqual("array");
+				var arrObjType = {
+					"type": "object",
+					"memberTypes": {
+						"@deref": expected.innerType,
+						"length": "number"
+					}
+				};
+				compareTypes(actual, arrObjType);
 				break;
 			case "recursive":
 				expect(actual.type).toEqual("recursive");

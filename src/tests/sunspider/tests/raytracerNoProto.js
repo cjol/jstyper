@@ -1,5 +1,8 @@
 // adapted from http://dromaeo.com/tests/sunspider-3d-raytrace.html
-// main adaptations are removing prototypes and array notation
+// trivial adaptations are removing prototypes and array notation
+// also had to refactor some functions which return either a value or null into functions which always return a value, and check funcs
+// also a few places had object initialisation by adding members within an array - I can't type that 
+
 // jstyper start
 // jstyper import Math
 function createVector(x,y,z) {
@@ -138,29 +141,36 @@ function Triangle(p1, p2, p3) {
     triangle.nv2 = -u2 / det; 
     triangle.material = [0.7, 0.7, 0.7];
     triangle.intersect = triangleIntersect;
+    triangle.intersectLegal = triangleIntersectLegal;
     return triangle;
 }
 
-// potential problem: sometimes returns null, sometimes returns number
+// these two functions were originally one which sometimes returned null
+// now there're two - a check and an actual computer
 function triangleIntersect(orig, dir, near, far) {
     var u = (this.axis + 1) % 3;
     var v = (this.axis + 2) % 3;
     var d = dir[this.axis] + this.nu * dir[u] + this.nv * dir[v];
     var t = (this.nd - orig[this.axis] - this.nu * orig[u] - this.nv * orig[v]) / d;
+    return t;
+}
+function triangleIntersectLegal(orig, dir, near, far, t) {
+    var u = (this.axis + 1) % 3;
+    var v = (this.axis + 2) % 3;
     if (t < near || t > far)
-        return null;
+        return false;
     var Pu = orig[u] + t * dir[u] - this.eu;
     var Pv = orig[v] + t * dir[v] - this.ev;
     var a2 = Pv * this.nu1 + Pu * this.nv1;
     if (a2 < 0) 
-        return null;
+        return false;
     var a3 = Pu * this.nu2 + Pv * this.nv2;
     if (a3 < 0) 
-        return null;
+        return false;
 
     if ((a2 + a3) > 1) 
-        return null;
-    return t;
+        return false;
+    return true;
 }
 
 function Scene(a_triangles) {
@@ -181,8 +191,8 @@ function sceneIntersect(origin, dir, near, far) {
         var triangle = this.triangles[i];   
 
         var d = triangle.intersect(origin, dir, near, far);
-        // resolution depends on how we fix triangle.intersect's variadicity
-        if (d == null || d > far || d < near)
+        // this used to check for null, now it checks if d is legal
+        if (! triangle.intersectLegal(origin, dir, near, far, t))
             continue;
         far = d;
         closest = triangle;
@@ -238,7 +248,7 @@ function sceneBlocked(O, D, far) {
     for (i = 0; i < this.triangles.length; i++) {
         var triangle = this.triangles[i];   
         var d = triangle.intersect(O, D, near, far);
-        if (d == null || d > far || d < near)
+        if (! triangle.intersectLegal(O, D, near, far, t)):where
             continue;
         return true;
     }

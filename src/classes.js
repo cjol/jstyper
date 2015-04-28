@@ -235,7 +235,7 @@ ObjectType.prototype.toString = function(donotrecurse, simple) {
 		}
 	}
 	// TODO: Add proto and originalObj members
-	return "{" + types.join(", ") +  origString + (this.illDefined?"?":"");
+	return "{" + types.join(", ") +  origString + (this.illDefined?"?":"" + (this.shouldInfer?"!":""));
 };
 ObjectType.prototype.toAST = function(donotrecurse) {
 	if (donotrecurse === undefined) donotrecurse = [];
@@ -334,6 +334,7 @@ FunctionType.prototype.applySubstitution = function(sub, donotrecurse) {
 	for (i = 0; i < donotrecurse.length; i++) {
 		if (this.returnType === donotrecurse[i]) return;
 	}
+	if (this.gamma !== undefined) this.gamma.applySubstitution(sub, donotrecurse.slice(0));
 	Type.store[this.returnType].applySubstitution(sub, donotrecurse.slice(0));
 };
 FunctionType.prototype.toString = function(donotrecurse) {
@@ -372,7 +373,6 @@ FunctionType.prototype.toString = function(donotrecurse) {
 
 
 FunctionType.prototype.toAST = function(donotrecurse) {
-
 
 	var j;
 	if (donotrecurse === undefined) donotrecurse = [];
@@ -443,82 +443,83 @@ FunctionType.prototype.addContainers = function(container) {
 
 
 function ArrayType(options, node) {
-	PrimitiveType.call(this, "array", options, node);
-
-	this.innerType = options.innerType;
-	Type.store[this.innerType].addContainers(this.id);
+	options.memberTypes = {
+		"@deref": options.innerType,
+		"length": Type.numType.id
+	};
+	ObjectType.call(this, options, node);
 }
-tmp.prototype = PrimitiveType.prototype;
+tmp.prototype = ObjectType.prototype;
 ArrayType.prototype = new tmp();
 ArrayType.prototype.constructor = ArrayType;
 
-ArrayType.prototype.applySubstitution = function(sub, donotrecurse) {
-	if (donotrecurse === undefined) donotrecurse = [];
-	donotrecurse.push(this.id);
+// ArrayType.prototype.applySubstitution = function(sub, donotrecurse) {
+// 	if (donotrecurse === undefined) donotrecurse = [];
+// 	donotrecurse.push(this.id);
 
-	if (this.innerType === sub.from) {
-		this.innerType = sub.to;
-		Type.store[sub.to].addContainers(this.id);
-	}
-	for (i = 0; i < donotrecurse.length; i++) {
-		if (this.innerType === donotrecurse[i]) return;
-	}
-	Type.store[this.innerType].applySubstitution(sub, donotrecurse.slice(0));
-};
-ArrayType.prototype.toString = function(donotrecurse) {
+// 	if (this.innerType === sub.from) {
+// 		this.innerType = sub.to;
+// 		Type.store[sub.to].addContainers(this.id);
+// 	}
+// 	for (i = 0; i < donotrecurse.length; i++) {
+// 		if (this.innerType === donotrecurse[i]) return;
+// 	}
+// 	Type.store[this.innerType].applySubstitution(sub, donotrecurse.slice(0));
+// };
+// ArrayType.prototype.toString = function(donotrecurse) {
 
-	var j;
-	if (donotrecurse === undefined) donotrecurse = [];
-	donotrecurse.push(this.id);
+// 	var j;
+// 	if (donotrecurse === undefined) donotrecurse = [];
+// 	donotrecurse.push(this.id);
 
-	var innerType;
-	if (donotrecurse.indexOf(this.innerType) < 0) {
-		innerType = Type.store[this.innerType].toString(donotrecurse);
-	} else {
-		innerType = "<" + Type.store[this.innerType].type + ">";
-	}
+// 	var innerType;
+// 	if (donotrecurse.indexOf(this.innerType) < 0) {
+// 		innerType = Type.store[this.innerType].toString(donotrecurse);
+// 	} else {
+// 		innerType = "<" + Type.store[this.innerType].type + ">";
+// 	}
 
-	return "[" + innerType + "]" + (this.illDefined?"?":"");
-};
+// 	return "[" + innerType + "]" + (this.illDefined?"?":"");
+// };
 
 
-ArrayType.prototype.toAST = function(donotrecurse) {
+// ArrayType.prototype.toAST = function(donotrecurse) {
 
-	var j;
-	if (donotrecurse === undefined) donotrecurse = [];
-	donotrecurse.push(this.id);
+// 	var j;
+// 	if (donotrecurse === undefined) donotrecurse = [];
+// 	donotrecurse.push(this.id);
 
-	// return type
+// 	// return type
 
-	var innerType;
-	if (donotrecurse.indexOf(this.innerType) < 0) {
-		innerType = Type.store[this.innerType].toAST(donotrecurse);
-	} else {
-		innerType = "<" + Type.store[this.innerType].type + ">";
-	}
+// 	var innerType;
+// 	if (donotrecurse.indexOf(this.innerType) < 0) {
+// 		innerType = Type.store[this.innerType].toAST(donotrecurse);
+// 	} else {
+// 		innerType = "<" + Type.store[this.innerType].type + ">";
+// 	}
 
-	return new UglifyJS.AST_Object({
-		properties: [
-			new UglifyJS.AST_ObjectKeyVal({
-				key: "kind",
-				value: new UglifyJS.AST_String({
-					value: "array"
-				})
-			}),
-			new UglifyJS.AST_ObjectKeyVal({
-				key: "innerType",
-				value: innerType
-			})
-		]
-	});
-};
-ArrayType.prototype.addContainers = function(container) {
+// 	return new UglifyJS.AST_Object({
+// 		properties: [
+// 			new UglifyJS.AST_ObjectKeyVal({
+// 				key: "kind",
+// 				value: new UglifyJS.AST_String({
+// 					value: "array"
+// 				})
+// 			}),
+// 			new UglifyJS.AST_ObjectKeyVal({
+// 				key: "innerType",
+// 				value: innerType
+// 			})
+// 		]
+// 	});
+// };
+// ArrayType.prototype.addContainers = function(container) {
 
-	if (this.isContainedBy(container)) return;
-	Type.prototype.addContainers.call(this, container);
+// 	if (this.isContainedBy(container)) return;
+// 	Type.prototype.addContainers.call(this, container);
 
-	Type.store[this.innerType].addContainers(container);
-};
+// 	Type.store[this.innerType].addContainers(container);
+// };
 
 
 
@@ -747,7 +748,9 @@ LEqConstraint.prototype.enforce = function() {
 		if (Type.store[this.type2].memberTypes[l] === undefined) {
 
 			var T = TypeEnv.getFreshType();
+			if (Type.store[this.type2].shouldInfer) T.shouldInfer = true;
 			Type.store[this.type2].memberTypes[l] = T.id;
+
 		}
 	}
 	this.regenDesc();
@@ -868,21 +871,25 @@ LEqConstraint.prototype.solve = function() {
 	} else if (!Type.store[this.type2].isConcrete) {
 		if (Type.store[this.type1].type === "object") {
 			// abs => object
-			// without knowing what type1 is yet, I do know it must be an object with these members
+			// without knowing what type2 is yet, I do know it must be an object with these members
 			objType = new ObjectType({
 				memberTypes: {}
 			});
+
+			var shouldInfer = Type.store[this.type2].shouldInfer;
+
 			if (!(this instanceof OptionalConstraint)) {
 				var o = Type.store[this.type1];
 				while (o !== null && o !== undefined) {
 					for (label in o.memberTypes) {
 						objType.memberTypes[label] = TypeEnv.getFreshType().id;
+						if (shouldInfer) Type.store[objType.memberTypes[label]].shouldInfer = true;
 					}
 					o = Type.store[o.originalObj];	
 				}
 			}
+			if (shouldInfer) objType.shouldInfer = true;
 
-			if (Type.store[this.type2].shouldInfer) objType.shouldInfer = true;
 			subs.push(new Substitution(this.type2, objType.id));
 
 			// I have contributed some information, but the constraint isn't solved yet
@@ -1023,11 +1030,13 @@ function TypeEnvEntry(varName, node, type) {
 	this.node = node;
 	this.type = type;
 }
-TypeEnvEntry.prototype.applySubstitution = function(sub) {
+TypeEnvEntry.prototype.applySubstitution = function(sub, donotrecurse) {
+	if (donotrecurse === undefined) donotrecurse = [];
+	if (donotrecurse.indexOf(this.type) >= 0) return;
 	if (sub.from === this.type) {
 		this.type = sub.to;
 	}
-	Type.store[this.type].applySubstitution(sub);
+	Type.store[this.type].applySubstitution(sub, donotrecurse);
 };
 TypeEnvEntry.prototype.toString = function() {
 	return this.name + ": " + Type.store[this.type].toString();
@@ -1069,13 +1078,13 @@ TypeEnv.getFreshType = function(opts, node) {
 	return new AbstractType("", opts, node);
 };
 TypeEnv.prototype.getFreshType = TypeEnv.getFreshType;
-TypeEnv.prototype.applySubstitution = function(sub) {
+TypeEnv.prototype.applySubstitution = function(sub, donotrecurse) {
 	for (var i = 0; i < this.length; i++) {
-		this[i].applySubstitution(sub);
+		this[i].applySubstitution(sub, donotrecurse);
 	}
 	if (this.derivedGammas !== undefined) {
 		for (var j=0; j<this.derivedGammas.length; j++) {
-			this.derivedGammas[j].applySubstitution(sub);
+			this.derivedGammas[j].applySubstitution(sub, donotrecurse);
 		}
 	}
 };

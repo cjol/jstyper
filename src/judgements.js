@@ -188,7 +188,7 @@ UglifyJS.AST_Lambda.prototype.check = function(gamma, dynamics) {
 	for (i = 0; i < argumentTypeEnvEntries.length; i++) {
 		funType.argTypes.push(argumentTypeEnvEntries[i].type);
 	}
-
+	funType.gamma = j1.gamma;
 
 
 	var C;
@@ -291,7 +291,25 @@ UglifyJS.AST_Dot.prototype.check = function(gamma, dynamics) {
 		C.push(nc);
 	}
 
-	var judgement = new Classes.Judgement(T, C, j1.gamma, W);
+	// after solving constraints, I know that j1.T must have the property in question
+	var r = partSolve(C, gamma, W);
+	C = r.C;
+	W = r.W;
+	gamma = r.gamma;
+	for (var i = 0; i<r.substitutions.length; i++) {
+		if (r.substitutions[i].from === j1.T.id) {
+			j1.T = Classes.Type.store[r.substitutions[i].to];
+		}
+		Classes.Type.store[j1.T.id].applySubstitution(r.substitutions[i]);
+	}
+
+	// @deref may not be in the root, however
+	var o=j1.T;
+	while (! (this.property in o.memberTypes)) o = Classes.Type.store[o.originalObj];
+	
+	var itemType = o.memberTypes[this.property];
+
+	var judgement = new Classes.Judgement(Classes.Type.store[itemType], C, j1.gamma, W);
 	judgement.nodes.push(this);
 	return judgement;
 };
@@ -318,11 +336,32 @@ UglifyJS.AST_Sub.prototype.check = function(gamma, dynamics) {
 		innerType: innerType.id
 	});
 
+	// If we should infer the array's type, then we should infer the contents' type
+	if (j1.T.shouldInfer) innerType.shouldInfer = true;
+
 	// TODO: This possibly should be LEqCheck. I'm being lenient...
 	// the array type must have more structure than the type being read
 	C.push(new Classes.LEqConstraint(T.id, j1.T.id));
 
-	var judgement = new Classes.Judgement(innerType, C, j1.gamma, W);
+	// after solving constraints, I know that j1.T must have an @deref property
+	var r = partSolve(C, gamma, W);
+	C = r.C;
+	W = r.W;
+	gamma = r.gamma;
+	for (var i = 0; i<r.substitutions.length; i++) {
+		if (r.substitutions[i].from === j1.T.id) {
+			j1.T = Classes.Type.store[r.substitutions[i].to];
+		}
+		Classes.Type.store[j1.T.id].applySubstitution(r.substitutions[i]);
+	}
+
+	// @deref may not be in the root, however
+	var o=j1.T;
+	while (! ("@deref" in o.memberTypes)) o = Classes.Type.store[o.originalObj];
+	
+	var itemType = o.memberTypes["@deref"];
+
+	var judgement = new Classes.Judgement(Classes.Type.store[itemType], C, j1.gamma, W);
 	judgement.nodes.push(this);
 	return judgement;
 };
@@ -418,6 +457,22 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 	var C = j1.C;
 	var W = j1.W;
 
+
+	// try to fix things by solving constraints before we attempt assignment (which is complicated!)
+	var r = partSolve(C, j1.gamma, W);
+
+	C = r.C;
+	W = r.W;
+	j1.gamma = r.gamma;
+	// we also need to apply substitutions to j1.T itself, which may not be represented in gamma
+	for (var i = 0; i<r.substitutions.length; i++) {
+		if (r.substitutions[i].from === j1.T.id) {
+			j1.T = Classes.Type.store[r.substitutions[i].to];
+		}
+		Classes.Type.store[j1.T.id].applySubstitution(r.substitutions[i]);
+	}
+
+
 	// if this is an assignment to a dynamic variable, we shouldn't wrap with a mimic
 	var returnType, j, j2, j3;
 	var nextGamma;
@@ -433,11 +488,11 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 						// AssignTypeUndef
 
 						// need to select a new type, but create a new env for it
-						currentType = j1.gamma.getFreshType();
+						// currentType = j1.gamma.getFreshType();
 
 						nextGamma = new Classes.TypeEnv(j1.gamma);
 
-						var tee = new Classes.TypeEnvEntry(this.left.name, this.left, currentType.id);
+						var tee = new Classes.TypeEnvEntry(this.left.name, this.left, j1.T.id);
 						this.left.tee = tee;
 						nextGamma.push(tee);
 						constrainType = j1.T;
@@ -473,10 +528,10 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 								j1.T.id
 							)
 						);
+						// important justification of LEqCheck v. LEq in WWT pad, bottom of page 1.
+						C.push(new Classes.LEqCheckConstraint(currentType.id, constrainType.id));
 					}
 
-					// important justification of LEqCheck v. LEq in WWT pad, bottom of page 1.
-					C.push(new Classes.LEqCheckConstraint(currentType.id, constrainType.id));
 
 				} else {
 					// ignore assignments to dynamic variables, and just use j1.gamma next
@@ -837,10 +892,30 @@ UglifyJS.AST_Return.prototype.check = function(gamma, dynamics) {
 	return judgement;
 };
 
+function partSolve(C, gamma, W) {
+	var result = solveConstraints(C);
+	var subs = result.substitutions;
+
+	for (var i=0; i<subs.length; i++) {
+		gamma.applySubstitution(subs[i]);
+
+		for (var j=0; j<W.length; j++) {
+			W[j].applySubstitution(subs[i]);
+		}
+	}
+
+	return {
+		C: result.constraints,
+		W: W,
+		gamma: gamma,
+		substitutions: subs
+	};
+
+}
+
 // Rule SeqTypable
 UglifyJS.AST_Block.prototype.check = function(gamma, dynamics) {
 	var judgement = new Classes.Judgement(null, [], new Classes.TypeEnv(gamma), []);
-	var allSubs = [];
 
 	for (var i = 0; i < this.body.length; i++) {
 		this.body[i].parent = parent(this);
@@ -849,25 +924,11 @@ UglifyJS.AST_Block.prototype.check = function(gamma, dynamics) {
 		judgement.C = judgement.C.concat(j.C);
 		judgement.gamma = j.gamma;
 
-		// solve the generated constraints, or throw an error if this isn't possible
-		// NB Type.store will be modified by this, and NOT all constraints are used up
-		var result = solveConstraints(judgement.C);
-		var substitutions = result.substitutions;
-		allSubs = allSubs.concat(substitutions);
+		var r = partSolve(judgement.C, j.gamma, judgement.W);
 
-		// reset the constraints for the next statement
-		judgement.C = result.constraints;
-
-		// apply the solution substitutions to the type environment
-		for (var l = 0; l < substitutions.length; l++) {
-
-			judgement.gamma.applySubstitution(substitutions[l]);
-			gamma.applySubstitution(substitutions[l]);
-
-			for (var k = 0; k < judgement.W.length; k++) {
-				judgement.W[k].applySubstitution(substitutions[l]);
-			}
-		}
+		judgement.C = r.C;
+		judgement.W = r.W;
+		judgement.gamma = r.gamma;
 		gamma = judgement.gamma;
 
 	}
@@ -1171,7 +1232,10 @@ UglifyJS.AST_VarDef.prototype.check = function(gamma, dynamics) {
 		var judgement = this.value.check(gamma, dynamics);
 
 		// C = judgement.C.concat([new Classes.LEqCheckConstraint(T, judgement.T, this.value)]);
-		C = judgement.C.concat([new Classes.LEqConstraint(T.id, judgement.T.id)]);
+		C = judgement.C;//.concat([new Classes.LEqConstraint(T.id, judgement.T.id)]);
+		// if (judgement.T.shouldInfer) T.shouldInfer = true;
+
+		T = judgement.T;
 		W = judgement.W;
 	} else {
 		T.illDefined = true;
@@ -1209,6 +1273,12 @@ UglifyJS.AST_Var.prototype.check = function(gamma, dynamics) {
 	j.nodes.push(this);
 
 
+	return j;
+};
+
+UglifyJS.AST_Continue.prototype.check = function(gamma, dynamic) {
+	var j = new Classes.Judgement(null, [], gamma, []);
+	j.nodes.push(this);
 	return j;
 };
 

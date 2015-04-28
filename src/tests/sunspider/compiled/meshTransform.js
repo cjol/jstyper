@@ -9,7 +9,7 @@ var nx = 120;
 // nz: number
 var nz = 120;
 
-// morph: fn(undefined, [number], number -> undefined)
+// morph: fn(undefined, {@deref:number, length:number}!, number -> undefined)
 function morph(a, f) {
     // PI2nx: number
     // nx: number
@@ -64,7 +64,7 @@ function morph(a, f) {
         // nx: number
         // j: number
         var j = 0; j < nx; ++j) {
-            // a: [number]
+            // a: {@deref:number, length:number}!
             // i: number
             // nx: number
             // j: number
@@ -79,7 +79,7 @@ function morph(a, f) {
 
 // replace 'new Array()' notation, and
 // move up to before use b/c we don't support var hoisting
-// a: [number]
+// a: {@deref:number, length:number}
 var a = [];
 
 // initialise array
@@ -88,7 +88,7 @@ for (// i: number
 // nx: number
 // nz: number
 // i: number
-var i = 0; i < nx * nz * 3; ++i) // a: [number]
+var i = 0; i < nx * nz * 3; ++i) // a: {@deref:number, length:number}
 // i: number
 a[i] = 0;
 
@@ -98,8 +98,8 @@ for (// i: number
 // loops: number
 // i: number
 var i = 0; i < loops; ++i) {
-    // morph: fn(undefined, [number], number -> undefined)
-    // a: [number]
+    // morph: fn(undefined, {@deref:number, length:number}!, number -> undefined)
+    // a: {}~>{@deref:number, length:number}
     // i: number
     // loops: number
     morph(a, i / loops);

@@ -81,7 +81,8 @@ app.get('/', function(req, res) {
 	// render the view with no initial data
     res.render("compile.html", {
         from: '// jstyper start \n\n\n\n// jstyper end',
-        to: ''
+        to: '',
+        serverjs: 'reloadFromStorage()'
     });
 });
 
@@ -101,7 +102,8 @@ app.get('/:dir/:test', function(req, res) {
     // render the view
     res.render("compile.html", {
         from: src,
-        to: result.src
+        to: result.src,
+        serverjs: ''
     });
 });
 

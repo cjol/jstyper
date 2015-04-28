@@ -11,6 +11,7 @@ function resetCounters() {
 		guardFunCall:0
 	};
 }
+
 resetCounters();
 
 // TODO: How can I deal with infinite recursion here?
