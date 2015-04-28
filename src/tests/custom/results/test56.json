@@ -1,0 +1,17 @@
+{
+	"success": true,
+	"types": {
+		"3": {
+			"4": {
+				"type": "object",
+				"memberTypes": {
+					"@deref": "number",
+					"length": "number"
+				}
+			}
+		}, 
+		"4": {
+			"4": "number"
+		}
+	}
+}
