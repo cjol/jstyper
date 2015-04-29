@@ -20,7 +20,7 @@ if (process.argv[2][0] === "-") {
 			r.guardReadProp + ", " +
 			r.guardWriteProp + ", " +
 			r.guardFunCall
-		)
+		);
 	} else {
 		throw Error("Incorrect usage (the only legal parameter is -count)");
 	}

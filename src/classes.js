@@ -678,7 +678,8 @@ Constraint.prototype.getFunctionConstraints = function() {
 	// generate new constraints asserting that the arguments and
 	// return type of type1 and of type2 have the same type
 	for (var i = 0; i < type1.argTypes.length; i++) {
-		nc = new Constraint(type2.argTypes[i], type1.argTypes[i]);
+
+		nc = new this.constructor(type2.argTypes[i], type1.argTypes[i]);
 		if (this.interesting) nc.interesting = true;
 		newConstraints.push(nc);
 	}
@@ -799,6 +800,16 @@ LEqConstraint.prototype.regenDesc = function() {
 	this.desc = Type.store[this.type1].toString() + " has less structure than " + Type.store[this.type2].toString();
 };
 LEqConstraint.prototype.solve = function() {
+
+	// "Heuristic" approach...
+	// if one type contains the other, substitute the contents out by a reference to itself (make a recursive type)
+	if (Type.store[this.type1].containers.indexOf(this.type2) >= 0) {
+		// type2 is in type1
+		this.applySubstitution(new Substitution(this.type2, this.type1));
+	} else if (Type.store[this.type2].containers.indexOf(this.type1) >= 0) {
+		// type1 is in type2
+		this.applySubstitution(new Substitution(this.type1, this.type2));
+	}
 
 	// shortcut
 	if (this.type1 === this.type2) return {
