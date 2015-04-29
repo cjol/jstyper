@@ -678,12 +678,12 @@ Constraint.prototype.getFunctionConstraints = function() {
 	// generate new constraints asserting that the arguments and
 	// return type of type1 and of type2 have the same type
 	for (var i = 0; i < type1.argTypes.length; i++) {
-		nc = new Constraint(type1.argTypes[i], type2.argTypes[i]);
+		nc = new Constraint(type2.argTypes[i], type1.argTypes[i]);
 		if (this.interesting) nc.interesting = true;
 		newConstraints.push(nc);
 	}
 
-	nc = new Constraint(type1.returnType, type2.returnType);
+	nc = new this.constructor(type1.returnType, type2.returnType);
 	if (this.interesting) nc.interesting = true;
 	newConstraints.push(nc);
 	return newConstraints;

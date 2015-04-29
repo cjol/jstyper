@@ -1,0 +1,6 @@
+sunspider fannkuch.js
+sunspider meshTransform.js
+sunspider sieve.js
+sunspider partial.js
+sunspider cordic.js
+sunspider spectral.js

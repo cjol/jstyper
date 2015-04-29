@@ -84,7 +84,7 @@ function testDir(dir, name) {
 				var compile;
 				var result;
 				try {
-					result = jstyper(src);
+					result = jstyper(src, true);
 					compile = true;
 				} catch (e) {
 					compile = false;

@@ -230,6 +230,7 @@ UglifyJS.AST_Symbol.prototype.check = function(gamma, dynamics) {
 		this.tee = {
 			type: "wrapped" // will be replaced once the wrapper is generated
 		};
+		T.shouldInfer = true; // maybe?
 		W.push(new Classes.Wrapper(this, this.parent(), T.id));
 		// }
 	} else {
@@ -391,7 +392,11 @@ UglifyJS.AST_Call.prototype.check = function(gamma, dynamics) {
 		// I don't care about je.C or je.gamma - they will come through when we check this.expression (j0)
 		var je = this.expression.expression.check(gamma, dynamics);
 
-		C.push(new Classes.LEqCheckConstraint(argTypes[0], je.T.id));
+		if (je.T.shouldInfer) {
+			C.push(new Classes.LEqConstraint(argTypes[0], je.T.id));
+		} else {
+			C.push(new Classes.LEqCheckConstraint(argTypes[0], je.T.id));
+		}
 	} else {
 		// normal function call (no this)
 		C.push(new Classes.Constraint(argTypes[0], Classes.Type.undefinedType.id));
@@ -410,8 +415,11 @@ UglifyJS.AST_Call.prototype.check = function(gamma, dynamics) {
 			node: this
 		});
 		argTypes.push(T.id);
-
-		C.push(new Classes.LEqCheckConstraint(T.id, ji.T.id));
+		if (ji.T.shouldInfer) {
+			C.push(new Classes.LEqConstraint(T.id, ji.T.id));
+		} else {
+			C.push(new Classes.LEqCheckConstraint(T.id, ji.T.id));
+		}
 
 		gamma = ji.gamma;
 	}
@@ -429,7 +437,13 @@ UglifyJS.AST_Call.prototype.check = function(gamma, dynamics) {
 		detail: 'use type of call',
 		node: this
 	});
-	C.push(new Classes.LEqCheckConstraint(useType.id, funcType.returnType));
+
+	if (j0.T.shouldInfer) {
+		C.push(new Classes.LEqConstraint(useType.id, funcType.returnType));
+	} else {
+		C.push(new Classes.LEqCheckConstraint(useType.id, funcType.returnType));
+	}
+	if (j0.T.shouldInfer) useType.shouldInfer = true;
 
 	var judgement = new Classes.Judgement(useType, C, gamma, W);
 	judgement.nodes.push(this);
@@ -1009,6 +1023,13 @@ function flattenObj(o1, o2, limit, C) {
 }
 
 function m(T1, T2, C) {
+	if (T1.type === "pending") {
+		T2.illDefined = true;
+		return T2;
+	} else if (T2.type === "pending") {
+		T1.illDefined = true;
+		return T1;
+	}
 	if (T1 instanceof Classes.ObjectType || T2 instanceof Classes.ObjectType) {
 		var an;
 		try {
@@ -1021,13 +1042,6 @@ function m(T1, T2, C) {
 		return flattenObj(T1, T2, an, C);
 	} else {
 
-		if (T1.type === "pending") {
-			T2.illDefined = true;
-			return T2;
-		} else if (T2.type === "pending") {
-			T1.illDefined = true;
-			return T1;
-		}
 		C.push(new Classes.Constraint(T1.id, T2.id));
 		if (T2.illDefined) T1.illDefined = true;
 		return T1;
@@ -1277,6 +1291,11 @@ UglifyJS.AST_Var.prototype.check = function(gamma, dynamics) {
 };
 
 UglifyJS.AST_Continue.prototype.check = function(gamma, dynamic) {
+	var j = new Classes.Judgement(null, [], gamma, []);
+	j.nodes.push(this);
+	return j;
+};
+UglifyJS.AST_Break.prototype.check = function(gamma, dynamic) {
 	var j = new Classes.Judgement(null, [], gamma, []);
 	j.nodes.push(this);
 	return j;

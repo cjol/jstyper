@@ -26,7 +26,7 @@ String.prototype.format = function() {
 	return newStr;
 };
 
-module.exports = function(src) {
+module.exports = function(src, nocomments) {
 
 	// obtain AST
 	var ast;
@@ -135,16 +135,18 @@ module.exports = function(src) {
 					}
 
 					// add a comment
-					if (currentStatementNode.comments_before === undefined) 
-						currentStatementNode.comments_before = [];
-					if (node.tee.type in Classes.Type.store) {
-						currentStatementNode.comments_before.push(
-							new UglifyJS.AST_Token({
-								type:"comment1",
-								nlb: true,
-								value: " " + node.name + ": " + Classes.Type.store[node.tee.type]
-							})
-						);	
+					if (!nocomments) {
+						if (currentStatementNode.comments_before === undefined) 
+							currentStatementNode.comments_before = [];
+						if (node.tee.type in Classes.Type.store) {
+							currentStatementNode.comments_before.push(
+								new UglifyJS.AST_Token({
+									type:"comment1",
+									nlb: true,
+									value: " " + node.name + ": " + Classes.Type.store[node.tee.type]
+								})
+							);	
+						}
 					}
 				}
 			}

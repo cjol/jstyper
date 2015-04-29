@@ -1,7 +1,7 @@
 var memwatch = require("memwatch");
 var util = require('util');
-var fs = require("fs")
-var wrapperFunctions = fs.readFileSync("./js/wrappers.js");;
+var fs = require("fs");
+var wrapperFunctions = fs.readFileSync("./js/wrappers.js");
 
 // TODO: time compilation
 
@@ -27,7 +27,6 @@ if (process.argv[2][0] === "-") {
 } else {
 	var src = fs.readFileSync("./tests/" + process.argv[2], "utf8");
 
-	memwatch.gc();
 	var start = process.hrtime();
 	var hd = new memwatch.HeapDiff();
 	var doCount = false;

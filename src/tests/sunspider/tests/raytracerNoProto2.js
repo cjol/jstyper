@@ -175,8 +175,8 @@ function Triangle(p1, p2, p3) {
         return colour;
     };
 
-    triangle.intersectLegal = triangleIntersectLegal;
-    triangle.intersect = triangleIntersect;
+    triangle.tintersectLegal = triangleIntersectLegal;
+    triangle.tintersect = triangleIntersect;
     return triangle;
 }
 
@@ -184,23 +184,24 @@ var zero = [0,0,0];
 
 function sceneIntersect(origin, dir, near, far) {
     var closest = this.triangles[0];
+    var r;
 
     var foundClosest = false;
     for (i = 0; i < this.triangles.length; i++) {
         var triangle = this.triangles[i];   
 
-        var d = triangle.intersect(origin, dir, near, far);
+        var d = triangle.tintersect(origin, dir, near, far);
         // this used to check for null, now it checks if d is legal
-        if (! triangle.intersectLegal(origin, dir, near, far, d))
+        if (! triangle.tintersectLegal(origin, dir, near, far, d))
             continue;
         far = d;
         closest = triangle;
         foundClosest = true;
     }
     
-    // if (!foundClosest) {
-    //     return [this.background[0],this.background[1],this.background[2]];
-    // } 
+    if (!foundClosest) {
+        return [this.background[0],this.background[1],this.background[2]];
+    } 
 
     var normal = closest.normal;
     var hit = add(origin, scale(dir, far)); 
@@ -211,13 +212,12 @@ function sceneIntersect(origin, dir, near, far) {
     var colour = closest.shader(closest, hit, dir);
     
     // // do reflection
-    var reflected;
+    var reflected = [];
     if (colour.reflection > 0.001) {
         var reflection = addVector(scale(normal, -2*dot(dir, normal)), dir);
-        reflected = this.intersect(hit, reflection, 0.0001, 1000000);
+        reflected = this.sintersect(hit, reflection, 0.0001, 1000000);
         if (colour.reflection >= 0.999999)
-        {}
-    //         return reflected;
+            return reflected;
     }
     
     var l = [this.ambient[0], this.ambient[1], this.ambient[2]];
@@ -234,187 +234,186 @@ function sceneIntersect(origin, dir, near, far) {
         if (nl > 0)
             addVector(l, scale(light.colour, nl));
     }
-    colour;
-    // l = scalev(l, colour);
-    // if (colour.reflection > 0.001) {
-    //     l = addVector(scaleVector(l, 1 - colour.reflection), scaleVector(reflected, colour.reflection));
-    // }
-    // return l;
+    l = scalev(l, colour);
+    if (colour.reflection > 0.001) {
+        l = addVector(scaleVector(l, 1 - colour.reflection), scaleVector(reflected, colour.reflection));
+    }
+    return l;
 }
 
-// function sceneBlocked(O, D, far) {
-//     var near = 0.0001;
-//     var closest = null;
-//     for (i = 0; i < this.triangles.length; i++) {
-//         var triangle = this.triangles[i];   
-//         var d = triangle.intersect(O, D, near, far);
-//         if (! triangle.intersectLegal(O, D, near, far, d))
-//             continue;
-//         return true;
-//     }
+function sceneBlocked(O, D, far) {
+    var near = 0.0001;
+    var closest = null;
+    for (i = 0; i < this.triangles.length; i++) {
+        var triangle = this.triangles[i];   
+        var d = triangle.tintersect(O, D, near, far);
+        if (! triangle.tintersectLegal(O, D, near, far, d))
+            continue;
+        return true;
+    }
     
-//     return false;
-// }
+    return false;
+}
 
-// function Scene(a_triangles) {
-//     var scene = {};
-//     scene.triangles = a_triangles;
-//     scene.lights = [];
-//     scene.ambient = [0,0,0];
-//     scene.background = [0.8,0.8,1];
-//     scene.intersect = sceneIntersect;
-//     scene.blocked = sceneBlocked;
-//     return scene;
-// }
-// function cameraGenerateRayPair(y) {
-//     rays = [{
-//         origin: this.origin,
-//         dir: addVector(scale(this.directions[0], y), scale(this.directions[3], 1 - y))
-//     },{
-//         origin: this.origin,
-//         dir: addVector(scale(this.directions[1], y), scale(this.directions[2], 1 - y))
-//     }];
-//     return rays;
-// }
+function Scene(a_triangles) {
+    var scene = {};
+    scene.triangles = a_triangles;
+    scene.lights = [];
+    scene.ambient = [0,0,0];
+    scene.background = [0.8,0.8,1];
+    scene.sintersect = sceneIntersect;
+    scene.blocked = sceneBlocked;
+    return scene;
+}
+function cameraGenerateRayPair(y) {
+    rays = [{
+        origin: this.origin,
+        dir: addVector(scale(this.directions[0], y), scale(this.directions[3], 1 - y))
+    },{
+        origin: this.origin,
+        dir: addVector(scale(this.directions[1], y), scale(this.directions[2], 1 - y))
+    }];
+    return rays;
+}
 
-// function renderRows(camera, scene, pixels, width, height, starty, stopy) {
-//     for (var y = starty; y < stopy; y++) {
-//         var rays = camera.generateRayPair(y / height);
-//         for (var x = 0; x < width; x++) {
-//             var xp = x / width;
-//             var origin = addVector(scale(rays[0].origin, xp), scale(rays[1].origin, 1 - xp));
-//             var dir = normaliseVector(addVector(scale(rays[0].dir, xp), scale(rays[1].dir, 1 - xp)));
-//             var l = scene.intersect(origin, dir);
-//             pixels[y][x] = l;
-//         }
-//     }
-// }
+function renderRows(camera, scene, pixels, width, height, starty, stopy) {
+    for (var y = starty; y < stopy; y++) {
+        var rays = camera.generateRayPair(y / height);
+        for (var x = 0; x < width; x++) {
+            var xp = x / width;
+            var origin = addVector(scale(rays[0].origin, xp), scale(rays[1].origin, 1 - xp));
+            var dir = normaliseVector(addVector(scale(rays[0].dir, xp), scale(rays[1].dir, 1 - xp)));
+            var l = scene.sintersect(origin, dir, 0.00001, 100000);
+            pixels[y][x] = l;
+        }
+    }
+}
 
-// function cameraRender(scene, pixels, width, height) {
-//     var cam = this;
-//     var row = 0;
-//     renderRows(cam, scene, pixels, width, height, 0, height);
-// }
-
-
-
-// // this camera code is from notes i made ages ago, it is from *somewhere* -- i cannot remember where
-// // that somewhere is
-// function Camera(origin, lookat, up) {
-//     var zaxis = normaliseVector(subVector(lookat, origin));
-//     var xaxis = normaliseVector(cross(up, zaxis));
-//     var yaxis = normaliseVector(cross(xaxis, subVector([0,0,0], zaxis)));
-//     var m = [];
-//     m[0] = xaxis[0]; m[1] = xaxis[1]; m[2] = xaxis[2];
-//     m[4] = yaxis[0]; m[5] = yaxis[1]; m[6] = yaxis[2];
-//     m[8] = zaxis[0]; m[9] = zaxis[1]; m[10] = zaxis[2];
-//     invertMatrix(m);
-//     m[3] = 0; m[7] = 0; m[11] = 0;
-//     var camera = {};
-//     camera.origin = origin;
-//     camera.directions = [];
-//     camera.directions[0] = normalise([-0.7,  0.7, 1]);
-//     camera.directions[1] = normalise([ 0.7,  0.7, 1]);
-//     camera.directions[2] = normalise([ 0.7, -0.7, 1]);
-//     camera.directions[3] = normalise([-0.7, -0.7, 1]);
-//     camera.directions[0] = transformMatrix(m, camera.directions[0]);
-//     camera.directions[1] = transformMatrix(m, camera.directions[1]);
-//     camera.directions[2] = transformMatrix(m, camera.directions[2]);
-//     camera.directions[3] = transformMatrix(m, camera.directions[3]);
-//     camera.generateRayPair = cameraGenerateRayPair;
-//     camera.render = cameraRender;
-//     return camera;
-// }
+function cameraRender(scene, pixels, width, height) {
+    var cam = this;
+    var row = 0;
+    renderRows(cam, scene, pixels, width, height, 0, height);
+}
 
 
-// function raytraceScene(size)
-// {
-//     var numTriangles = 2 * 6;
-//     var triangles = [];
-//     var tfl = createVector(-10,  10, -10);
-//     var tfr = createVector( 10,  10, -10);
-//     var tbl = createVector(-10,  10,  10);
-//     var tbr = createVector( 10,  10,  10);
-//     var bfl = createVector(-10, -10, -10);
-//     var bfr = createVector( 10, -10, -10);
-//     var bbl = createVector(-10, -10,  10);
-//     var bbr = createVector( 10, -10,  10);
+// this camera code is from notes i made ages ago, it is from *somewhere* -- i cannot remember where
+// that somewhere is
+function Camera(origin, lookat, up) {
+    var zaxis = normaliseVector(subVector(lookat, origin));
+    var xaxis = normaliseVector(cross(up, zaxis));
+    var yaxis = normaliseVector(cross(xaxis, subVector([0,0,0], zaxis)));
+    var m = [];
+    m[0] = xaxis[0]; m[1] = xaxis[1]; m[2] = xaxis[2];
+    m[4] = yaxis[0]; m[5] = yaxis[1]; m[6] = yaxis[2];
+    m[8] = zaxis[0]; m[9] = zaxis[1]; m[10] = zaxis[2];
+    invertMatrix(m);
+    m[3] = 0; m[7] = 0; m[11] = 0;
+    var camera = {};
+    camera.origin = origin;
+    camera.directions = [];
+    camera.generateRayPair = cameraGenerateRayPair;
+    camera.directions[0] = normalise([-0.7,  0.7, 1]);
+    camera.directions[1] = normalise([ 0.7,  0.7, 1]);
+    camera.directions[2] = normalise([ 0.7, -0.7, 1]);
+    camera.directions[3] = normalise([-0.7, -0.7, 1]);
+    camera.directions[0] = transformMatrix(m, camera.directions[0]);
+    camera.directions[1] = transformMatrix(m, camera.directions[1]);
+    camera.directions[2] = transformMatrix(m, camera.directions[2]);
+    camera.directions[3] = transformMatrix(m, camera.directions[3]);
+    camera.render = cameraRender;
+    return camera;
+}
+
+
+function raytraceScene(size)
+{
+    // var numTriangles = 2 * 6;
+    var triangles = [];
+    // var tfl = createVector(-10,  10, -10);
+    // var tfr = createVector( 10,  10, -10);
+    // var tbl = createVector(-10,  10,  10);
+    // var tbr = createVector( 10,  10,  10);
+    // var bfl = createVector(-10, -10, -10);
+    // var bfr = createVector( 10, -10, -10);
+    // var bbl = createVector(-10, -10,  10);
+    // var bbr = createVector( 10, -10,  10);
     
-//     // cube!!!
-//     // front
-//     var i = 0;
+    // // // cube!!!
+    // // // front
+    // var i = 0;
     
-//     triangles[i++] = Triangle(tfl, tfr, bfr);
-//     triangles[i++] = Triangle(tfl, bfr, bfl);
-//     // back
-//     triangles[i++] = Triangle(tbl, tbr, bbr);
-//     triangles[i++] = Triangle(tbl, bbr, bbl);
+    // triangles[i++] = Triangle(tfl, tfr, bfr);
+    // triangles[i++] = Triangle(tfl, bfr, bfl);
+    // // back
+    // triangles[i++] = Triangle(tbl, tbr, bbr);
+    // triangles[i++] = Triangle(tbl, bbr, bbl);
 
-//     // left
-//     triangles[i++] = Triangle(tbl, tfl, bbl);
-//     triangles[i++] = Triangle(tfl, bfl, bbl);
+    // // left
+    // triangles[i++] = Triangle(tbl, tfl, bbl);
+    // triangles[i++] = Triangle(tfl, bfl, bbl);
 
-//     // right
-//     triangles[i++] = Triangle(tbr, tfr, bbr);
-//     triangles[i++] = Triangle(tfr, bfr, bbr);
+    // // right
+    // triangles[i++] = Triangle(tbr, tfr, bbr);
+    // triangles[i++] = Triangle(tfr, bfr, bbr);
 
-//     // top
-//     triangles[i++] = Triangle(tbl, tbr, tfr);
-//     triangles[i++] = Triangle(tbl, tfr, tfl);
+    // // top
+    // triangles[i++] = Triangle(tbl, tbr, tfr);
+    // triangles[i++] = Triangle(tbl, tfr, tfl);
 
-//     // bottom
-//     triangles[i++] = Triangle(bbl, bbr, bfr);
-//     triangles[i++] = Triangle(bbl, bfr, bfl);
+    // // bottom
+    // triangles[i++] = Triangle(bbl, bbr, bfr);
+    // triangles[i++] = Triangle(bbl, bfr, bfl);
     
-//     //Floor!!!!
-//     var green = createVector(0.0, 0.4, 0.0);
-//     var grey = createVector(0.4, 0.4, 0.4);
-//     grey.reflection = 1.0;
-//     var floorShader = function(tri, pos, view) {
-//         var x = ((pos[0]/32) % 2 + 2) % 2;
-//         var z = ((pos[2]/32 + 0.3) % 2 + 2) % 2;
-//         if (x < 1 != z < 1) {
-//             //in the real world we use the fresnel term...
-//             //    var angle = 1-dot(view, tri.normal);
-//             //   angle *= angle;
-//             //  angle *= angle;
-//             // angle *= angle;
-//             //grey.reflection = angle;
-//             return grey;
-//         } else 
-//             return green;
-//     };
-//     var ffl = createVector(-1000, -30, -1000);
-//     var ffr = createVector( 1000, -30, -1000);
-//     var fbl = createVector(-1000, -30,  1000);
-//     var fbr = createVector( 1000, -30,  1000);
-//     triangles[i++] = Triangle(fbl, fbr, ffr);
-//     triangles[i-1].shader = floorShader;
-//     triangles[i++] = Triangle(fbl, ffr, ffl);
-//     triangles[i-1].shader = floorShader;
+    // //Floor!!!!
+    // var green = createVector(0.0, 0.4, 0.0);
+    // var grey = createVector(0.4, 0.4, 0.4);
+    // grey.reflection = 1.0;
+    // green.reflection = 0.0;
+    // var floorShader = function(tri, pos, view) {
+    //     var x = ((pos[0]/32) % 2 + 2) % 2;
+    //     var z = ((pos[2]/32 + 0.3) % 2 + 2) % 2;
+    //     if (x < 1 != z < 1) {
+    //         //in the real world we use the fresnel term...
+    //         //    var angle = 1-dot(view, tri.normal);
+    //         //   angle *= angle;
+    //         //  angle *= angle;
+    //         // angle *= angle;
+    //         //grey.reflection = angle;
+    //         return grey;
+    //     } else 
+    //         return green;
+    // };
+    // var ffl = createVector(-1000, -30, -1000);
+    // var ffr = createVector( 1000, -30, -1000);
+    // var fbl = createVector(-1000, -30,  1000);
+    // var fbr = createVector( 1000, -30,  1000);
+    // triangles[i++] = Triangle(fbl, fbr, ffr);
+    // triangles[i-1].shader = floorShader;
+    // triangles[i++] = Triangle(fbl, ffr, ffl);
+    // triangles[i-1].shader = floorShader;
     
-//     var _scene = Scene(triangles);
-//     _scene.lights[0] = createVector(20, 38, -22);
-//     _scene.lights[0].colour = createVector(0.7, 0.3, 0.3);
-//     _scene.lights[1] = createVector(-23, 40, 17);
-//     _scene.lights[1].colour = createVector(0.7, 0.3, 0.3);
-//     _scene.lights[2] = createVector(23, 20, 17);
-//     _scene.lights[2].colour = createVector(0.7, 0.7, 0.7);
-//     _scene.ambient = createVector(0.1, 0.1, 0.1);
+    var _scene = Scene(triangles);
+    // _scene.lights[0] = createVector(20, 38, -22);
+    // _scene.lights[0].colour = createVector(0.7, 0.3, 0.3);
+    // _scene.lights[1] = createVector(-23, 40, 17);
+    // _scene.lights[1].colour = createVector(0.7, 0.3, 0.3);
+    // _scene.lights[2] = createVector(23, 20, 17);
+    // _scene.lights[2].colour = createVector(0.7, 0.7, 0.7);
+    // _scene.ambient = createVector(0.1, 0.1, 0.1);
     
-//     var pixels = [];
-//     for (var y = 0; y < size; y++) {
-//         pixels[y] = [];
-//         for (var x = 0; x < size; x++) {
-//             pixels[y][x] = 0;
-//         }
-//     }
+    var pixels = [];
+    // for (var y = 0; y < size; y++) {
+    //     pixels[y] = [];
+    //     for (var x = 0; x < size; x++) {
+    //         pixels[y][x] = 0;
+    //     }
+    // }
 
-//     var _camera = Camera(createVector(-40, 40, 40), createVector(0, 0, 0), createVector(0, 1, 0));
-//     _camera.render(_scene, pixels, size, size);
+    var _camera = Camera(createVector(-40, 40, 40), createVector(0, 0, 0), createVector(0, 1, 0));
+    _camera.render(_scene, pixels, size, size);
 
-//     return pixels;
-// }
+    // return pixels;
+}
 // // jstyper end
 
 // var startTime=new Date() ;
@@ -422,4 +421,3 @@ function sceneIntersect(origin, dir, near, far) {
 // var endTime=new Date() ;
 // console.log(startTime, endTime, endTime - startTime);
 
-// {intersectLegal:fn({axis:number, eu:number, ev:number, nu1:number, nv1:number, nu2:number, nv2:number}, T1231, T1232, number, number, number -> boolean)}~>{intersect:fn({axis:number, nv:number, nu:number, nd:number}, {@deref:number, length:number}, {@deref:number, length:number}, T1132, T1133 -> number)}~>{shader:fn({material:T2056}, T2049, T2050, T2051 -> T2046)}~>{material:{@deref:number, length:number}}~>{nv2:number}~>{nu2:number}~>{nv1:number}~>{nu1:number}~>{ev:number}~>{eu:number}~>{nd:number}~>{nv:number}~>{nu:number}~>{normal:{@deref:number, length:number}}~>{axis:number}~>{})
