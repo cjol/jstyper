@@ -1,4 +1,4 @@
-%o Draft #1
+% Draft #2
 \documentclass[12pt,a4paper,twoside,openright]{report}
 \usepackage[pdfborder={0 0 0}]{hyperref}    % turns references into hyperlinks
 \usepackage[margin=25mm]{geometry}  % adjusts page layout
@@ -48,32 +48,34 @@ Types are a way of grouping together values which support similar operations.
 For example, \texttt{number} might be a type representing values which support
 addition and subtraction. \texttt{string} might represent a sequence of
 characters which supports concatenation, but doesn't support addition or
-subtraction. A program cannot subtract a \texttt{number} from a
-\texttt{string}, and an attempt to do so is known as a \textit{type error}. We
-say that a language is \textit{strongly} typed if such attempts will always
-generate some kind of error, whereas a \textit{weakly} typed language may allow
-the operation to execute, with sometimes unpredictable consequences. Under
-\textit{dynamic} typing, checking for type errors happens at the very last
-minute -- during program execution itself. Using a \textit{static} type %chktex
-8 checker, the program code can be analysed in advance to identify type errors
-before the program ever runs.
+subtraction. A program in a language with these types cannot subtract a
+\texttt{number} from a \texttt{string}, and an attempt to do so is known as a
+\textit{type error}. We say that a language is \textit{strongly} typed if such
+attempts will always generate some kind of error, whereas a \textit{weakly}
+typed language may allow the operation to execute, with sometimes
+unpredictable consequences. Under \textit{dynamic} typing, checking for type
+errors happens at the very last minute -- during program execution itself.
+Using a \textit{static} type checker, the program code can be analysed in
+advance to identify type errors before the program runs.
 
 JavaScript is a high-level, dynamically-typed programming language which was
 originally designed for little more than validating forms on websites. Today
 the language is an essential part of everyday computing, powering demanding
-online applications such as image editors, IDEs and online games. The execution
-context of the language has also changed, moving from the browser to the
-server, and now even being targeted by compilers of other languages~\cite{asm}.
-As the scale of JavaScript applications has increased, so too has the
-complexity of development projects.  Assurance that a program is bug-free has
-become more critical, and development tools have accordingly become more
-powerful. JavaScript's weak typing discipline, however, makes it hard to
+online applications such as image editors, IDEs and online games. The
+execution context of the language has also changed, moving from the browser to
+the server, and now even being targeted by other languages'
+compilers~\cite{asm}. As the scale of JavaScript applications has increased,
+so too has the complexity of development projects. Assurance that a program is
+bug-free has become more critical, both for online companies which rely on
+JavaScript for e-commerce, and for the people that use their applications. A
+security bug in an online banking application, for example, could be
+devastating. JavaScript's weak typing discipline, however, makes it hard to
 reason about a program's correctness, and limits the information available to
 development tools. This problem is exacerbated by JavaScript's type
 \textit{coercion}, which permits expressions which would normally be deemed
-untypable by, for example, converting any object to the value \js{true}
-when placed in a context expecting a boolean. This can result in silent
-propagation of type errors, providing no errors to the developer.
+untypable by, for example, converting any object to the value \js{true} when
+placed in a context expecting a boolean. This can result in silent propagation
+of type errors, providing no errors to the developer.
 
 Static type checking catches potential bugs earlier in the development cycle,
 and can allow programs to run faster, without needing to check types before
@@ -97,7 +99,6 @@ checks.
 
 Several such attempts have been made to perform static analysis on JavaScript,
 which is typically a dynamically-typed language. ECMAScript~4~\cite{es4},
-% dubious citation of JScript...
 a proposed extension to the JavaScript standard, featured optional type
 annotations, but the proposal was never finalised and the annotations are not
 present in later versions of the standard. TypeScript~\cite{ts}, uses a
@@ -123,10 +124,6 @@ program, as certain parts of it have effectively not been checked.
   	// adapted from the Prototype library
   	function serialize(val) {
 	  	switch (typeof val) {
-		  	case "undefined":
-		  	case "function":
-		  	case "object":
-			  	return false;
 		  	case "boolean":
 			  	return val ? "true" : "false";
 		  	case "number":
@@ -145,47 +142,60 @@ piece of code may introduce a type error by, for example, passing data of the
 incorrect type to a well-typed function.
 
 Gradual typing is a technique used to make safety guarantees about code which
-combines both static and dynamic typing. The idea was independently presented
-by four sets of authors between September 2006 and January 2007~\cite{gradSiek,
-gradTobin, gradMatthews, gradGronski}. Since static analysis cannot guarantee
-that the program is free of dynamic type errors, we instead guarantee that only
-dynamic properties of the code are able to cause runtime errors -- that the
-well-typed code ``can't be blamed''~\cite{cantblame} for any type errors which
-arise. This is achieved by protecting the boundaries between the type-safe and
-type-unsafe `worlds'. Conversions are made from dynamic types to static types,
-and although this conversion process may generate an error (for example trying
-to convert a \texttt{number} to a \texttt{string}), the type safety of the
-well-typed world is provably preserved.
+combines both static and dynamic typing. Initially looking at interoperation
+between static and dynamic languages~\cite{gray2005fine}, the concepts are
+also applicable here, where the division between static and dynamic code lies
+within one language rather than between several. Since static analysis cannot
+guarantee that the program is free of dynamic type errors, we instead
+guarantee that only dynamic properties of the code are able to cause runtime
+errors -- that the well-typed code ``can't be blamed''~\cite{cantblame} for
+any type errors which arise. This is achieved by protecting the boundaries
+between the type-safe and type- unsafe `worlds'. Conversions are made from
+dynamic types to static types, and although this conversion process may
+generate an error (for example trying to convert a \texttt{number} to a
+\texttt{string}), the type safety of the well- typed world is provably
+preserved.
 
-In this project I have combined the type inference and gradual typing ideas
-introduced above to create a type checker and source-to-source compiler for a
-subset of JavaScript. The static analysis allows dynamic modification of
-object types by assignment to previously undefined properties. Parts of the
-source code which are type-safe are statically analysed, allowing safe
-interface with untyped code through declared `dynamic' variables.
+In this project, I have defined a formal operational semantics and a type
+system for a subset of JavaScript, and created a proof that the system defined
+has the properties of \textit{progress} and \textit{type preservation}. I have
+successfully implemented type inference according to this specification in
+order to create a static type checker, and this implementation has been checked
+by a large suite of tests. In doing this, I realised that the subset of
+JavaScript initially planned to be supported was insufficient for `real-world'
+code, and added arrays and object growth to both the specification and
+implementation. This enabled me to test my implementation using seven tests
+from the Mozilla SunSpider JavaScript benchmark suite. The only extension task
+left incomplete is the inclusion of object inheritance via object prototypes --
+but I present ideas which could fruitfully be built upon in future work.
 
 \chapter{Preparation}\label{preparation} \section{Background}
-% Should I cite the lecture notes?
+
 Before development could begin, an understanding of the theoretical
 underpinnings of the project was required. Several of the undergraduate courses
 offered as part of the Tripos were a valuable introduction, notably the Part IB
-course \textit{Semantics of Programming Languages}, and the Part II course
-\textit{Types}. \textit{Semantics of Programming Languages} introduced the
-proof techniques necessary for proving type soundness, but for an
-insufficiently complex example language to cover all strategies required.
-Pierce's \textit{Types and Programming Languages}~\cite{pierce} bridged this
-gap sufficiently that I was able to look at recent work defining the
-operational semantics of real dynamic programming languages~\cite{pythonOpSem}.
-The \textit{Types} course similarly introduced the Hindley--Damas--Milner
-algorithm for type inference, and Pierce's book helped develop those ideas
-further. Neither course touched on the topic of gradual typing, which is very
-much a topic of current research interest. A few papers by Siek~\cite{gradSiek,
-gradSiek2} and Gray~\cite{gradGray} proved sufficiently accessible, however,
-for me to explore the area.
+course \textit{Semantics of Programming Languages}, and the Part II courses
+\textit{Types} and \textit{Optimising Compilers}. \textit{Semantics of
+Programming Languages} introduced the proof techniques necessary for proving
+type soundness, but for an insufficiently complex example language to cover all
+strategies required.  Pierce's \textit{Types and Programming
+Languages}~\cite{pierce} bridged this gap sufficiently that I was able to look
+at recent work defining the operational semantics of real dynamic programming
+languages~\cite{pythonOpSem}.  The \textit{Types} course similarly introduced
+the Hindley--Damas--Milner algorithm for type inference, and Pierce's book
+helped develop those ideas further. Neither course touched on the topic of
+gradual typing, which is very much a topic of current research interest. A few
+papers by Siek~\cite{gradSiek, gradSiek2} and Gray~\cite{gradGray} proved
+sufficiently accessible, however, for me to explore the area.
+\textit{Optimising Compilers} presented techniques for control flow analysis,
+which usefully complement the inference-based analyses, for example by checking
+that a variable has been defined before use.
 
 In relation to JavaScript itself, I began the project with a strong informal
 grasp of the language. The ECMAScript 5 specification~\cite{ecmaSpec} offered a
 more rigorous definition, which would be required in defining my own
+operational semantics. Some work has already been done attempting to formalise
+the semantics of JavaScript~\cite{guha2010essence}, providing useful inspiration in designing my own
 operational semantics. Carrying out any kind of static analysis on a dynamic
 language will result in false negatives, where a safe statement is incorrectly
 deemed unsafe. This is preferable to a false positive in terms of guaranteeing
@@ -212,21 +222,33 @@ operations and loops. This division meant the project lent itself to an
 incremental build model, whereby each build increment introduced a new language
 feature to the specification, proof and implementations. This allowed
 development to proceed systematically, offering sensible opportunities for
-regression testing after each iteration. Fixing bugs highlighted by the
-regression testing was also simplified, since only relatively small changes
-were introduced in each iteration. This strategy also minimised development
-risk by allowing me to cease development at the end of any iteration and still
-have a successful system, albeit supporting fewer features than planned.
+regression testing after each iteration, with only few changes since the last
+test. This strategy also minimised development risk by allowing me to cease
+development at the end of any iteration and still have a successful system,
+albeit supporting fewer features than planned.
+
+I used Git for version control, with the primary repository hosted on GitHub
+which also served as a remote backup of my work. To amplify the benefit of my
+regression tests for bug detection, I set up continuous integration such that
+each time the GitHub repository was updated, the code was downloaded to a
+private VPS, and the full test suite ran automatically. If any tests failed, an
+email warning was sent to me, so I was immediately alerted of the problem I had
+introduced, and could fix it while the changes which had triggered it were
+still fresh in my mind. If all tests passed, the new code was deployed to a web
+server, such that a live demo was always accessible online at
+\href{http://jstyper.clittle.com}{http://jstyper.clittle.com}.
 
 Within each iteration, I began with the specification, as a kind of
-requirements analysis. The iteration would be considered complete when each of
-the other components conformed to the specification. For the two development
-tasks, I proceeded in a test-driven manner, whereby I would first write tests
-involving the new language feature, expecting them to fail. Development 
-then aimed to make these failing test-cases pass. My collection of tests
-available for regression testing (and later for benchmarking) thus grew
-consistently across the project life-cycle, and by the end of the project 86
-such tests had been produced.
+requirements analysis. The specification was written using
+Ott~\cite{sewell2007ott}, a tool which I learnt to use as the project
+progressed. The iteration would be considered complete when each of the other
+components conformed to the specification. For the two development tasks, I
+proceeded in a test-driven manner, whereby I would first write tests involving
+the new language feature, expecting them to fail.  Development then aimed to
+make these failing test-cases pass. My collection of tests available for
+regression testing (and later for benchmarking) thus grew consistently across
+the project life-cycle, and by the end of the project 
+\input{|"ls ../../src/tests/custom/results -l | wc -v"} such tests had been produced.
 
 Many developers view theoretical computer science as carrying little practical
 benefit for them, when the truth is that concrete implementations of the theory
@@ -241,8 +263,12 @@ has been released as an open source project but suffers from a lack of
 contributors because the project's main users are not able to understand or
 make meaningful contributions to the type checker's code. Instead, I decided to
 write the type inference system in JavaScript, thus ensuring it could run on
-any system. This decision also potentially opened the door for writing a
-self-hosting compiler, which could type-check and compile its own source code.
+any system. This decision opened the door for writing a self-hosting compiler,
+which could type-check and compile its own source code. It also potentially
+made it possible for type checking and compilation to happen in the browser,
+though in practice this is likely only advantageous in fairly unusual
+circumstances. Instead, development focussed on running the compiler using
+Node.js~\cite{nodejs}, a JavaScript interpreter designed for use outside the browser.
 
 As an interpreted language, JavaScript is not compiled prior to execution, but
 it is often compressed to speed up download times to client computers. A number
@@ -282,7 +308,7 @@ all subsequent configurations must be well-typed and hence that the program
 will never get stuck. The initial verification of the program is what the
 implementation of the type inference system achieves.
 
-The operational semantics takes the form of about 60 inductive rules describing
+The operational semantics takes the form of \color{red}{60} inductive rules describing
 all possible transitions from one step of computation to another. A step of
 computation is described by a configuration triple of the form $$\langle m,s,\theta\rangle.$$
 $m$ is the program code remaining to be executed, $s$ represents the current
