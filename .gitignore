@@ -4,6 +4,7 @@ node_modules
 *.log
 *.aux
 *.pdf
+_minted*
 !report/res/*.pdf
 *.synctex.gz
 *.sublime-workspace
