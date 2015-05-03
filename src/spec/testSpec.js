@@ -1,6 +1,5 @@
 // for reading tests
 var fs = require("fs");
-var memwatch = require("memwatch");
 var util = require('util');
 
 // for type-checking and compilation
@@ -176,17 +175,4 @@ function compareTypes(actual, expected) {
 				throw new Error("Unexpected expectation type: " + expected.type);
 		}
 	}
-}
-
-function profile(src) {
-	memwatch.gc();
-	var start = process.hrtime();
-	var hd = new memwatch.HeapDiff();
-	eval(src);
-	var memDiff = hd.end();
-	var time = process.hrtime(start);
-	return {
-		time: time,
-		memory: memDiff.change
-	};
 }
