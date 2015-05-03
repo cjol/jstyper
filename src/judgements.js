@@ -29,34 +29,34 @@ UglifyJS.AST_Constant.prototype.check = function(gamma) {
 	throw new Error("Unhandled constant type " + this);
 };
 UglifyJS.AST_Number.prototype.check = function(gamma) {
-	var j = new Classes.Judgement(Classes.Type.numType, [], gamma);
+	var j = new Classes.Judgement(Classes.Type.numType, [], gamma, [], []);
 	j.nodes.push(this);
 	return j;
 };
 UglifyJS.AST_Boolean.prototype.check = function(gamma) {
-	var j = new Classes.Judgement(Classes.Type.boolType, [], gamma);
+	var j = new Classes.Judgement(Classes.Type.boolType, [], gamma, [], []);
 	j.nodes.push(this);
 	return j;
 };
 UglifyJS.AST_String.prototype.check = function(gamma) {
-	var j = new Classes.Judgement(Classes.Type.stringType, [], gamma);
+	var j = new Classes.Judgement(Classes.Type.stringType, [], gamma, [], []);
 	j.nodes.push(this);
 	return j;
 };
 UglifyJS.AST_Undefined.prototype.check = function(gamma) {
-	var j = new Classes.Judgement(Classes.Type.undefinedType, [], gamma);
+	var j = new Classes.Judgement(Classes.Type.undefinedType, [], gamma, [], []);
 	j.nodes.push(this);
 	return j;
 };
 UglifyJS.AST_Null.prototype.check = function(gamma) {
-	var j = new Classes.Judgement(Classes.Type.nullType, [], gamma);
+	var j = new Classes.Judgement(Classes.Type.nullType, [], gamma, [], []);
 	j.nodes.push(this);
 	return j;
 };
 
 // Rule V_Skip (special case of expression when e is skip)
 UglifyJS.AST_EmptyStatement.prototype.check = function(gamma, dynamics) {
-	var j = new Classes.Judgement(Classes.Type.undefinedType, [], gamma, []);
+	var j = new Classes.Judgement(Classes.Type.undefinedType, [], gamma, [], []);
 	j.nodes.push(this);
 	return j;
 };
@@ -68,6 +68,7 @@ UglifyJS.AST_Object.prototype.check = function(gamma, dynamics) {
 	var memberType = {};
 	var C = [];
 	var W = [];
+	var S = [];
 	// an object's type can be derived as long as each of its members has a valid type
 	for (var i = 0; i < this.properties.length; i++) {
 		this.properties[i].parent = parent(this);
@@ -76,6 +77,7 @@ UglifyJS.AST_Object.prototype.check = function(gamma, dynamics) {
 		var judgement = this.properties[i].value.check(gamma, dynamics);
 		C = C.concat(judgement.C);
 		W = W.concat(judgement.W);
+		S = S.concat(judgement.S);
 
 		// generate a new Type for this property, which will be constrained by the value type
 		var propType = gamma.getFreshType(undefined, {
@@ -95,7 +97,7 @@ UglifyJS.AST_Object.prototype.check = function(gamma, dynamics) {
 		memberTypes: memberType
 	});
 
-	return new Classes.Judgement(T, C, gamma, W);
+	return new Classes.Judgement(T, C, gamma, W, S);
 };
 
 // Rule V_Array
@@ -107,6 +109,7 @@ UglifyJS.AST_Array.prototype.check = function(gamma, dynamics) {
 	});
 	var C = [];
 	var W = [];
+	var S = [];
 	// an array's type is constrained by the elements within it
 	for (var i = 0; i < this.elements.length; i++) {
 		this.elements[i].parent = parent(this);
@@ -114,6 +117,7 @@ UglifyJS.AST_Array.prototype.check = function(gamma, dynamics) {
 		var judgement = this.elements[i].check(gamma, dynamics);
 		C = C.concat(judgement.C);
 		W = W.concat(judgement.W);
+		S = S.concat(judgement.S);
 
 		// can read an element with less structure than the array's type, (but must write elms with more)
 		// this is one of those places where I'd like to use straight LEq, to be able to grow array type as I see more elements
@@ -125,7 +129,7 @@ UglifyJS.AST_Array.prototype.check = function(gamma, dynamics) {
 		gamma = judgement.gamma;
 	}
 
-	return new Classes.Judgement(T, C, gamma, W);
+	return new Classes.Judgement(T, C, gamma, W, S);
 };
 
 // V_Fun1 / V_Fun2 / V_Fun3 / V_Fun4
@@ -193,6 +197,7 @@ UglifyJS.AST_Lambda.prototype.check = function(gamma, dynamics) {
 
 	var C;
 	var W = j1.W;
+	var S = j1.S;
 	var finalReturn = j1.gamma.get('return');
 	if (finalReturn.type === 'pending') {
 		// some paths don't return, but there were never any returns anyway
@@ -206,14 +211,14 @@ UglifyJS.AST_Lambda.prototype.check = function(gamma, dynamics) {
 	}
 
 	// return the original gamma
-	var j = new Classes.Judgement(funType, C, gamma, W);
+	var j = new Classes.Judgement(funType, C, gamma, W, S);
 	j.nodes.push(this);
 	return j;
 };
 
 // Rule IdType / IdTypeUndef
 UglifyJS.AST_Symbol.prototype.check = function(gamma, dynamics) {
-	var T, W = [];
+	var T, W = [], S = [];
 	var dynamic = false;
 	if (dynamics.indexOf(this.name) >= 0) {
 		// this is a dynamic variable, so we will be wrapping with a mimic
@@ -244,7 +249,7 @@ UglifyJS.AST_Symbol.prototype.check = function(gamma, dynamics) {
 		}
 	}
 
-	var j = new Classes.Judgement(T, [], gamma, W);
+	var j = new Classes.Judgement(T, [], gamma, W, S);
 	j.nodes.push(this);
 	return j;
 };
@@ -259,6 +264,7 @@ UglifyJS.AST_Dot.prototype.check = function(gamma, dynamics) {
 	var j1 = this.expression.check(gamma, dynamics);
 	var C = j1.C;
 	var W = j1.W;
+	var S = j1.S;
 
 
 	// HAAAAAAAAAAACK :( I'm doing this to get around the fact that
@@ -266,7 +272,7 @@ UglifyJS.AST_Dot.prototype.check = function(gamma, dynamics) {
 	// when in fact a previously assigned object should potentially not have shouldInfer
 	var existingType = objectGetProperty(j1.T, this.property);
 	if (existingType !== null) {
-		return new Classes.Judgement(existingType, C, j1.gamma, W);
+		return new Classes.Judgement(existingType, C, j1.gamma, W, S);
 	}
 
 	// add a new constraint stating the containing object much have this as a property
@@ -296,6 +302,7 @@ UglifyJS.AST_Dot.prototype.check = function(gamma, dynamics) {
 	var r = partSolve(C, gamma, W);
 	C = r.C;
 	W = r.W;
+	S.concat(r.substitutions);
 	gamma = r.gamma;
 	for (var i = 0; i<r.substitutions.length; i++) {
 		if (r.substitutions[i].from === j1.T.id) {
@@ -310,7 +317,8 @@ UglifyJS.AST_Dot.prototype.check = function(gamma, dynamics) {
 	
 	var itemType = o.memberTypes[this.property];
 
-	var judgement = new Classes.Judgement(Classes.Type.store[itemType], C, j1.gamma, W);
+	var judgement = new Classes.Judgement(Classes.Type.store[itemType], C, j1.gamma, W, S);
+	judgement.substitutions = r.substitutions;
 	judgement.nodes.push(this);
 	return judgement;
 };
@@ -325,11 +333,13 @@ UglifyJS.AST_Sub.prototype.check = function(gamma, dynamics) {
 	var j1 = this.expression.check(gamma, dynamics);
 	var C = j1.C;
 	var W = j1.W;
+	var S = j1.S;
 
 	// check that the index property was a number (we don't support string accesses)
 	var j2 = this.property.check(j1.gamma, dynamics);
 	C = C.concat(j2.C);
 	W = W.concat(j2.W);
+	S = S.concat(j2.S);
 	C.push(new Classes.Constraint(Classes.Type.numType.id, j2.T.id));
 
 	var innerType = gamma.getFreshType();
@@ -348,6 +358,7 @@ UglifyJS.AST_Sub.prototype.check = function(gamma, dynamics) {
 	var r = partSolve(C, gamma, W);
 	C = r.C;
 	W = r.W;
+	S = S.concat(r.substitutions);
 	gamma = r.gamma;
 	for (var i = 0; i<r.substitutions.length; i++) {
 		if (r.substitutions[i].from === j1.T.id) {
@@ -362,7 +373,7 @@ UglifyJS.AST_Sub.prototype.check = function(gamma, dynamics) {
 	
 	var itemType = o.memberTypes["@deref"];
 
-	var judgement = new Classes.Judgement(Classes.Type.store[itemType], C, j1.gamma, W);
+	var judgement = new Classes.Judgement(Classes.Type.store[itemType], C, j1.gamma, W, S);
 	judgement.nodes.push(this);
 	return judgement;
 };
@@ -375,6 +386,7 @@ UglifyJS.AST_Call.prototype.check = function(gamma, dynamics) {
 	var j0 = this.expression.check(gamma, dynamics);
 	var C = j0.C;
 	var W = j0.W;
+	var S = j0.S;
 	gamma = j0.gamma;
 
 	// prepare new constraints
@@ -409,6 +421,7 @@ UglifyJS.AST_Call.prototype.check = function(gamma, dynamics) {
 		var ji = this.args[i].check(gamma, dynamics);
 		C = C.concat(ji.C);
 		W = W.concat(ji.W);
+		S = S.concat(ji.S);
 
 		var T = gamma.getFreshType(undefined, {
 			detail: 'inferred arg' + i + ' type of call',
@@ -445,7 +458,7 @@ UglifyJS.AST_Call.prototype.check = function(gamma, dynamics) {
 	}
 	if (j0.T.shouldInfer) useType.shouldInfer = true;
 
-	var judgement = new Classes.Judgement(useType, C, gamma, W);
+	var judgement = new Classes.Judgement(useType, C, gamma, W, S);
 	judgement.nodes.push(this);
 	return judgement;
 };
@@ -470,7 +483,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 	var j1 = this.right.check(gamma, dynamics);
 	var C = j1.C;
 	var W = j1.W;
-
+	var S = j1.S;
 
 	// try to fix things by solving constraints before we attempt assignment (which is complicated!)
 	var r = partSolve(C, j1.gamma, W);
@@ -478,6 +491,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 	C = r.C;
 	W = r.W;
 	j1.gamma = r.gamma;
+	S = S.concat(r.substitutions);
 	// we also need to apply substitutions to j1.T itself, which may not be represented in gamma
 	for (var i = 0; i<r.substitutions.length; i++) {
 		if (r.substitutions[i].from === j1.T.id) {
@@ -590,6 +604,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 				j2 = expNode.check(j1.gamma, dynamics);
 				var expType = j2.T;
 				W = W.concat(j2.W);
+				S = S.concat(j2.S);
 
 				function attachOriginalObjs(baseType, newType, path) {
 					newType.originalObj = baseType.id;
@@ -647,11 +662,13 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 				j2 = this.left.expression.check(j1.gamma, dynamics);
 				C = C.concat(j2.C);
 				W = W.concat(j2.W);
+				S = S.concat(j2.S);
 
 				// check that the index property was a number (we don't support string accesses)
 				j3 = this.left.property.check(j1.gamma, dynamics);
 				C = C.concat(j3.C);
 				W = W.concat(j3.W);
+				S = S.concat(j3.S);
 				C.push(new Classes.Constraint(Classes.Type.numType.id, j3.T.id));
 
 				var arrayType = new Classes.ArrayType({
@@ -680,6 +697,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 				j2 = this.left.expression.check(j1.gamma, dynamics);
 				C = j1.C.concat(j2.C);
 				W = j1.W.concat(j2.W);
+				S = j1.S.concat(j2.S);
 
 				var memberTypeNum = {};
 				memberTypeNum[this.left.property] = Classes.Type.numType.id;
@@ -698,6 +716,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 
 				C = C.concat(j2.C);
 				W = W.concat(j2.W);
+				S = S.concat(j2.S);
 
 				C.push(new Classes.Constraint(Classes.Type.numType.id, j1.T.id));
 				C.push(new Classes.Constraint(Classes.Type.numType.id, j2.T.id));
@@ -709,11 +728,13 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 				j2 = this.left.expression.check(j1.gamma, dynamics);
 				C = C.concat(j2.C);
 				W = W.concat(j2.W);
+				S = S.concat(j2.S);
 
 				// check that the index property was a number (we don't support string accesses)
 				j3 = this.left.property.check(j1.gamma, dynamics);
 				C = C.concat(j3.C);
 				W = W.concat(j3.W);
+				S = S.concat(j3.S);
 				C.push(new Classes.Constraint(Classes.Type.numType.id, j3.T.id));
 
 				var numArrayType = new Classes.ArrayType({
@@ -733,7 +754,7 @@ UglifyJS.AST_Assign.prototype.check = function(gamma, dynamics) {
 		default:
 			throw new Error("Unhandled assignment operator " + this.operator);
 	}
-	j = new Classes.Judgement(returnType, C, nextGamma, W);
+	j = new Classes.Judgement(returnType, C, nextGamma, W, S);
 	j.nodes.push(this);
 
 	return j;
@@ -746,8 +767,9 @@ UglifyJS.AST_Binary.prototype.check = function(gamma, dynamics) {
 
 	var j1 = this.left.check(gamma, dynamics);
 	var j2 = this.right.check(j1.gamma, dynamics);
-	var C, returnType, W;
+	var C, returnType, W, S;
 	W = j1.W.concat(j2.W);
+	S = j1.S.concat(j2.S);
 
 	// NB both expressions are being READ so they must be second parameter to constraint 
 	// (this is important in case they're dynamic)
@@ -799,7 +821,7 @@ UglifyJS.AST_Binary.prototype.check = function(gamma, dynamics) {
 			throw new Error("Unhandled binary operator " + this.operator);
 	}
 
-	var j = new Classes.Judgement(returnType, C, j2.gamma, W);
+	var j = new Classes.Judgement(returnType, C, j2.gamma, W, S);
 	j.nodes.push(this);
 
 	return j;
@@ -813,6 +835,7 @@ UglifyJS.AST_Unary.prototype.check = function(gamma, dynamics) {
 	var j1 = this.expression.check(gamma, dynamics);
 	var C, returnType;
 	var W = j1.W;
+	var S = j1.S;
 
 	switch (this.operator) {
 		// NegType
@@ -833,7 +856,7 @@ UglifyJS.AST_Unary.prototype.check = function(gamma, dynamics) {
 		default:
 			throw new Error("Unhandled unary operator!");
 	}
-	var j = new Classes.Judgement(returnType, C, j1.gamma, W);
+	var j = new Classes.Judgement(returnType, C, j1.gamma, W, S);
 	j.nodes.push(this);
 
 	return j;
@@ -859,19 +882,20 @@ UglifyJS.AST_Defun.prototype.check = function(gamma, dynamics) {
 		j.gamma.push(tee);
 
 	}
-	return new Classes.Judgement(null, j.C, j.gamma, j.W);
+	return new Classes.Judgement(null, j.C, j.gamma, j.W, j.S);
 };
 
 // RetTypable1/2/3/4
 UglifyJS.AST_Return.prototype.check = function(gamma, dynamics) {
 	// type the return value if present
-	var C, T, newGamma, W;
+	var C, T, newGamma, W, S;
 
 	if (this.value !== undefined && this.value !== null) {
 		// RetTypable 2/3/4 
 		var j = this.value.check(gamma, dynamics);
 		C = j.C;
 		W = j.W;
+		S = j.S;
 		newGamma = j.gamma;
 		T = j.T;
 	} else {
@@ -879,6 +903,7 @@ UglifyJS.AST_Return.prototype.check = function(gamma, dynamics) {
 		newGamma = gamma;
 		C = [];
 		W = [];
+		S = [];
 		T = Classes.Type.undefinedType;
 	}
 
@@ -901,7 +926,7 @@ UglifyJS.AST_Return.prototype.check = function(gamma, dynamics) {
 		C.push(new Classes.Constraint(T.id, previousReturn.id));
 	}
 
-	var judgement = new Classes.Judgement(null, C, newGamma, W);
+	var judgement = new Classes.Judgement(null, C, newGamma, W,S);
 	judgement.nodes.push(this);
 	return judgement;
 };
@@ -929,12 +954,13 @@ function partSolve(C, gamma, W) {
 
 // Rule SeqTypable
 UglifyJS.AST_Block.prototype.check = function(gamma, dynamics) {
-	var judgement = new Classes.Judgement(null, [], new Classes.TypeEnv(gamma), []);
+	var judgement = new Classes.Judgement(null, [], new Classes.TypeEnv(gamma), [], []);
 
 	for (var i = 0; i < this.body.length; i++) {
 		this.body[i].parent = parent(this);
 		var j = this.body[i].check(gamma, dynamics);
 		judgement.W = judgement.W.concat(j.W);
+		judgement.S = judgement.S.concat(j.S);
 		judgement.C = judgement.C.concat(j.C);
 		judgement.gamma = j.gamma;
 
@@ -942,6 +968,7 @@ UglifyJS.AST_Block.prototype.check = function(gamma, dynamics) {
 
 		judgement.C = r.C;
 		judgement.W = r.W;
+		judgement.S = judgement.S.concat(r.substitutions);
 		judgement.gamma = r.gamma;
 		gamma = judgement.gamma;
 
@@ -1064,13 +1091,16 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 	var j = this.condition.check(gamma, dynamics);
 	var C = j.C;
 	var W = j.W;
+	var S = j.S;
 
 	C.push(new Classes.Constraint(Classes.Type.boolType.id, j.T.id));
 
 	// apply any substitutions before we clone
+	// TOOD: use partSolve instead
 	var result = solveConstraints(C);
 	var substitutions = result.substitutions;
 	C = result.constraints;
+	S = S.concat(substitutions);
 	for (var l = 0; l < substitutions.length; l++) {
 
 		j.gamma.applySubstitution(substitutions[l]);
@@ -1087,6 +1117,7 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 	this.body.parent = parent(this);
 	C = C.concat(j1.C);
 	W = W.concat(j1.W);
+	S = S.concat(j1.S);
 	var g1p = j1.gamma;
 
 	var g2p;
@@ -1095,6 +1126,7 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 		this.alternative.parent = parent(this);
 		C = C.concat(j2.C);
 		W = W.concat(j2.W);
+		S = S.concat(j2.S);
 		g2p = j2.gamma;
 	} else {
 		g2p = g2;
@@ -1111,7 +1143,7 @@ UglifyJS.AST_If.prototype.check = function(gamma, dynamics) {
 		));
 	}
 
-	var judgement = new Classes.Judgement(null, C, g3, W);
+	var judgement = new Classes.Judgement(null, C, g3, W, S);
 	judgement.nodes.push(this);
 	return judgement;
 };
@@ -1124,6 +1156,7 @@ UglifyJS.AST_While.prototype.check = function(gamma, dynamics) {
 	var j = this.condition.check(gamma, dynamics);
 	var C = j.C;
 	var W = j.W;
+	var S = j.S;
 
 	C.push(new Classes.Constraint(Classes.Type.boolType.id, j.T.id));
 
@@ -1131,6 +1164,7 @@ UglifyJS.AST_While.prototype.check = function(gamma, dynamics) {
 	var result = solveConstraints(C);
 	var substitutions = result.substitutions;
 	C = result.constraints;
+	S = S.concat(substitutions);
 	for (var l = 0; l < substitutions.length; l++) {
 
 		j.gamma.applySubstitution(substitutions[l]);
@@ -1146,6 +1180,7 @@ UglifyJS.AST_While.prototype.check = function(gamma, dynamics) {
 	this.body.parent = parent(this);
 	C = C.concat(j1.C);
 	W = W.concat(j1.W);
+	S = S.concat(j1.S);
 	var g1p = j1.gamma;
 
 	// construct a new type environment g2
@@ -1159,7 +1194,7 @@ UglifyJS.AST_While.prototype.check = function(gamma, dynamics) {
 		));
 	}
 
-	var judgement = new Classes.Judgement(null, C, g2, W);
+	var judgement = new Classes.Judgement(null, C, g2, W, S);
 	judgement.nodes.push(this);
 	return judgement;
 };
@@ -1168,6 +1203,7 @@ UglifyJS.AST_While.prototype.check = function(gamma, dynamics) {
 UglifyJS.AST_For.prototype.check = function(gamma, dynamics) {
 	var C = [],
 		W = [],
+		S = [],
 		j;
 
 	if (this.init !== null) {
@@ -1175,6 +1211,7 @@ UglifyJS.AST_For.prototype.check = function(gamma, dynamics) {
 		j = this.init.check(gamma, dynamics);
 		C = C.concat(j.C);
 		W = W.concat(j.W);
+		S = S.concat(j.S);
 		gamma = j.gamma;
 	}
 
@@ -1184,6 +1221,7 @@ UglifyJS.AST_For.prototype.check = function(gamma, dynamics) {
 		C = C.concat(j.C);
 		C.push(new Classes.Constraint(Classes.Type.boolType.id, j.T.id));
 		W = W.concat(j.W);
+		S = S.concat(j.S);
 		gamma = j.gamma;
 	}
 
@@ -1191,6 +1229,7 @@ UglifyJS.AST_For.prototype.check = function(gamma, dynamics) {
 	var result = solveConstraints(C);
 	var substitutions = result.substitutions;
 	C = result.constraints;
+	S = S.concat(substitutions);
 	for (var l = 0; l < substitutions.length; l++) {
 
 		gamma.applySubstitution(substitutions[l]);
@@ -1206,12 +1245,14 @@ UglifyJS.AST_For.prototype.check = function(gamma, dynamics) {
 	this.body.parent = parent(this);
 	C = C.concat(j1.C);
 	W = W.concat(j1.W);
+	S = S.concat(j1.S);
 
 	if (this.step !== null) {
 		this.step.parent = parent(this);
 		j1 = this.step.check(j1.gamma, dynamics);
 		C = C.concat(j1.C);
 		W = W.concat(j1.W);
+		S = S.concat(j1.S);
 	}
 	var g1p = j1.gamma;
 
@@ -1226,7 +1267,7 @@ UglifyJS.AST_For.prototype.check = function(gamma, dynamics) {
 		));
 	}
 
-	var judgement = new Classes.Judgement(null, C, g2, W);
+	var judgement = new Classes.Judgement(null, C, g2, W, S);
 	judgement.nodes.push(this);
 	return judgement;
 };
@@ -1236,7 +1277,8 @@ UglifyJS.AST_VarDef.prototype.check = function(gamma, dynamics) {
 	this.name.parent = parent(this);
 
 	var C = [],
-		W = [];
+		W = [], 
+		S = [];
 	// need to select a new type (we are redefining the type from here on)
 	var T = gamma.getFreshType();
 
@@ -1251,6 +1293,7 @@ UglifyJS.AST_VarDef.prototype.check = function(gamma, dynamics) {
 
 		T = judgement.T;
 		W = judgement.W;
+		S = judgement.S;
 	} else {
 		T.illDefined = true;
 	}
@@ -1259,7 +1302,7 @@ UglifyJS.AST_VarDef.prototype.check = function(gamma, dynamics) {
 	var tee = new Classes.TypeEnvEntry(this.name.name, this.name, T.id);
 	gamma.push(tee);
 	this.name.tee = tee;
-	var j = new Classes.Judgement(null, C, gamma, W);
+	var j = new Classes.Judgement(null, C, gamma, W, S);
 	j.nodes.push(this);
 
 	return j;
@@ -1270,7 +1313,8 @@ UglifyJS.AST_Var.prototype.check = function(gamma, dynamics) {
 
 	// VariableDeclaration.declarations is a list of VariableDeclarators
 	var C = [],
-		W = [];
+		W = [],
+		S = [];
 	for (var i = 0; i < this.definitions.length; i++) {
 
 		this.definitions[i].parent = parent(this);
@@ -1280,10 +1324,11 @@ UglifyJS.AST_Var.prototype.check = function(gamma, dynamics) {
 		// TODO: assert X1 n X2 is empty
 		C = C.concat(judgement.C);
 		W = W.concat(judgement.W);
+		S = S.concat(judgement.S);
 		gamma = judgement.gamma;
 	}
 
-	var j = new Classes.Judgement(null, C, gamma, W);
+	var j = new Classes.Judgement(null, C, gamma, W, S);
 	j.nodes.push(this);
 
 
@@ -1291,12 +1336,12 @@ UglifyJS.AST_Var.prototype.check = function(gamma, dynamics) {
 };
 
 UglifyJS.AST_Continue.prototype.check = function(gamma, dynamic) {
-	var j = new Classes.Judgement(null, [], gamma, []);
+	var j = new Classes.Judgement(null, [], gamma, [], []);
 	j.nodes.push(this);
 	return j;
 };
 UglifyJS.AST_Break.prototype.check = function(gamma, dynamic) {
-	var j = new Classes.Judgement(null, [], gamma, []);
+	var j = new Classes.Judgement(null, [], gamma, [], []);
 	j.nodes.push(this);
 	return j;
 };

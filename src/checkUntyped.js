@@ -130,7 +130,18 @@ function seq(statements, par) {
 			// carry the new judgement into the next statement
 			judgement.W = judgement.W.concat(newJudgement.W);
 			judgement.C = judgement.C.concat(newJudgement.C);
-			
+			var j, k;
+			// apply the new substitutions to our older wrappers and constraints
+			for (j=0; j<newJudgement.S.length; j++) {
+
+				for (k = 0; k<judgement.W.length; k++) {
+					judgement.W[k].applySubstitution(newJudgement.S[j]);
+				}
+				for (k = 0; k<judgement.C.length; k++) {
+					judgement.C[k].applySubstitution(newJudgement.S[j]);
+				}
+			}
+
 			// solve the generated constraints, or throw an error if this isn't possible
 			// NB Type.store will be modified by this, and NOT all constraints are used up
 			var result = solveConstraints(judgement.C);
@@ -140,12 +151,12 @@ function seq(statements, par) {
 			judgement.C = result.constraints;
 
 			// apply the solution substitutions to the type environment
-			for (var j=0; j<substitutions.length; j++) {
+			for (j=0; j<substitutions.length; j++) {
 
 				judgement.gamma.applySubstitution(substitutions[j]);
 				newJudgement.gamma.applySubstitution(substitutions[j]);
 
-				for (var k = 0; k<judgement.W.length; k++) {
+				for (k = 0; k<judgement.W.length; k++) {
 					judgement.W[k].applySubstitution(substitutions[j]);
 				}
 			}
