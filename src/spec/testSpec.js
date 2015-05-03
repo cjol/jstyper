@@ -36,6 +36,8 @@ console.log(util.inspect(evalResults, false, null));
 
 function testDir(dir, name) {
 
+	if (!fs.existsSync("./tests/" + dir + "/compiled/"))
+		fs.mkdirSync("./tests/" + dir + "/compiled/");
 	describe(name, function() {
 		beforeEach(function() {
 			jasmine.addMatchers(extraMatchers);
@@ -111,9 +113,7 @@ function testDir(dir, name) {
 						}
 					}
 
-					if (expected.evaluate === true) {
-						fs.writeFileSync("./tests/" + dir + "/compiled/" + file, result.src);					
-					}
+					fs.writeFileSync("./tests/" + dir + "/compiled/" + file, result.src);					
 					// TODO: Further tests to check gradual typing is correct
 					// Further tests to check execution
 
