@@ -149,7 +149,7 @@ also applicable here, where the division between static and dynamic code lies
 within one language rather than between several. Since static analysis cannot
 guarantee that the program is free of dynamic type errors, we instead
 guarantee that only dynamic properties of the code are able to cause runtime
-errors -- that the well-typed code ``can't be blamed''~\cite{cantblame} for
+errors -- that the well-typed code ``can't be blamed"~\cite{cantblame} for
 any type errors which arise. This is achieved by protecting the boundaries
 between the type-safe and type- unsafe `worlds'. Conversions are made from
 dynamic types to static types, and although this conversion process may
@@ -458,7 +458,7 @@ closure at the point of use, being converted to a function body in execution
 function parameters (including the implicit parameter \js{this}), and these
 are referenced within the inner scope.
 
-Values denoted within $[\![\enspace]\!]$ will never appear in
+Values foo denoted within $[\![\enspace]\!]$ will never appear in
 the original code as typed by the programmer, but can only arise after a
 transition. Because of this, the type checker implementation does not need to
 be aware of such constructs -- they are only required for our proof of type
@@ -492,60 +492,175 @@ is updated to $\theta'$, but only the scope $s'$ within the function closure is
 modified -- not the containing scope $s$.
 
 \subsection{Type Judgement}
-The second component of the specification is the typing judgement, which is
-divided into typing judgements for expressions (which have a type) and
-typability judgements for statements. A typing judgement has the form 
-$$\Gamma\vdash e : T\ |_C\ \Gamma'$$
+The second component of the specification is the type judgement, which is
+divided into typing judgements for expressions and typability judgements for
+statements. A typing judgement has the form $$\Gamma\vdash e : T\ |_C\
+\Gamma'$$ and a typability judgement has the form $$\Gamma \vdash m\ |_C\
+\Gamma'.$$
 
 $\Gamma$ represents the type store, functioning similarly to the store from our
 operational semantics by providing a map from variable identifiers to types.
-$e$ is the expression being judged, and $T$ is a valid type for this
-expression. $C$ is a set of constraints which must be satisfied for the type
-judgement to be considered valid. Constraints will either be straight equality
-($T = number$) or subtype constraints ($T_1 \succeq T_2$). $T_2$ is a valid
-subtype of $T_1$ if both types are object types, and if every property of $T_1$
-is also present in $T_2$. For example, a \js{shape} type may have
-properties for \js{area} and \js{colour}. Any other type which has both
-\js{area} and \js{colour} may be a valid subtype of \js{shape},
-regardless of which other properties it has. Finally, evaluating the expression
-may result in changes to the type store (for example introducing a new
-variable), and these changes are reflected in $\Gamma'$, which will be used for
-judging the type of subsequent expressions. Statements $m$ do not themselves
-have a type, so a type judgement would not make sense. Instead, we use a
-`typability' judgement to assert that all sub-expressions of the statement are
-well-typed. This judgement has the same form as the typing judgements, without
-$T$: 
-$$\Gamma \vdash m\ |_C\ \Gamma'$$
+\js{e} is the expression being judged, and $T$ is a valid type for this
+expression. Statement \js{m} do not themselves have a type, so a we use a
+typability judgement of the same form without $T$. The typabilty judgement
+asserts that all sub-expressions of the statement are well-typed. $C$ is a set
+of constraints which must be satisfied for the type judgement to be considered
+valid. Finally, evaluating the expression may result in changes to the type store (for
+example introducing a new variable), and these changes are reflected in
+$\Gamma'$, which will be used for judging the type of subsequent expressions.
 
+$$\infer[\textsc{PropType}]{
+	\Gamma \vdash \mathtt{e.l}:T\ |_{C\cup\{\{l:T\}\succeq T_1\}}\ \Gamma_2
+}{\begin{split}
+	&T \textbf{ is fresh} \\
+	&\Gamma\vdash\mathtt{e}:T_1\ |_C\ \Gamma_1
+  \end{split}}$$
 The structure of the inductive rules is the same as for the operational
 semantics. For example, rule \textsc{PropType} indicates that \js{e.l} only
 has a valid type if \js{e} does, and if the type of \js{e} is a subtype
-of the type $\{l: T\}$ (i.e.~if the type of \js{e} has at least the property
-\js{l}).
+of the type $\{l: T\}$ for some $T$ (i.e.~if the type of \js{e} has at least the property
+\js{l}). Again I will focus on a few interesting cases.
 
-Most of the judgements follow reasonably closely an intuitive understanding of
-the operation of JavaScript, but a few merit closer attention.
+\subsubsection{Return}
 
-One area where I deliberately deviate from the ECMAScript specification is in
-disallowing assignments of different types. If a variable \js{x} contains a
-number, it should not be possible to assign a string to it, as this makes it
-unclear whether \js{x} should be considered a string or a number
-henceforth, especially without some sort of control flow analysis. In practice
-this is often not a great problem, since programmers will mostly follow a
-fairly static typing discipline themselves, even when programming in a dynamic
-language. It's rarely the case that a single variable is used for both a string
-and a number.
-% This is something Avik mentioned for flow, would be good to get some stats
+$$\infer[\textsc{RetTypable1}]{
+	\Gamma \vdash \mathtt{return}\ |_C\ \Gamma'
+}{
+	\Gamma \vdash \mathtt{return\ undefined}\ |_C\ \Gamma'
+}$$
+$$\infer[\textsc{RetTypable2}]{
+	\Gamma \vdash \mathtt{return\ e}\ |_C\ \Gamma'\cup\{return: T\}
+}{
+  \begin{split}
+	&\Gamma \vdash \mathtt{e}\ |_C\ \Gamma'\\
+	&\Gamma'[``return"] = \mathtt{pending}
+  \end{split}
+}$$
+$$\infer[\textsc{RetTypable3}]{
+	\Gamma \vdash \mathtt{return\ e}\ |_{C\cup\{T=T'\}}\ \Gamma'\cup\{return: T\}
+}{
+  \begin{split}
+	&\Gamma \vdash \mathtt{e}\ |_C\ \Gamma'\\
+	&\Gamma'[``return"] = IllDefined(T')
+  \end{split}
+}$$
+$$\infer[\textsc{RetTypable4}]{
+	\Gamma \vdash \mathtt{return\ e}\ |_{C\cup\{T=T'\}}\ \Gamma'
+}{
+  \begin{split}
+	&\Gamma \vdash \mathtt{e}:T\ |_C\ \Gamma'\\
+	&\Gamma'[``return"] = T'
+  \end{split}
+}$$
 
-The exception to this is the case of objects. It is very common to add
-properties to an object after its creation. Some approaches to typing
-JavaScript make the assumption that all objects have a larger `potential' type
-than they are created with, and uninitialised properties will be added during
-an extended initialisation phase~\cite{anderson05}. Analysis of JavaScript's
-dynamic behaviour in practice, however, suggests that adding properties is
-likely to happen at any point in the object's life cycle~\cite{JSBehaviour},
-and so potential types are not a good model for dynamic objects.
-\begin{program}[ht]
+When a function has multiple return statements, we need to ensure that every
+possible value returned has the same type.  This parallels the situation with
+variable assignments, where we need to ensure that each assignment is of a
+suitable type. I thus use the same mechanism for return values as for
+variables, and include a special ``\textit{return}" entry in the type
+environment. The absence of a return statement in a function indicates a
+function which effectively returns the value \js{undefined}.  However we cannot
+simply initialise $\Gamma[``return"]$ to the type \texttt{undefined}, since
+later return statements are likely to have types which are not equal to
+\texttt{undefined}. Instead, $\Gamma[``return"]$ is initialised to a special
+type \texttt{pending}, and rule \textsc{RetTypable2} handles the first
+encountered return statement by simply overwriting the \texttt{pending} entry
+in the type environment with a new one. If $\Gamma[``return"]$ is still
+\texttt{pending} after typing the function body, then the function is typed as
+having return type \texttt{undefined} (rules \textsc{AnonVoid} and
+\textsc{NamedVoid})
+
+Matters are complicated slightly in the presence of non-trivial control flow.
+The function below, for example, is not typable because it may sometimes return
+a \texttt{number}, but sometimes it will return \texttt{undefined}.
+\begin{program}
+  \begin{minted}{javascript}
+	function isPositive(x) {
+		if (x>0) {
+			return true;
+		}
+	}
+  \end{minted}
+\end{program}
+
+Because there is no explicit \js{return undefined;} statement at the end of the
+function, an unsatisfiable constraint is not generated. This problem requires
+some primitive control flow analysis to solve. As part of the $merge$ operation
+of rules \textsc{If}, \textsc{While} and \textsc{ForTypable}, type environment
+entries are given an ``$IllDefined$" wrapper type if they are well-defined in
+one branch but not in the other. In particular, this operation will apply to
+the \textit{return} entry. If the return type is ill-defined when a new return
+statement is encountered, the two types will be constrained, and the
+ill-defined one will be overwritten by a well-defined type
+(\textsc{RetTypable3}).  If the return type is still ill-defined after typing
+the function body, then no type judgement is applicable, and the function is
+not typable (rules \textsc{AnonFun} and \textsc{NamedFun} both require that
+$\Gamma[``return"]\neq IllDefined(T)$ for any type T).
+
+\subsubsection*{Origin Chains}
+It is very common to add properties to an object
+after its creation. Some approaches to typing JavaScript make the assumption
+that all objects have a larger `potential' type than they are created with, and
+uninitialised properties will be added during an extended initialisation
+phase~\cite{anderson05}. Analysis of JavaScript's dynamic behaviour in
+practice, however, suggests that adding properties is likely to happen at any
+point in the object's life cycle~\cite{JSBehaviour}, and so potential types are
+not a good model for dynamic objects.
+
+Instead, one must consider two separate object types -- one where the new
+property is present, and one where it is not. Listing~\ref{lst:propAdd}
+illustrates one situation in which two distinct types are needed. At the start
+of the function, \js{x} must have type $$\mathtt{\{b:\{c:\{d:\ number\}\}\}},$$
+otherwise line 3 will involve an undefined property access. At the end of the
+function, after adding the property \js{d2}, \js{x} should have type $$\mathtt{\{b:\{c:\{d:\ number, d2:\
+  boolean\}\}\}}.$$ When determining the type
+of \js{f}, we must have access to both of these types in order to construct the
+correct function type: $$\mathtt{\{b:\{c:\{d:\ number\}\}\} \rightarrow
+  \{b:\{c:\{d:\ number,\ d2:\ boolean\}\}\}}.$$
+
+Let the initial type of \js{x} be $T_x$, and let the type of \js{x} after the
+property addition be $T_x'$. It is sadly insufficient to simply replace $T_x$
+with $T_x'$ in the type store after the property addition.  The reason for this
+is the property access on line 3. This is only a valid operation if \js{x} has
+a property \js{b}, which has a property \js{c} with property \js{d}. Indeed the
+type judgement for this statement will generate constraints of the form 
+\begin{equation}
+ \begin{split}
+ \label{eq:barC}
+ \{b:T_b\} \succeq T_x' \\
+ \{c:T_c\} \succeq T_b \\
+ \{d:number\} \succeq T_c \\
+\end{split}
+\end{equation}equation
+
+The problem is that these only constrain $T_x'$, and not $T_x$. $T_x$ is
+left essentially unconstrained, and \js{f} is incorrectly given the type
+$$\mathtt{(\mathtt{\{\} \rightarrow \{b:\{c:\{d:\ number,\ d2:\ boolean\}\}\}})}.$$ In order to
+correctly judge the type of this function, we need constraint~\eqref{eq:barC}
+to pass through $T_x'$ to $T_x$. I do this by attaching $T_x$ as the
+\textit{origin} of $T_x'$. I represent this by $T_x'\orig T_x$. When a
+non-root object type (i.e.~one which has an origin defined) is constrained as a
+subtype, it may either have the required properties itself, or find them
+further down the origin chain. Formally,
+\begin{equation}
+ \begin{split}
+	T_1\enspace \succeq\enspace T_2\orig T_2' \iff \exists\ & T_a, T_b\ .\\
+	& T_a\cup T_b = T_1 \quad\land \\
+	& \forall \left\{l: T\right\} \in T_a \enspace.\enspace (\{l: T'\}\in T_2\enspace \land \enspace T \succeq T') \quad\land \\
+	& T_b \succeq T_2'
+ \end{split}
+ \label{succeq}
+\end{equation}
+{\color{red}\{Do I need to give some explanation of the formula above? I think
+  of it as splitting $T_1$ into two, half of which is present in $T_2$, and
+  half of which is present in $T_2'$ (which may itself have a further
+  origin)\}}
+and
+\begin{equation}
+ T_1\orig T_1'\enspace \succeq \enspace T_2 \iff T_1\succeq T_2 \land T_1' \succeq T_2
+\end{equation}
+
+\begin{program}[t]
  \centering
  \begin{minipage}[b]{0.45\linewidth}
  	\begin{minted}[numbersep=-12pt,linenos]{js}
@@ -567,88 +682,98 @@ and so potential types are not a good model for dynamic objects.
  \caption{Property addition}\label{lst:propAdd}
 \end{program}
 
-Instead, one must consider two object types -- one where the new property is
-present, and one where it is not. Listing~\ref{lst:propAdd} illustrates one
-situation in which two distinct types are needed. At the start of the function,
-\js{x} must have type $\mathtt{\{b:\{c:\{d:\ number\}\}\}}$, otherwise line 3 will involve
-an undefined property access. At the end of the function, \js{x} should
-have type $\mathtt{\{b:\{c:\{d:\ number, d2:\ boolean\}\}\}}$ after adding the property
-\js{foo}. When determining the type of \js{f}, we must have access to
-both of these types in order to construct the correct function type:
-$\mathtt{\{b:\{c:\{d:\ number\}\}\} \rightarrow \{b:\{c:\{d:\ number,\ d2:\ boolean\}\}\}}$.
-
-Let the initial type of \js{x} be $T_x$, and let the type of \js{x}
-after the property addition be $T_x'$. It would be nice to simply replace $T_x$
-with $T_x'$ in the type store after the property addition, but sadly this is
-insufficient. The reason for this is the property access on line 3. This is
-only a valid operation if \js{x} has a property \js{b}, which has a
-property \js{c} with property \js{d}. Indeed the type judgement for
-this statement will generate constraints of the form 
-\begin{equation}
- \begin{split}
- \label{eq:barC}
- \{b:T_b\} \succeq T_x' \\
- \{c:T_c\} \succeq T_b \\
- \{d:number\} \succeq T_c \\
-\end{split}
-\end{equation}
-
-The problem is that these only constrain $T_x'$, and not $T_x$. $T_x$ is
-left essentially unconstrained, and \js{f} is incorrectly given the type
-$\mathtt{(\mathtt{\{\} \rightarrow \{b:\{c:\{d:\ number,\ d2:\ boolean\}\}\}})}$. In order to
-correctly judge the type of this function, we need constraint~\eqref{eq:barC}
-to pass through $T_x'$ to $T_x$. I do this by attaching $T_x$ as the
-\textit{origin} of $T_x'$. I represent this by $T_x'\orig T_x$. When a
-non-root object type (i.e.~one which has an origin defined) is constrained as a
-subtype, it may either have the required properties itself, or find them in the
-origin. Formally,
-\begin{equation}
- \begin{split}
-	T_1\enspace \succeq\enspace T_2\orig T_2' \iff \exists\ & T_a, T_b\ .\\
-	& T_a\cup T_b = T_1 \quad\land \\
-	& \forall \left\{l: T\right\} \in T_a \enspace.\enspace (\{l: T'\}\in T_2\enspace \land \enspace T \succeq T') \quad\land \\
-	& T_b \succeq T_2'
- \end{split}
-\end{equation}
-and
-\begin{equation}
- T_1\orig T_1'\enspace \succeq \enspace T_2 \iff T_1\succeq T_2 \land T_1' \succeq T_2
-\end{equation}
-
 This system allows the constraint to propagate along the origin chain, finally
-enforcing it on the root object. \textsc{PropType} describes this for any chain of
-object value references. Note that a a full object chain is created (as
-required for $T_x'$), not simply an object for the new member, and that each
-element of this chain is needs to be attached to its origin so that constraints
-at other levels are correctly passed through. \textsc{PropType} does not allow adding
-properties to value references which include array types, because adding a
-property to one object in an array will not change any of the other objects,
-and so the type of the array itself cannot be modified in this way.
+enforcing it on the root object. All this is clearly not necessary in the case
+of assignment to a pre-existing, rather than novel, property. It is not
+possible to determine from the expression alone, however, whether the property
+is novel or not, and so my system treats every property assignment as a
+property creation. This introduces the possibility of conflict between the type
+of the property in $T_x$ and the type of the property in $T_x'$. I resolve this
+by adding a special \textit{optional} constraint $\succeq_o$. This verifies
+that the novel property is constrained if it already exists, but the constraint
+is trivially satisfied if the property did not exist. Formally, the definition
+is similar to
+\ref{succeq}:
+\begin{equation}
+ \begin{split}
+	T_1\enspace \succeq_o\enspace T_2&\orig T_2' \iff \\
+	& \forall \left\{l: T\right\} \in T_1 \enspace.\enspace (\{l: T'\}\in T_2\enspace \implies \enspace T \succeq T') \quad\land \\
+	& T_b \succeq_o T_2'
+ \end{split}
+ \label{succeq0}
+\end{equation}
+It would be possible to introduce some control-flow analysis to determine which 
+properties have been assigned to before, and only attach origin objects if the
+assignment is to a novel property. Since most assignments are likely to existing 
+properties, this would increase performance of the compiler.
 
-These origin chains are largely orthogonal to the rest of the typing rules,
-except for those involving interesting control flow (i.e.~rules for
-\js{if}, \js{while} and \js{for}). This is due to the possibility
-of a branch not being taken, and so we cannot be certain whether or not a
-certain property has been added. Instead, we merge together the different
-potential type environments, essentially taking the intersection of the
-possible types.
+$$\infer[\textsc{PropAssignType}]{
+  \Gamma\vdash\mathtt{id.l_1.\cdots.l_k.l = e}:\ T\ |_C\ \Gamma_1
+}{
+  \begin{split}
+	&\Gamma\vdash\mathtt{e}:T'\ |_{C'}\ \Gamma_0 \\
+	&\Gamma_0\vdash\mathtt{id}:T_0\ |_{C_0}\ \Gamma_1 \\
+	&\Gamma_0\vdash\mathtt{id.l_1}:T_1\ |_{C_1}\ \Gamma_2 \\
+	&\vdots \\
+	&\Gamma_0\vdash\mathtt{id.l_1.\cdots.l_k}:T_k\ |_{C_k}\ \Gamma_{k+1} \\
+	&\Gamma' = \Gamma_{k+1}\cup\{\textbf{id}: \{ \mathbf{l_1}: \{\cdots \{\mathbf{l_k}:\{\mathbf{l}: T'\}\orig T_k \} \cdots\} \orig T_1\}\orig T_0\} \\
+	&C = \{T_k \succeq_o \{\mathbf{l}:T'\}\} \cup C' \cup \bigcup_{j=0}^{i}{C_j}
+  \end{split}
+}$$
 
-The final interesting part of the specification is function closures.
-JavaScript uses a lexical rather than dynamic scope, meaning that the scope
-available during a function call is the one surrounding the function definition
-rather than the call site. In order to model this, transition rule
-\textsc{Func} reduces a function into a \textit{function closure} which
-captures both the function itself and the current scope. When this function is
-eventually called (e.g.~in rule \textsc{CallNamed}), this scope is used for
-further reductions (as in rule \textsc{CallBody1}). An analogous process
-happens in the typing rules, capturing the type environment in a closure type.
-Note in particular that, when using the closure's type environment, we must
-first assert that the captured store is well-typed under this type environment
-($\gamma \vdash (s, \theta)$). This is necessary for our proof of progress,
-discussed in the next section.
+The typing rule \textsc{PropAssignType} describes the process of adding a
+property for any chain of object value references. Note that a full object is
+created, (not simply a small object for the innermost member), and that each
+intermediate member needs to be attached to its own origin so that constraints
+at other levels are correctly passed through. \textsc{PropAssignType} does not
+allow adding properties to value references which include array types, because
+adding a property to one object in an array will not change any of the other
+objects, and so the type of the array itself cannot be modified in this way.
 
-\section{Proof}
-TBC
+Origin chains are largely orthogonal to the rest of the typing rules, except
+for those involving interesting control flow (i.e.~rules for \js{if},
+\js{while} and \js{for}). This is due to the possibility of a branch not being
+taken, and so we cannot be certain whether or not a certain property has been
+added. Instead, we merge together the different potential type environments,
+essentially taking the intersection of the possible types.
+
+\subsubsection{Function Closures}
+$$
+\infer[\textsc{V\_Closure}]{
+	\Gamma\vdash\mathtt{[\![func, s]\!]}: [\![T, \gamma]\!]\ |_C\ \Gamma
+}{
+	\begin{split}
+		&dom(\gamma) \subseteq dom(s) \\
+		&\gamma \vdash \mathtt{func} : [\![T, \gamma]\!]\ |_C\ \gamma'
+	\end{split}
+}$$
+
+The typing rules for function closures are analogous to the transition rules,
+capturing the type environment, rather than the actual store, in a closure
+type. The restriction of $\gamma$'s domain is necessary to show that \js{func} will be 
+well-typed when using $s$ as scope in particular.
+
+$$\infer[\textsc{VoidBodyType}]{
+	\Gamma\vdash\mathtt{[\![@body\{m\},s,\theta]\!]}:T\ |_{C\cup\{T=T_k\}}\ \Gamma
+}{
+	\begin{split}
+		&\gamma\cup\{\mathbf{return}:\textrm{pending}\} \vdash \mathtt{m}\ |_C\ \gamma' \\
+		&\gamma \vdash (s, \theta) \\
+		&\gamma'[``return"] = T_k\\
+		&T_k \neq IllDefined(T_k')
+	\end{split}
+}$$
+
+When using the closure's type environment after a function call, we must first
+assert that the captured store is well-typed under this type environment
+($\gamma \vdash (s, \theta)$). In essence, this tells us that the type
+environment $\gamma$ and the store $(s, \theta)$ agree on the types of
+variables. This is necessary for our proof of progress, which will be discussed
+further in chapter \ref{evaluation}. Note again that the expression
+$\mathtt{[\![@body\{m\},s,\theta]\!]}$ will never actually appear in the
+original program code, and so the type judgements for these kinds of expression
+are required for the proof of type safety, but do not appear in the executable
+type inference system.
 
 \section{Inference Implementation}
 As mentioned earlier, the purpose of the implementation is to verify that the
@@ -658,19 +783,19 @@ of the implementation closely follows the structure of my specification.
 
 \begin{program}[t]
  \begin{minted}[linenos,numbersep=-12pt]{javascript}
-  // Rule IdType
-  UglifyJS.AST_Symbol.prototype.check = function(gamma) {
-   var T = gamma.get(this.name);
- 
-   if (T === null || T === undefined || T.illDefined === true) {
-    // we are reading this variable but it is ill-defined
-    throw new Error("Reading from '" + this.name +
-                "' but it is ill-defined");
-   }
-
-	 this.tee = T;
-	 return new Classes.Judgement(T, [], gamma);
-  };
+    // Rule IdType
+    UglifyJS.AST_Symbol.prototype.check = function(gamma) {
+     var T = gamma.get(this.name);
+   
+     if (T === null || T === undefined || T.illDefined === true) {
+      // we are reading this variable but it is ill-defined
+      throw new Error("Reading from '" + this.name +
+                  "' but it is ill-defined");
+     }
+  
+  	 this.tee = T;
+  	 return new Classes.Judgement(T, [], gamma);
+    };
  \end{minted}
  \caption{The implementation of \textsc{IdType}}\label{lst:idimpl}
 \end{program}
@@ -705,6 +830,8 @@ distinction between `dynamic' and `import' to reduce overhead \\
 \printbibliography{}
 
 \chapter{Evaluation}\label{evaluation}
+\section{Proof}
+TBC
 \section{`Sanity Check': visual inspection of my test cases}
 \section{Correctness tests comparing output of code with and without gradual typing}
 \section{Speed and Memory Overhead}

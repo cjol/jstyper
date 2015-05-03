@@ -1,5 +1,16 @@
 % v1.2.0
 % Version numbering: (project_goals_met?1:0).(added syntax).(refined spec)
+
+embed 
+ {{ tex-preamble
+	\usepackage{txfonts}
+	\usepackage{lmodern}
+	\newcommand*{\orig}{\ensuremath{\!\multimapinv\!} }
+}}
+
+
+
+
 metavar termvar, x, y, z, id, l, this, return ::=  
 indexvar index, i, j, k, o ::= 
 
@@ -216,12 +227,11 @@ const :: 'const_' ::=
 	| >o 		 ::  :: GEqOptConstraint						{{ com GEqOptConstraint }}
 																	{{ tex \succeq_o }} 
 	| = 		 ::  :: EqConstraint							{{ com EqConstraint }}
-																	{{ tex = }} 
-
+																	{{ tex = }}
 
 terminals :: 'terminals_' ::=
 	| ->        ::  :: rightarrow 									{{ tex \rightarrow }}
-	| ~>        ::  :: Rightarrow 									{{ tex \Rightarrow }}
+	| ~>        ::  :: Rightarrow 									{{ tex \multimapinv }}
 	| |-        ::  :: Entails              						{{ tex \vdash }}
 	| ;         ::  :: semicolon
 	| var       ::  :: var
@@ -887,4 +897,4 @@ Jop :: '' ::=
 		---------------------------------------            		    :: MultiDecTypable
 		G |- var vd1,...,vdk |(U i=i-k Ck) G2
 	
-	defn G |- (s, h) :: M:: store ::'' {{tex \Gamma \vdash (s, \Theta) }} by	
+	defn G |- (s, h) :: M:: store ::'' {{tex [[G]] \vdash (s, \Theta) }} by	
