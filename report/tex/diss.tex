@@ -300,7 +300,7 @@ enough to represent actual JavaScript programs while being free of some of the
 complications of implementation. For example, storage of variables was
 simplified to just a scope and a heap, without modelling the special cases of
 the global scope, nor worrying about removal of unused data by the garbage
-collector. The subset included primitive constants, object and array literals;
+collector. The subset included primitive constants; object and array literals;
 arithmetic and logical binary and unary operators; dereferencing from and
 assignment to object properties and array elements; functions and function
 expressions; and basic control flow via \js{if ... else ...} and loops. 
@@ -994,9 +994,138 @@ subconstraint on the function type, which can be handled as discussed in the
 subconstraints section above.
 
 \section{Gradual Typing}
-Explanation as explicit casts + why this allows proofs of safety \\
-Guards and mimics for higher-order objects \\
-distinction between `dynamic' and `import' to reduce overhead \\
+
+As previously mentioned, any static type checker must exclude some well typed
+programs.  Although this is a problem for any language, it is all the more
+likely to arise in a dynamic language like JavaScript, where the programmer is
+used to having a certain freedom of expression. A mechanism is thus needed to
+give programmers freedom to write dynamic could where convenient, while still
+using a static type checker wherever possible. To allow for this, a programmer
+can annotate his program with an ``import" directive, which declares a certain
+variable as having dynamic behaviour. When read, we cannot rely on an imported
+variable to have any particular type, and so we must instead insert a dynamic
+type-check to ensure that its type is as what we expect.
+Listing~\ref{lst:import1} shows one situation which can only be considered safe
+\js{x} is a boolean value when it first appears, but is then a numeric value on
+the next line. Although this may seem a contrived example, a very similar
+situation could arise if \js{x} was instead used as a function, returning a
+different type of value depending on its parameters.
+\begin{program}
+  \begin{minted}
+	// jstyper import x
+	if (x) {
+		sum = x + 5;
+	}
+  \end{minted}
+  \caption{A simple use of imported variables}\label{lst:import1}
+\end{program}
+
+When type-checking a variable identifier, my implementation first checks
+whether the variable's name is in the ``imported" list. If it is, the current
+program point is recorded, and a fresh type is returned. After type checking is
+complete, this fresh type will have been substituted away, and will tell us
+what type is required at the program point. The gradual-typing compiler can
+then replace all such variables with an appropriate wrapper which will check
+that the dynamically check that the variable has the correct type before
+returning its value.  This wrapper acts as a kind of explicit cast for the
+variable -- from an unknown dynamic type, to some known fixed type. The wrapper
+will only return values of the specified type, regardless of the actual type of
+the dynamic variable (though it may throw an error instead of returning).
+Since the cast is type-preserving, then, the resulting code must be type-safe,
+and our guarantee that the program will not get stuck is maintained. We may yet
+generate \textit{cast} errors -- if the wrapper is given data of the incorrect type --
+but the well-typed portion of the program cannot be blamed for this error,
+which must have been caused by the dynamic code returning a value of the
+incorrect value. 
+
+\begin{program}
+  \begin{minted}
+	// jstyper import x
+	var sum = (function(t) {
+		if (typeof t !== "number") 
+			throw new CastError("x is not a number");
+		return t;
+		})(x) + 5;
+  \end{minted}
+  \caption{An example primitive wrapper}\label{lst:importPrim}
+\end{program}
+Although it may appear that we have not gained anything by replacing type
+errors with cast errors, it must be remembered that, in JavaScript, an explicit
+type error may never be thrown. Instead, values of incorrect types are silently
+coerced from one type to another, and the error can propagate quite some
+distance through the program before being spotted. The guarantee of a visible
+cast error means that this kind of bug is much more likely to be spotted early
+in the development process. The additional safety guarantees -- that the
+non-dynamic code cannot be blamed -- also restricts the location in which it
+may have arisen, which will help locate and correct the bug much faster.
+
+\subsubsection{Higher Order Casts}
+
+The wrapper for a primitive type is simple enough -- simply check the type of
+the variable and return it if it is correct. When looking at higher-order
+types, we cannot determine by immediate inspection whether the data has the
+correct type. Almost by definition, for example, we cannot determine the return
+type of a dynamic function by looking at it. Object and array types have the
+same problem, since properties can be defined by separate getter and setter
+functions, and there is no guarantee that a dynamic getter function will always
+return the same type of value. We will only be able to know the return type
+once the function has executed, and a return value has been given.
+
+And so, our wrappers for higher order types do exactly that -- they mimic the
+original function by accepting arguments, passing them on to the inner
+(dynamic) function, then finally examining the return type. If the return type
+is itself of a higher order, we once again cannot examine its type directly, so
+we instead give it another mimic wrapper before returning it. This wrapping is
+similar to the decorator pattern in object-oriented design, where the wrappers
+functionality is determined by the inner object. 
+
+Unfortunately, by passing on parameters directly to the inner function, we are
+introducing a new potential hole in our type system. The parameters are well
+typed, but the inner function is not, so we cannot guarantee that the
+parameters are used in a type-safe manner. If the parameter is a callback
+expecting an integer, for example, the wrapped inner function could pass it a
+string without triggering a cast error. The solution is to guard the parameters
+with a different kind of wrapper as they enter the untyped world. The guard
+will check the callback's parameters (wrapping them in a mimic if necessary),
+call the callback itself, then pass on the return value into the untyped world
+(wrapping it in a guard if necessary). 
+
+With this system of guards and wrappers, we control the boundary between the
+typed and untyped worlds. Unchecked data is given a mimic to ensure it is safe
+in the well-typed world, and type safe data is given a guard to ensure its
+safety is not compromised by anything in the unchecked world.
+
+\subsubsection{Performance}
+
+Inserting extra dynamic checks will inevitably have an impact on the
+performance of the program. If the program makes frequent use of higher-order
+data -- and the common callback paradigm in JavaScript means this will often be
+the case -- the memory footprint of the program may be significantly increased
+by the wrappers created. An empirical analysis of these effects are included in
+Chapter~\ref{evaluation}.
+
+Although this performance cost will be disappointing, there are ways the
+problem can be mitigated. It should be noted that there are two main reasons
+for a variable to be imported into the type safe world. The first reason is
+because the variable is truly dynamic, and the type of the variable can indeed
+change at any point. For these, every check is necessary. The second reason to
+import a variable, however, is that some section of code is either inaccessible
+for static checking (for example if it has been dynamically loaded), or the
+type checker has erroneously rejected it (for example if the code uses an
+unsupported language feature). In this latter case, inserting a check at every
+point of use is unnecessary, since the type of the variable will not change. We
+can optimise for performance by distinguishing between these two cases, and in
+the latter, only inserting a check at the first use.
+
+Another point to consider is that the JavaScript interpreter must run this kind
+of type check at all times anyway. In order to perform a coercion between
+types, for example, it must first check to see what types the values are. If
+the interpreter is made aware that part of the code has already been statically
+verified as type safe, it can avoid making such checks. By protecting the
+boundaries of the type checked world, we are guaranteeing that it will be free
+of type errors. Interpreters may in fact be able to use this knowledge to
+achieve better overall performance than the unchecked code could previously
+allow.
 
 \printbibliography{}
 
