@@ -8,6 +8,9 @@ _minted*
 !report/res/*.pdf
 *.synctex.gz
 *.sublime-workspace
+*.pyg
+*.fls
+*.fdb_latexmk
 *.out
 *.toc
 *.lof
