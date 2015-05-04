@@ -576,7 +576,7 @@ having return type \texttt{undefined} (rules \textsc{AnonVoid} and
 Matters are complicated slightly in the presence of non-trivial control flow.
 The function below, for example, is not typable because it may sometimes return
 a \texttt{number}, but sometimes it will return \texttt{undefined}.
-\begin{program}
+\begin{program}[H]
   \begin{minted}{javascript}
 	function isPositive(x) {
 		if (x>0) {
@@ -634,7 +634,7 @@ type judgement for this statement will generate constraints of the form
  \{c:T_c\} \succeq T_b \\
  \{d:number\} \succeq T_c \\
 \end{split}
-\end{equation}equation
+\end{equation}
 
 The problem is that these only constrain $T_x'$, and not $T_x$. $T_x$ is
 left essentially unconstrained, and \js{f} is incorrectly given the type
@@ -779,51 +779,130 @@ are required for the proof of type safety, but do not appear in the executable
 type inference system.
 
 \section{Inference Implementation}
-As mentioned earlier, the purpose of the implementation is to verify that the
-original source code is well-typed according to the type judgements. Once this
-is verified, we have proven that the program will not get stuck. The structure
-of the implementation closely follows the structure of my specification. 
+The purpose of the implementation is to verify that the original source code is
+well-typed according to the type judgements. Once this is verified, I have
+proven that the program will not get stuck without a transition available.
+There are two parts to verifying this: generating constraints according to the
+typing rules defined, and solving these constraints. If the constraints are
+satisfiable, then the program is well typed. Although all that is required for
+type-safety is this satisfiability, we are also interested in finding an
+explicit type for each expression, as an aid for development tools.
 
-\begin{program}[t]
- \begin{minted}[linenos,numbersep=-12pt]{javascript}
-    // Rule IdType
-    UglifyJS.AST_Symbol.prototype.check = function(gamma) {
-     var T = gamma.get(this.name);
-   
-     if (T === null || T === undefined || T.illDefined === true) {
-      // we are reading this variable but it is ill-defined
-      throw new Error("Reading from '" + this.name +
-                  "' but it is ill-defined");
-     }
-  
-  	 this.tee = T;
-  	 return new Classes.Judgement(T, [], gamma);
-    };
- \end{minted}
- \caption{The implementation of \textsc{IdType}}\label{lst:idimpl}
-\end{program}
+\subsection{Constraint Generation}
 
-UglifyJS parses the input code and creates an abstract syntax tree. Each node
-in the tree inherits from a base prototype object representing the node type.
-For example, the expression \js{x.l = 5} is represented by an AST\_Assign node
-containing an AST\_Dot and an AST\_Number node. This inheritance made it easy
-to implement the type checks by adding a \js{check(gamma)} method to the
+With the type judgements formally specified, generating constraints is a fairly
+straightforward affair.  UglifyJS parses the input code and creates an abstract
+syntax tree. Each node in the tree inherits from a base prototype object
+representing the node type.  For example, the expression \js{x.l = 5} is
+represented by an \textit{AST\_Assign} node containing an \textit{AST\_Dot} and
+an \textit{AST\_Number} node.  I added a \js{check(gamma)} method to the
 prototype object for each node type. The parameter for the method is the type
 environment to use to check the node, and the method returns a judgement object
 containing the type (if the node was an expression node), an array of
 constraints, and a modified type environment. The inferred type is also
 attached to the node, so that future tools can build on the inference
-performed. With a well-defined specification governing the typing rules, writing the type
-checks to generate a set of constraints was easy. The real implementation
-challenge came in solving this set of constraints.
+performed. Listing~\ref{lst:arrimpl} shows the \js{check} function
+corresponding to the typing rule \textsc{V\_Arr}, which is shown in figure~\ref{fig:arrrule}
+\begin{figure}[t]
+$$\infer[\textsc{V\_Arr}]{
+  \Gamma\vdash\mathtt{[e_1,\, \ldots,\ e_k]}:[T]\ |_C\ \Gamma_k	
+}{ 
+	\begin{split}
+		&T \textrm{ is fresh} \\
+		&\Gamma\vdash \mathtt{e_1}:T_1\ |_{C_1}\ \Gamma_1 \\
+		&\vdots \\
+		&\Gamma_{k-1}\vdash \mathtt{e_k}:T_k\ |_{C_k}\ \Gamma_k \\
+		&C=\bigcup_{i=1}^kC_i \cup {T \succeq T_i'}
+	\end{split}	  
+}$$
+\label{fig:arrrule}
+\caption{Typing Rule \textsc{V\_Arr}}
+\end{figure}
+\begin{program}[t]
+ \begin{minted}[linenos,numbersep=-12pt]{javascript}
+    // Rule V_Arr
+    UglifyJS.AST_Array.prototype.check = function(gamma, dynamics) {
+
+      var innerType = gamma.getFreshType();
+      var T = new ArrayType({
+        innerType: innerType.id
+      });
+      var C = [];
+      // an array's type is constrained by the elements within it
+      for (var i = 0; i < this.elements.length; i++) {
+
+        var judgement = this.elements[i].check(gamma);
+        C = C.concat(judgement.C);
+
+        C.push(new LEqConstraint(innerType.id, judgement.T.id));
+
+        // thread gamma through to the next element
+        gamma = judgement.gamma;
+      }
+ 
+      return new Judgement(T, C, gamma);
+    };
+ \end{minted}
+ \caption{The implementation of \textsc{V\_Arr}}\label{lst:arrimpl}
+\end{program}
+
+
+\subsection{Constraint Solution}
 
 Pierce~\cite{pierce} presents a unification algorithm based on Hindley and
-Milner's ideas to calculate a solution to a set of equality constraints.
+Milner's ideas to calculate a solution to a set of equality constraints. The
+algorithm is simple and operates in linear time in the number of constraints
+(which is itself linear with respect to the program size). It operates by
+iteratively turning constraints involving abstract type variables into
+substitutions, such that each iteration eliminates one abstract type variable.
+This is made possible by the fact that the constraints are equations -- if
+$T_1=T_2$, then it is always possible to substitute $T_1$ for $T_2$. If a
+constraint is found which equates two different concrete types, the algorithm
+fails. A side-effect of this algorithm is finding the \textit{most general
+ unifier} for each type variable, which gives a single convenient
+representation of the type.
 
+We have generated subtype constraints, however, which are not so easily solved.
+We cannot simply use substitution in the same way, because the two constrained
+types may not be equal. Even with an algorithm to determine satisfiability, we
+cannot find a single most general unifier for object types.  The most precisely
+we can hope to pin down a type variable to is within an upper and lower bound.
+In listing~\ref{lst:multSols}, for example, \js{x} must have the property
+\js{c}, but \js{b} and \js{a} may or may not be present.
 
+\begin{program}
+  \begin{minted}[mathescape]{javascript}
+		x = {a:1, b:2, c:3} // $x \succeq \{a:number, b:number, c:number\}$
+		x.c++;              // $x \preceq \{c:number\}$
+  \end{minted}
+  \caption{An example of a program with multiple solutions}\label{lst:multSols}
+\end{program}
+
+Discussion re: difficulties, efficiency, etc. Want to make it seem justifiable to cling to unification
+
+This is only a problem for object types - primitives, function and array types are all fine [\ldots]
+
+Make an initial guess at object types by substitution, and then selectively `grow' the object. 
+NB We always use LEqCheck unless T.inferTrue is set, in which case we use LEq in some places (still not all)
+
+Solving constraints iteratively, or at least solving them in order (rather than
+in one pass at the end) means we have more concrete objects to play with for the harder (subtype) constraints,
+so our guesses should be more accurate?
+
+Also need to solve constraints as we go in order to get property types
+(substitutions happens by copying so we lose a link) -- but I don't know if
+this is a hack that shouldn't be discussed here.
+
+Table of constraint resolution. goes here.
+
+Justify substitutions for objects - still guaranteed safety, though may eliminate some solns
+In practical testing, none have come up, but we've extended the linear time unification algorithm
+to handle subtyping (is it still linear time? I think so, except potentially for subconstraints)
+
+generation of subconstraints
+
+\subsubsection{Recursive Types}
 Recursive `this' \\
-Solving constraints iteratively (rather than in one pass at the end) \\
-Solving substructure constraints (several times\ldots) \\
 
 \section{Gradual Typing}
 Explanation as explicit casts + why this allows proofs of safety \\

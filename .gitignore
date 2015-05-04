@@ -15,3 +15,5 @@ _minted*
 *-blx.bib
 *.bbl
 *.blg
+src/tests/sunspider/compiled/*
+src/tests/custom/compiled/*

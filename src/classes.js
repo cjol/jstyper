@@ -1119,15 +1119,16 @@ Wrapper.prototype.applySubstitution = function(sub) {
 };
 
 
-function Judgement(type, constraints, gamma, wrappers) {
+function Judgement(type, constraints, gamma, wrappers, S) {
 	this.T = type;
 	this.gamma = gamma;
 	this.C = constraints || [];
 	this.nodes = [];
 	this.W = wrappers || [];
+	this.S = S || [];
 }
 Judgement.InitEmpty = function() {
-	return new Judgement(null, [], new TypeEnv(), []);
+	return new Judgement(null, [], new TypeEnv(), [], []);
 };
 Judgement.InitFromDirective = function(directive) {
 	var gamma = new TypeEnv();
@@ -1154,5 +1155,5 @@ Judgement.InitFromDirective = function(directive) {
 		}
 	}
 
-	return new Judgement(null, [], gamma, []);
+	return new Judgement(null, [], gamma, [], []);
 };
