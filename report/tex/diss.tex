@@ -703,7 +703,7 @@ is similar to
 	& \forall \left\{l: T\right\} \in T_1 \enspace.\enspace (\{l: T'\}\in T_2\enspace \implies \enspace T \succeq T') \quad\land \\
 	& T_b \succeq_o T_2'
  \end{split}
- \label{succeq0}
+ \label{succeqo}
 \end{equation}
 It would be possible to introduce some control-flow analysis to determine which 
 properties have been assigned to before, and only attach origin objects if the
@@ -859,16 +859,19 @@ This is made possible by the fact that the constraints are equations -- if
 $T_1=T_2$, then it is always possible to substitute $T_1$ for $T_2$. If a
 constraint is found which equates two different concrete types, the algorithm
 fails. A side-effect of this algorithm is finding the \textit{most general
- unifier} for each type variable, which gives a single convenient
-representation of the type.
+  unifier} for each type variable, which gives a single convenient
+representation of the type.  We have generated subtype constraints, however,
+which are not so easily solved.
 
-We have generated subtype constraints, however, which are not so easily solved.
-We cannot simply use substitution in the same way, because the two constrained
-types may not be equal. Even with an algorithm to determine satisfiability, we
-cannot find a single most general unifier for object types.  The most precisely
-we can hope to pin down a type variable to is within an upper and lower bound.
-In listing~\ref{lst:multSols}, for example, \js{x} must have the property
-\js{c}, but \js{b} and \js{a} may or may not be present.
+We cannot simply use substitution in the
+same way for subtype constraints, because the two constrained types may not be
+equal. Even with an algorithm to determine satisfiability, we cannot find a
+single most general unifier for object types.  The most precisely we can hope
+to pin down a type variable to is within an upper and lower bound.  In
+listing~\ref{lst:multSols}, for example, \js{x} must have the property \js{c},
+but \js{b} and \js{a} may or may not be present.  {\color{red}Discussion re:
+  difficulties, efficiency, etc. Want to make it seem justifiable to cling to
+  unification}
 
 \begin{program}
   \begin{minted}[mathescape]{javascript}
@@ -878,31 +881,117 @@ In listing~\ref{lst:multSols}, for example, \js{x} must have the property
   \caption{An example of a program with multiple solutions}\label{lst:multSols}
 \end{program}
 
-Discussion re: difficulties, efficiency, etc. Want to make it seem justifiable to cling to unification
+Although these problems are introduced by subtyping constraints, in practice it
+is only object types which will encounter them. Primitive types like numbers or
+strings, for example, lack any kind of substructure and so a subtype constraint
+involving a primitive type can essentially be treated as a straight equation
+constraint. Function and array types do have substructure, but solving a
+subtype constraint involving these types simply involves passing on the
+constraint to a lower level of structure. Table {\color{red}X} summarises these
+solution methods for constraints between different kinds of type. Since most
+types can be handled easily, it would be nice to find a solution for objects in
+terms of substitution, and hence retain the benefits of the linear-time
+unification algorithm. 
 
-This is only a problem for object types - primitives, function and array types are all fine [\ldots]
+{\color{red}Table of constraint resolution goes here.}
 
-Make an initial guess at object types by substitution, and then selectively `grow' the object. 
-NB We always use LEqCheck unless T.inferTrue is set, in which case we use LEq in some places (still not all)
+\subsubsection*{Object Subtype Constraints} 
+Let $A$ be an abstract type, and $O$ be a concrete object type. For the
+constraint $A \preceq O$ to be satisfied, $A$ must be an object type with at
+least all the properties of $O$. If some property was present in $O$ but not in
+$A$, then $A$ would not be a valid subtype of $O$. So for this constraint it is
+reasonable to use the substitution $[O'/A]$, where $O'$ is a clone of $O$. The
+reason we do not use $O$ directly is that later constraints may require $O'$ to
+grow, but this should not have an effect on $O$.
 
-Solving constraints iteratively, or at least solving them in order (rather than
-in one pass at the end) means we have more concrete objects to play with for the harder (subtype) constraints,
-so our guesses should be more accurate?
+For the inverse constraint, $A\succeq O$, the substitution is perhaps not so
+obvious. Although the same substitution $[O'/A]$ does satisfy the constraint,
+by using it we are rejecting any object types smaller than $O$, which would
+also satisfy the constraint. This approximation means that some potentially
+legal programs will be rejected by the implementation. Of course, static
+type-checking is inherently conservative.  Any type checker which is sound and
+decidable must be incomplete -- that is, it will always be possible to write a
+program which is well typed but does not satisfy the type checker. The
+approximate substitution used here maintains type safety -- any program which
+satisfies it must be well typed -- at the cost of a slight reduction in
+completeness. Empirical observation through testing fragments of JavaScript has
+not revealed any `real' programs which suffer as a result of this
+approximation, however.
 
-Also need to solve constraints as we go in order to get property types
-(substitutions happens by copying so we lose a link) -- but I don't know if
-this is a hack that shouldn't be discussed here.
+The last case to consider is a constraint between two object types,$O_1\succeq
+O_2$. To simplify discussion, I will not consider object chains or optional
+constraints here, though the extension to these cases is apparent from
+equations~\ref{succeq}~--~\ref{succeqo}. {\color{red}Is it? It is to me...} We
+can check whether the constraint is satisfied by inspection -- iterate through
+all properties of $O_1$ and ensure they are present in $O_2$. If it is
+satisfied, we can simply move onto the next constraint. If it is not satisfied,
+however, we should not yet declare the program untypable. If the constraint was
+deemed unsatisfied, $O_1$ must have a property which is absent in $O_2$. Since
+the substitution from an abstract variable only represented a bound on the
+object, we may be able to `grow' $O_2$ by adding the missing properties.
+{\color{red}I don't think this is sound. Firstly, I'm not sure my $\succeq_c$
+  constraints always ensure that it is valid to grow $O_2$. Secondly, even if
+  it is valid to solve this equation by growing $O_2$, these changes won't be
+  constrained by constraints we've already solved and discarded. How do I
+  proceed at this point?  I think a correct solution will need to keep track of
+  the upper and lower bounds for each object type, and only collapse the bounds
+  down to a single object when we need to -- but that's not enough of a
+  solution to present here!}
 
-Table of constraint resolution. goes here.
+\subsubsection{Subconstraints}
+Objects, functions and arrays all have sub-structures, such that once we are
+satisfied that two types match at a certain level, we will need to generate
+sub-constraints to ensure that the substructures also correspond to one
+another. For a constraint $O_1\succeq O_2$ between object types, this is
+simple, following on from the definition of $\succeq$. For all $\{l:T_1\}$ in
+$O_1$, we must have some $\{l:T_2\}$ in $O_2$. In this, case we simply push the
+constraint down, generating the new constraints $T_1\succeq T_2$. Array types
+are similar.  For a constraint $[T_1]\succeq[T_2]$, we simply generate the new
+constraint $T_1\succeq T_2$. Finally, functions behave in a similar way with
+regards to their return type, but are contravariant in their argument types.
+Hence for a constraint $(T_1, \ldots, T_i \rightarrow T_r) \succeq(T_1',
+\ldots, T_i' \rightarrow T_r')$, we generate the new constraints $T_1\preceq
+T_1'$, \dots, $T_i\preceq T_i'$, and $T_r \succeq T_r'$
 
-Justify substitutions for objects - still guaranteed safety, though may eliminate some solns
-In practical testing, none have come up, but we've extended the linear time unification algorithm
-to handle subtyping (is it still linear time? I think so, except potentially for subconstraints)
+This generation of subconstraints carries with it the risk of non-termination,
+in the case where one type contains itself. Indeed, this is a very real
+possibility for JavaScript, since every object method has an implicit \js{this}
+parameter which will have the type of the object itself. The solution is to
+keep track of which types we have passed as we recursively generate the
+subconstraints. If we generate a constraint involving types which we have
+already encountered, then it is skipped. The soundness of this can be proved by
+induction. A constraint near the top of the path is satisfied if all
+subconstraints are satisfied. To prove the subconstraints are satisfied, we can
+assume by induction that the constraint itself is satisfied. If a subconstraint
+involving the same types appears later on in the path, then we can use this
+assumption to immediately show that it is satisfied, and hence we can simply
+skip its generation to avoid infinite recursion.
 
-generation of subconstraints
+\subsubsection{Functions and Arrays as Objects}
 
-\subsubsection{Recursive Types}
-Recursive `this' \\
+Although I have modelled functions, arrays and objects as all having distinct
+types, in practice JavaScript does not make a strong distinction between the
+three. In JavaScript, everything which is not a primitive type is an object
+type. This means that arrays and functions can have properties added and
+removed freely. It could be argued that this is an undesirable behaviour which
+a type system should exclude, since for example adding a property to an array
+may well be indicative of a bug. However, there are some indispensable
+properties of arrays and functions which can only be accessed by dereferencing
+them as objects. Chief amongst these is the \js{.length} property of an array,
+which is fairly crucial for most tasks involving arrays.
+
+The solution is to treat, as JavaScript does, arrays and functions as if they
+were simply objects. We can rewrite array types as object types with a special
+`\texttt{@deref}' property representing the array items' type. This then allows
+property addition and dereferencing like any other object. Since array items'
+types are covariant with the type of the array itself (as object properties
+are), we do not need to do anything different for subconstraint generation. A
+little more care is required to rewrite function types, since argument types
+are covariant, but the principle is the same. Function types are wrapped by an
+object type with a special `\texttt{@call}' property, containing the original
+function type. Constraints on the object wrapper will generate a covariant
+subconstraint on the function type, which can be handled as discussed in the
+subconstraints section above.
 
 \section{Gradual Typing}
 Explanation as explicit casts + why this allows proofs of safety \\
