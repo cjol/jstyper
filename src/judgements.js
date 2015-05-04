@@ -311,7 +311,7 @@ UglifyJS.AST_Dot.prototype.check = function(gamma, dynamics) {
 		Classes.Type.store[j1.T.id].applySubstitution(r.substitutions[i]);
 	}
 
-	// @deref may not be in the root, however
+	// the property may not be in the root, however
 	var o=j1.T;
 	while (! (this.property in o.memberTypes)) o = Classes.Type.store[o.originalObj];
 	
