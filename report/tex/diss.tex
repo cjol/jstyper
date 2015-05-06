@@ -311,14 +311,16 @@ statements can be written as a series of \js{if} statements, and do not present
 an interesting problem from a typing perspective. No attempt was made to
 include a representation of commonly used JavaScript objects, such as the
 \js{RegExp} object or the \textit{Document Object Model}, which is used to
-represent the structure of an HTML document. Some features were left out to
-reduce the complexity of the project. One such example is the concatenation of
-strings using \js{+}, which overloads the use of the \js{+} operator to
-represent more than one method signature. This is difficult to accommodate for
-without using union types, which carry problems of efficiency. Even where a
-feature is missing, however, the gradual typing mechanisms usually allow code
-fragments using unavailable features to bypass the type checker, and be used as
-if they were dynamic.
+represent the structure of an HTML document. The type signatures of such objects
+could be predefined for use within the system.
+
+Some other features were left out to reduce the complexity of the project. One
+such example is the concatenation of strings using \js{+}, which overloads the
+use of the \js{+} operator to represent more than one method signature. This is
+difficult to accommodate for without using union types, which carry problems of
+efficiency. Even where a feature is missing, however, the gradual typing
+mechanism usually allows code fragments relying on these features to bypass the
+type checker.
 
 \section{Formal Specification}
 
@@ -326,7 +328,7 @@ The specification of my JavaScript subset has two components -- a definition of
 the operational semantics, and a definition of the typing judgement used. The
 executable type inference system has the job of verifying that the initial
 program, as typed by the developer, is well-typed. If the specification is
-correctly defined, this property can be proven to be preserved throughout the
+correctly defined, this property can then be proved to be preserved throughout the
 execution of the program.
 
 \subsection{Operational Semantics}
@@ -863,15 +865,13 @@ fails. A side-effect of this algorithm is finding the \textit{most general
 representation of the type.  We have generated subtype constraints, however,
 which are not so easily solved.
 
-We cannot simply use substitution in the
-same way for subtype constraints, because the two constrained types may not be
-equal. Even with an algorithm to determine satisfiability, we cannot find a
-single most general unifier for object types.  The most precisely we can hope
-to pin down a type variable to is within an upper and lower bound.  In
-listing~\ref{lst:multSols}, for example, \js{x} must have the property \js{c},
-but \js{b} and \js{a} may or may not be present.  {\color{red}Discussion re:
-  difficulties, efficiency, etc. Want to make it seem justifiable to cling to
-  unification}
+We cannot simply use substitution in the same way for subtype constraints,
+because the two constrained types may not be equal. Even with an algorithm to
+determine satisfiability, we cannot find a single most general unifier for
+object types.  The most precisely we can hope to pin down a type variable to is
+within an upper and lower bound.  In listing~\ref{lst:multSols}, for example,
+\js{x} must have the property \js{c}, but \js{b} and \js{a} may or may not be
+present.  
 
 \begin{program}
   \begin{minted}[mathescape]{javascript}
@@ -1011,7 +1011,7 @@ the next line. Although this may seem a contrived example, a very similar
 situation could arise if \js{x} was instead used as a function, returning a
 different type of value depending on its parameters.
 \begin{program}
-  \begin{minted}
+  \begin{minted}{javascript}
 	// jstyper import x
 	if (x) {
 		sum = x + 5;
@@ -1039,13 +1039,13 @@ which must have been caused by the dynamic code returning a value of the
 incorrect value. 
 
 \begin{program}
-  \begin{minted}
+  \begin{minted}{javascript}
 	// jstyper import x
-	var sum = (function(t) {
+	var sum = 5 + (function(t) {
 		if (typeof t !== "number") 
 			throw new CastError("x is not a number");
 		return t;
-		})(x) + 5;
+		})(x)*2;
   \end{minted}
   \caption{An example primitive wrapper}\label{lst:importPrim}
 \end{program}
