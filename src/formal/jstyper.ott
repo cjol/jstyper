@@ -219,9 +219,9 @@ const :: 'const_' ::=
 	| > 		 ::  :: GEqConstraint 							{{ com GEqConstraint }}
 																	{{ tex \succeq }} 
 	| <c 		 ::  :: LEqCheckConstraint						{{ com LEqCheckConstraint }}
-																	{{ tex \preceq_c }} 
+																	{{ tex {\color{red}\preceq_c} }} 
 	| >c 		 ::  :: GEqCheckConstraint						{{ com GEqCheckConstraint }}
-																	{{ tex \succeq_c }} 
+																	{{ tex {\color{red}\succeq_c} }} 
 	| <o 		 ::  :: LEqOptConstraint						{{ com LEqOptConstraint }}
 																	{{ tex \preceq_o }} 
 	| >o 		 ::  :: GEqOptConstraint						{{ com GEqOptConstraint }}

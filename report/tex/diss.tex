@@ -13,6 +13,8 @@
 \usepackage{lmodern}
 \usepackage[sorting=none,backend=bibtex]{biblatex}
 \usepackage{proof}
+\usepackage{listings}
+\usepackage[T1]{fontenc}
 \bibliography{mybib}
 \raggedbottom
 \sloppy
@@ -300,27 +302,62 @@ enough to represent actual JavaScript programs while being free of some of the
 complications of implementation. For example, storage of variables was
 simplified to just a scope and a heap, without modelling the special cases of
 the global scope, nor worrying about removal of unused data by the garbage
-collector. The subset included primitive constants; object and array literals;
-arithmetic and logical binary and unary operators; dereferencing from and
-assignment to object properties and array elements; functions and function
-expressions; and basic control flow via \js{if ... else ...} and loops. 
+collector. 
 
+\section{Language Definition}
+
+\begin{lstlisting}[mathescape, escapechar=£]
+v            ::= $b$ | $n$ | $str$ | £\textbf{undefined}£ | £\textbf{null}£ | £\textbf{\{}£$l_1$:$v_1$, $\dots$, $l_i$:$v_i$£\textbf{\}}£
+                | £\textbf{[}£$v_1$, $\dots$, $v_i$£\textbf{]}£ | £[\![£$func$, s£]\!]£
+func         ::= £\textbf{function}£ $id$£\textbf{(}£$x_1$, $\dots$, $x_i$£\textbf{)}£ £\textbf{\{}£ $m$ £\textbf{\}}£ 
+                | £\textbf{function}£ £\textbf{(}£$x_1$, $\dots$, $x_i$£\textbf{)}£ £\textbf{\{}£ $m$ £\textbf{\}}£
+e            ::= $v$ | $id$ | $e$ $op$ $e'$ | £\textbf{\{}£$l_1$:$e_1$, $\dots$, $l_i$:$e_i$£\textbf{\}}£ 
+                | £\textbf{[}£$e_1$, $\dots$ $e_i$£\textbf{]}£ | $e$£\textbf{.}£l | $e$£\textbf{[}£$e'$£\textbf{]}£ 
+                | $e$£\textbf{(}£$e_1$, $\dots$, $e_i$£\textbf{)}£ | $func$
+                | $assignTarget$ $\approx$ $e$ | $assignTarget$ $assignOp$ 
+                | $assignOp$ $assignTarget$ | $preOp$ e
+m            ::= $e$ | $m_1$; $\dots$; $m_i$ | £\textbf{var}£ $vd_1$, $\dots$ $vd_i$ 
+                | £\textbf{if}£ £\textbf{(}£$e$£\textbf{)}£ £\textbf{\{}£$m_1$£\textbf{\}}£ | £\textbf{if}£ £\textbf{(}£$e$£\textbf{) \{}£$m_1$£\textbf{\} else \{}£$m_2$£\textbf{\}}£ | £\textbf{while}£ £\textbf{(}£$e$£\textbf{)}£ £\textbf{\{}£$m$£\textbf{\}}£ 
+                | £\textbf{for}£ £\textbf{(}£$e_1$; $e_2$; $e_3$£\textbf{)}£ £\textbf{\{}£$m$£\textbf{\}}£ | £\textbf{for}£ £\textbf{(}£$varDec$; $e_2$; $e_3$£\textbf{)}£ £\textbf{\{}£$m$£\textbf{\}}£ 
+                | £\textbf{@def function}£ $id$£\textbf{(}£$x_1$, $\dots$, $x_i$£\textbf{)}£ £\textbf{\{}£$m$£\textbf{\}}£
+                | £\textbf{return}£ $e$ | £\textbf{return}£  | £\textbf{$\epsilon$}£
+assignTarget ::= $vRef$ | $assignTarget$£\textbf{[}£$e$£\textbf{]}£ | $assignTarget$£\textbf{.}£l
+vRef         ::= $id$ | $vRef$£\textbf{.}£l | $vRef$£\textbf{[}£$n$£\textbf{]}£
+vd           ::= $id$ | $id$£\textbf{=}$e$£
+op           ::= $numOp$ | $cmpOp$ | $numcmpOp$ | $boolOp$
+$\approx$             ::=  £\textbf{=}£ | $numOp$£\textbf{=}£
+numOp        ::= £\textbf{+}£ | £\textbf{-}£ | £\textbf{/}£ | £\textbf{*}£ | £\textbf{\%}£
+numcmpOp     ::= £\textbf{\textless}£ | $\mathbf{\leq}$ | £\textbf{$\geq$}£ | £\textbf{\textgreater}£
+cmpOp        ::= £\textbf{===}£ | £\textbf{!==}£ | £\textbf{==}£ | £\textbf{!==}£
+boolOp       ::= £\textbf{||}£ | £\textbf{\&\&}£
+preOp        ::= £\textbf{-}£ | £\textbf{!}£
+assignOp     ::= £\textbf{-\,-}£ | £\textbf{++}£
+\end{lstlisting}
+
+
+The subset includes primitive constants; object and array literals;
+arithmetic and logical binary and unary operators; dereferencing from and
+assignment to object properties and array elements; functions and function expressions; and basic control flow via \js{if ... else ...} and loops.  
 Where features of JavaScript were omitted, they largely tended to be features
 which could be desugared into supported features -- for example \js{switch}
 statements can be written as a series of \js{if} statements, and do not present
 an interesting problem from a typing perspective. No attempt was made to
 include a representation of commonly used JavaScript objects, such as the
-\js{RegExp} object or the \textit{Document Object Model}, which is used to
+\js{RegExp} object or elements of the \textit{Document Object Model}, which is used to
 represent the structure of an HTML document. The type signatures of such objects
 could be predefined for use within the system.
 
-Some other features were left out to reduce the complexity of the project. One
-such example is the concatenation of strings using \js{+}, which overloads the
-use of the \js{+} operator to represent more than one method signature. This is
-difficult to accommodate for without using union types, which carry problems of
-efficiency. Even where a feature is missing, however, the gradual typing
-mechanism usually allows code fragments relying on these features to bypass the
-type checker.
+Some other features were excluded which would introduce difficult problems in
+ensuring type safety.  Although I included the ability to dynamically grow an
+object by assigning to an undefined property, I excluded the ability to remove
+or change properties once defined. These features, although legal in
+JavaScript, make it difficult to reason about the type safety of a property
+access without control flow analyses keeping track of precisely which
+properties are well-defined at each program point. Another example is the
+concatenation of strings using \js{+}, which overloads the use of the \js{+}
+operator to represent more than one method signature. Even where a feature is
+missing, however, the gradual typing mechanism usually allows code fragments
+relying on these features to bypass the type checker.
 
 \section{Formal Specification}
 
@@ -523,7 +560,7 @@ has a valid type if \js{e} does, and if the type of \js{e} is a subtype
 of the type $\{l: T\}$ for some $T$ (i.e.~if the type of \js{e} has at least the property
 \js{l}). Again I will focus on a few interesting cases.
 
-\subsubsection{Return}
+\subsubsection*{Return}
 
 $$\infer[\textsc{RetTypable1}]{
 	\Gamma \vdash \mathtt{return}\ |_C\ \Gamma'
@@ -742,7 +779,7 @@ taken, and so we cannot be certain whether or not a certain property has been
 added. Instead, we merge together the different potential type environments,
 essentially taking the intersection of the possible types.
 
-\subsubsection{Function Closures}
+\subsubsection*{Function Closures}
 $$
 \infer[\textsc{V\_Closure}]{
 	\Gamma\vdash\mathtt{[\![func, s]\!]}: [\![T, \gamma]\!]\ |_C\ \Gamma
@@ -938,7 +975,7 @@ object, we may be able to `grow' $O_2$ by adding the missing properties.
   down to a single object when we need to -- but that's not enough of a
   solution to present here!}
 
-\subsubsection{Subconstraints}
+\subsubsection*{Subconstraints}
 Objects, functions and arrays all have sub-structures, such that once we are
 satisfied that two types match at a certain level, we will need to generate
 sub-constraints to ensure that the substructures also correspond to one
@@ -967,7 +1004,7 @@ involving the same types appears later on in the path, then we can use this
 assumption to immediately show that it is satisfied, and hence we can simply
 skip its generation to avoid infinite recursion.
 
-\subsubsection{Functions and Arrays as Objects}
+\subsubsection*{Functions and Arrays as Objects}
 
 Although I have modelled functions, arrays and objects as all having distinct
 types, in practice JavaScript does not make a strong distinction between the
@@ -1059,7 +1096,7 @@ in the development process. The additional safety guarantees -- that the
 non-dynamic code cannot be blamed -- also restricts the location in which it
 may have arisen, which will help locate and correct the bug much faster.
 
-\subsubsection{Higher Order Casts}
+\subsubsection*{Higher Order Casts}
 
 The wrapper for a primitive type is simple enough -- simply check the type of
 the variable and return it if it is correct. When looking at higher-order
@@ -1095,7 +1132,7 @@ typed and untyped worlds. Unchecked data is given a mimic to ensure it is safe
 in the well-typed world, and type safe data is given a guard to ensure its
 safety is not compromised by anything in the unchecked world.
 
-\subsubsection{Performance}
+\subsubsection*{Performance}
 
 Inserting extra dynamic checks will inevitably have an impact on the
 performance of the program. If the program makes frequent use of higher-order
@@ -1127,19 +1164,42 @@ of type errors. Interpreters may in fact be able to use this knowledge to
 achieve better overall performance than the unchecked code could previously
 allow.
 
-\printbibliography{}
-
 \chapter{Evaluation}\label{evaluation}
-\section{Proof}
-TBC
-\section{`Sanity Check': visual inspection of my test cases}
-\section{Correctness tests comparing output of code with and without gradual typing}
-\section{Speed and Memory Overhead}
 
+\section{Evaluation of the Formal Specification}
+
+In order for the type checking process to be useful, we must show that a
+well-typed program has certain desirable properties. In particular, we want to
+show that there is always a well-defined sequence of transitions from the
+type-checked program down to a single value representing the result of the
+computation. The proof for this has two parts. Firstly, we show that, if a
+program is well typed to begin with, then any transition will result in a
+program which is also well-typed. This is the proof of \textit{preservation}.
+Using this, we know that the well-typed property of the initial program will be
+preserved under any sequence of transitions. The second part of the proof is to
+show that, if a program is well-typed, then either the program has already
+maximally reduced down to a single value, or some further transition must
+exist. This is the proof of \textit{progress}. Thus our initial program --
+which we have checked is well typed -- must have some transition, and the
+result will be another well-typed program, which itself must have a transition,
+and so on until the program has reduced to a single value, at which point no
+further transitions exist.
+
+\subsection{Proof of Preservation}
+
+\subsection{Proof of Progress}
+
+\section{Evaluation of the Implementation}
+\subsection{Testing Type Inference}
+\subsection{Testing and Profiling the Compiler}
+\subsubsection*{Correctness}
+\subsubsection*{Performance}
+
+\printbibliography{}
 
 \chapter{Conclusions}
 \section{Future work}
-Prototypal Inheritance, Strings as objects, functions as objects \\
+Prototypal Inheritance, Strings as objects \\
 Union types, with discharge under type-checks
 Auto-detect imported vars by scope analysis \\
 Fine-grained object modification by control flow analysis
