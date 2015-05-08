@@ -65,7 +65,7 @@
   \begin{multline*}
   	\indHypTwo \stackrel{\text{def}}{=} \\
   	\forall s,\theta. (\Gamma \vdash (s,\theta))\implies e=\mathtt{v}\vee
-  	\exists e', s',\theta. \transition{e}{s}{\theta'}{e'}{s'}{\theta'}
+  	\exists e', s',\theta'. \transition{e}{s}{\theta}{e'}{s'}{\theta'}
   \end{multline*}
 
   We show that for all $\Gamma$, $e$, $T$, $C$, $\Gamma'$, if $\typed{e}{T}$
@@ -428,7 +428,7 @@
   	\indHyp \stackrel{\text{def}}{=} 
   	\forall s,\theta. (\Gamma \vdash (s,\theta))\implies \\
   	m=\mathtt{v} \vee m=\mathtt{return\ v; m'} \vee
-  	\exists m', s',\theta. \transition{m}{s}{\theta'}{m'}{s'}{\theta'}
+  	\exists m', s',\theta'. \transition{m}{s}{\theta}{m'}{s'}{\theta'}
   \end{multline*}
 
   We show that for all $\Gamma$, $m$, $C$, $\Gamma'$, if $\typable{m}$

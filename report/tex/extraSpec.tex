@@ -21,7 +21,8 @@
 \usepackage{txfonts}
 \usepackage{lmodern}
 \newcommand*{\orig}{\ensuremath{\!\multimapinv\!}}
-
+\newcommand\eqdef{\mathrel{\overset{\makebox[0pt]{\mbox{\normalfont\tiny def}}}{=}}}
+\newcommand\qdot{\mathbin{\scalebox{1.5}{.}}\enspace}
 
 \declaretheoremstyle[
   spaceabove=6pt, spacebelow=6pt,
@@ -117,20 +118,15 @@
 \begin{definition}[merge]\label{merge}
   The function $merge(\Gamma_0, \Gamma_1, \Gamma_2)$ merges two derivative type environments $\Gamma_1$ and $\Gamma_2$ back into the original type environment $\Gamma_0$.
   \begin{equation} \label{merge-eqn}
-	merge (\Gamma_0, \Gamma_1, \Gamma_2) = \Set{ \Gamma_1(x) \cap \Gamma_2(x) | (x: T) \in \Gamma_0 }
+	merge (\Gamma_0, \Gamma_1, \Gamma_2) \eqdef \Set{ (x:\Gamma_1(x) \cap \Gamma_2(x)) | (x: T) \in \Gamma_0 }
   \end{equation}
 \end{definition}
 
-\begin{definition}[$\sqsubseteq$]
-  I impose a partial order on type environments, such that
-  \begin{equation} \label{less-typed-eqn}
-  	\begin{split}
-	\Gamma_1 \sqsubseteq \Gamma_2 \iff &\\
-		\big(\forall e, T_1, C, \Gamma_1' . ( \Gamma_1 &\vdash e : T_1\ |_C\ \Gamma_1' \implies\\
-			\exists T_2, \Gamma_2' . &\Gamma_2 \vdash e : T_2\ |_C\ \Gamma_2' \enspace \land\enspace  \Gamma_1' \sqsubseteq \Gamma_2' \enspace \land\enspace  T_1 \succeq T_2 )\ \quad\land\\
-		\forall m, C, \Gamma_1' . ( \Gamma_1 &\vdash m\ |_C\ \Gamma_1' \implies\\
-			\exists \Gamma_2' . &\Gamma_2 \vdash m\ |_C\ \Gamma_2' \enspace\land\enspace \Gamma_1' \sqsubseteq \Gamma_2' \enspace\land\enspace T_1 \succeq T_2 ) \big)\\
-  	\end{split}
+\begin{definition}[Strength]
+  \begin{equation} \label{eqn:strength}
+	\Gamma_1 \sqsubseteq \Gamma_2 \eqdef 
+	\forall id\qdot \{id:T_1\}\in\Gamma_1 \implies \exists T_2 \qdot \{id:T_2\}\in\Gamma_2 \land T_1\succeq T_2
   \end{equation}
 \end{definition}
+
 \end{document}

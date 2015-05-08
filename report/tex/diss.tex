@@ -3,18 +3,35 @@
 \usepackage[pdfborder={0 0 0}]{hyperref}  % turns references into hyperlinks
 \usepackage[margin=25mm]{geometry} % adjusts page layout
 \usepackage{graphicx} % allows inclusion of PDF, PNG and JPG images
-\usepackage{verbatim}
-\usepackage{docmute}  % only needed to allow inclusion of proposal.tex
-\usepackage[super]{nth}
-\usepackage{minted}
-\usepackage{amsmath}
-\usepackage{txfonts}
 \usepackage{import}
-\usepackage{lmodern}
+\usepackage{docmute}  % only needed to allow inclusion of proposal.tex
 \usepackage[sorting=none,backend=bibtex]{biblatex}
+\usepackage[super]{nth}
+
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{txfonts}
+\usepackage{lmodern}
 \usepackage{proof}
+\usepackage{mathtools}
+\usepackage{enumitem}
+\setlistdepth{9} % Magically makes the 'too deeply nested' error go away on some cases
+
 \usepackage{listings}
-\usepackage[T1]{fontenc}
+\usepackage{verbatim}
+\usepackage{minted}
+\usepackage{thmtools}
+\usepackage{etoolbox}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+
+\newtheoremstyle{dotless}{\topsep}{\topsep}{\itshape}{}{\bfseries}{}{5pt plus 1pt minus 1pt}{}
+\theoremstyle{dotless}
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{theorem}{Theorem}[section]
+
+
 \bibliography{mybib}
 \raggedbottom
 \sloppy
@@ -28,21 +45,48 @@
 \usepackage{float}
 \makeatletter
 \newcommand\fs@plainruled{\def\@fs@cfont{\rmfamily}\let\@fs@capt\floatc@plain%
-\def\@fs@pre{}%
-\def\@fs@mid{\kern2pt\hrule\vspace\abovecaptionskip\relax}%
-\def\@fs@post{}%
-\let\@fs@iftopcapt\iffalse
+  \def\@fs@pre{}%
+  \def\@fs@mid{\kern2pt\hrule\vspace\abovecaptionskip\relax}%
+  \def\@fs@post{}%
+  \let\@fs@iftopcapt\iffalse
 }
+\patchcmd{\@thm}{\trivlist}{\list{}{ \leftmargin=1.5em}}{}{}
+\patchcmd{\@endtheorem}{\endtrivlist}{\endlist}{}{}
 \makeatother
 \floatstyle{plain}
+
+\declaretheoremstyle[
+  spaceabove=6pt, spacebelow=6pt,
+  headfont=\normalfont\bfseries, numbered=no,
+  notefont=\textsc, headpunct={\\}, notebraces={}{},
+  bodyfont=\normalfont,
+  postheadspace=1em
+]{casestyle}
+\declaretheoremstyle[
+  spaceabove=6pt, spacebelow=3pt,
+  headfont=\normalfont\bfseries,
+  notefont=\scshape, headpunct={}, numbered=no,
+  bodyfont=\normalfont,
+  postheadspace=1em
+]{subcasestyle}
+\declaretheorem[style=casestyle]{case}
+\declaretheorem[style=subcasestyle, name=case]{subcase}
 
 \setlength\partopsep{-\topsep}
 \addtolength\partopsep{-\parskip}
 \newfloat{program}{thp}{lop}
 \floatname{program}{Listing}
 
-\renewcommand{\baselinestretch}{1.1}  % adjust line spacing to make
-                    % more readable
+\renewcommand{\baselinestretch}{1.1}  % adjust line spacing to make more readable
+\newcommand{\typable}[2][ ]{\Gamma{}\vdash\mathtt{#2}\, |_C#1\:\Gamma#1'}
+\newcommand{\typed}[2]{\Gamma{}\vdash\mathtt{#1}: #2\,|_C\:\Gamma'}
+\newcommand{\transition}[6]{\langle{}\mathtt{#1},#2,#3\rangle{}\rightarrow{}\langle{}\mathtt{#4},#5,#6\rangle}
+\newcommand{\indHyp}{\Phi(\Gamma, m, C, \Gamma')}
+\newcommand{\indHypTwo}{\Psi(\Gamma, e, T, C, \Gamma')}
+\newcommand{\var}{\textbf{var}}
+\newcommand{\sub}[1]{\textsubscript{#1}}
+\newcommand\eqdef{\mathrel{\overset{\makebox[0pt]{\mbox{\normalfont\tiny def}}}{=}}}
+\newcommand\qdot{\mathbin{\scalebox{1.5}{.}}\enspace}
 \begin{document}
 
 \chapter{Introduction}\label{introduction}
@@ -81,11 +125,12 @@ placed in a context expecting a boolean. This can result in silent propagation
 of type errors, providing no errors to the developer.
 
 Static type checking catches potential bugs earlier in the development cycle,
+Static type checking catches potential bugs earlier in the development cycle,
 and can allow programs to run faster, without needing to check types before
 every operation. However, it is impossible for a static type checker to
 precisely identify all potential type errors, because it cannot know precisely
 what the program will do when it runs. If such a type checker existed, it could
-be used to determine whether any given program will terminate or not -- which %chktex 8
+be used to determine whether any given program will terminate or not -- which
 would violate the undecidability of the halting problem. Instead, a
 conservative approximation is made, and some programs which would never
 actually exhibit a type error will fail a static type check. This approximation
@@ -123,21 +168,21 @@ never trigger a static type error. The obvious disadvantage here is that the
 static analysis can no longer make any guarantees about the soundness of the
 program, as certain parts of it have effectively not been checked.
 \begin{program}[t]
- \begin{minted}[linenos,numbersep=-12pt]{javascript}
+  \begin{minted}[linenos,numbersep=-12pt]{javascript}
  	// adapted from the Prototype library
  	function serialize(val) {
-	 	switch (typeof val) {
-		 	case "boolean":
-			 	return val ? "true" : "false";
-		 	case "number":
-			 	return "" + val;
-		 	case "string":
-			 	return val;
-	 	}
+	  switch (typeof val) {
+		case "boolean":
+		return val ? "true" : "false";
+		case "number":
+		return "" + val;
+		case "string":
+		return val;
+	  }
  	}	
- \end{minted}
- \label{lst:dynamicIdiom}
- \caption{Dynamic idioms in JavaScript}
+  \end{minted}
+  \label{lst:dynamicIdiom}
+  \caption{Dynamic idioms in JavaScript}
 \end{program}
 Additionally, JavaScript code rarely operates in isolation in modern web
 applications. Even if a program passes the static type checker, some external
@@ -180,10 +225,10 @@ underpinnings of the project was required. Several of the undergraduate courses
 offered as part of the Tripos were a valuable introduction, notably the Part IB
 course \textit{Semantics of Programming Languages}, and the Part II courses
 \textit{Types} and \textit{Optimising Compilers}. \textit{Semantics of
-Programming Languages} introduced the proof techniques necessary for proving
+  Programming Languages} introduced the proof techniques necessary for proving
 type soundness, but for an insufficiently complex example language to cover all
 strategies required. Pierce's \textit{Types and Programming
-Languages}~\cite{pierce} bridged this gap sufficiently that I was able to look
+  Languages}~\cite{pierce} bridged this gap sufficiently that I was able to look
 at recent work defining the operational semantics of real dynamic programming
 languages~\cite{pythonOpSem}. The \textit{Types} course similarly introduced
 the Hindley--Damas--Milner algorithm for type inference, and Pierce's book
@@ -307,31 +352,31 @@ collector.
 \section{Language Definition}
 
 \begin{lstlisting}[mathescape, escapechar=£]
-v            ::= $b$ | $n$ | $str$ | £\textbf{undefined}£ | £\textbf{null}£ | £\textbf{\{}£$l_1$:$v_1$, $\dots$, $l_i$:$v_i$£\textbf{\}}£
-                | £\textbf{[}£$v_1$, $\dots$, $v_i$£\textbf{]}£ | £[\![£$func$, s£]\!]£
-func         ::= £\textbf{function}£ $id$£\textbf{(}£$x_1$, $\dots$, $x_i$£\textbf{)}£ £\textbf{\{}£ $m$ £\textbf{\}}£ 
-                | £\textbf{function}£ £\textbf{(}£$x_1$, $\dots$, $x_i$£\textbf{)}£ £\textbf{\{}£ $m$ £\textbf{\}}£
-e            ::= $v$ | $id$ | $e$ $op$ $e'$ | £\textbf{\{}£$l_1$:$e_1$, $\dots$, $l_i$:$e_i$£\textbf{\}}£ 
-                | £\textbf{[}£$e_1$, $\dots$ $e_i$£\textbf{]}£ | $e$£\textbf{.}£l | $e$£\textbf{[}£$e'$£\textbf{]}£ 
-                | $e$£\textbf{(}£$e_1$, $\dots$, $e_i$£\textbf{)}£ | $func$
-                | $assignTarget$ $\approx$ $e$ | $assignTarget$ $assignOp$ 
-                | $assignOp$ $assignTarget$ | $preOp$ e
-m            ::= $e$ | $m_1$; $\dots$; $m_i$ | £\textbf{var}£ $vd_1$, $\dots$ $vd_i$ 
-                | £\textbf{if}£ £\textbf{(}£$e$£\textbf{)}£ £\textbf{\{}£$m_1$£\textbf{\}}£ | £\textbf{if}£ £\textbf{(}£$e$£\textbf{) \{}£$m_1$£\textbf{\} else \{}£$m_2$£\textbf{\}}£ | £\textbf{while}£ £\textbf{(}£$e$£\textbf{)}£ £\textbf{\{}£$m$£\textbf{\}}£ 
-                | £\textbf{for}£ £\textbf{(}£$e_1$; $e_2$; $e_3$£\textbf{)}£ £\textbf{\{}£$m$£\textbf{\}}£ | £\textbf{for}£ £\textbf{(}£$varDec$; $e_2$; $e_3$£\textbf{)}£ £\textbf{\{}£$m$£\textbf{\}}£ 
-                | £\textbf{@def function}£ $id$£\textbf{(}£$x_1$, $\dots$, $x_i$£\textbf{)}£ £\textbf{\{}£$m$£\textbf{\}}£
-                | £\textbf{return}£ $e$ | £\textbf{return}£  | £\textbf{$\epsilon$}£
-assignTarget ::= $vRef$ | $assignTarget$£\textbf{[}£$e$£\textbf{]}£ | $assignTarget$£\textbf{.}£l
-vRef         ::= $id$ | $vRef$£\textbf{.}£l | $vRef$£\textbf{[}£$n$£\textbf{]}£
-vd           ::= $id$ | $id$£\textbf{=}$e$£
-op           ::= $numOp$ | $cmpOp$ | $numcmpOp$ | $boolOp$
-$\approx$             ::=  £\textbf{=}£ | $numOp$£\textbf{=}£
-numOp        ::= £\textbf{+}£ | £\textbf{-}£ | £\textbf{/}£ | £\textbf{*}£ | £\textbf{\%}£
-numcmpOp     ::= £\textbf{\textless}£ | $\mathbf{\leq}$ | £\textbf{$\geq$}£ | £\textbf{\textgreater}£
-cmpOp        ::= £\textbf{===}£ | £\textbf{!==}£ | £\textbf{==}£ | £\textbf{!==}£
-boolOp       ::= £\textbf{||}£ | £\textbf{\&\&}£
-preOp        ::= £\textbf{-}£ | £\textbf{!}£
-assignOp     ::= £\textbf{-\,-}£ | £\textbf{++}£
+  v            ::= $b$ | $n$ | $str$ | £\textbf{undefined}£ | £\textbf{null}£ | £\textbf{\{}£$l_1$:$v_1$, $\dots$, $l_i$:$v_i$£\textbf{\}}£
+  | £\textbf{[}£$v_1$, $\dots$, $v_i$£\textbf{]}£ | £[\![£$func$, s£]\!]£
+  func         ::= £\textbf{function}£ $id$£\textbf{(}£$x_1$, $\dots$, $x_i$£\textbf{)}£ £\textbf{\{}£ $m$ £\textbf{\}}£ 
+  | £\textbf{function}£ £\textbf{(}£$x_1$, $\dots$, $x_i$£\textbf{)}£ £\textbf{\{}£ $m$ £\textbf{\}}£
+  e            ::= $v$ | $id$ | $e$ $op$ $e'$ | £\textbf{\{}£$l_1$:$e_1$, $\dots$, $l_i$:$e_i$£\textbf{\}}£ 
+  | £\textbf{[}£$e_1$, $\dots$ $e_i$£\textbf{]}£ | $e$£\textbf{.}£l | $e$£\textbf{[}£$e'$£\textbf{]}£ 
+  | $e$£\textbf{(}£$e_1$, $\dots$, $e_i$£\textbf{)}£ | $func$
+  | $assignTarget$ $\approx$ $e$ | $assignTarget$ $assignOp$ 
+  | $assignOp$ $assignTarget$ | $preOp$ e
+  m            ::= $e$ | $m_1$; $\dots$; $m_i$ | £\textbf{var}£ $vd_1$, $\dots$ $vd_i$ 
+  | £\textbf{if}£ £\textbf{(}£$e$£\textbf{)}£ £\textbf{\{}£$m_1$£\textbf{\}}£ | £\textbf{if}£ £\textbf{(}£$e$£\textbf{) \{}£$m_1$£\textbf{\} else \{}£$m_2$£\textbf{\}}£ | £\textbf{while}£ £\textbf{(}£$e$£\textbf{)}£ £\textbf{\{}£$m$£\textbf{\}}£ 
+  | £\textbf{for}£ £\textbf{(}£$e_1$; $e_2$; $e_3$£\textbf{)}£ £\textbf{\{}£$m$£\textbf{\}}£ | £\textbf{for}£ £\textbf{(}£$varDec$; $e_2$; $e_3$£\textbf{)}£ £\textbf{\{}£$m$£\textbf{\}}£ 
+  | £\textbf{@def function}£ $id$£\textbf{(}£$x_1$, $\dots$, $x_i$£\textbf{)}£ £\textbf{\{}£$m$£\textbf{\}}£
+  | £\textbf{return}£ $e$ | £\textbf{return}£  | £\textbf{$\epsilon$}£
+  assignTarget ::= $vRef$ | $assignTarget$£\textbf{[}£$e$£\textbf{]}£ | $assignTarget$£\textbf{.}£l
+  vRef         ::= $id$ | $vRef$£\textbf{.}£l | $vRef$£\textbf{[}£$n$£\textbf{]}£
+  vd           ::= $id$ | $id$£\textbf{=}$e$£
+  op           ::= $numOp$ | $cmpOp$ | $numcmpOp$ | $boolOp$
+  $\approx$             ::=  £\textbf{=}£ | $numOp$£\textbf{=}£
+  numOp        ::= £\textbf{+}£ | £\textbf{-}£ | £\textbf{/}£ | £\textbf{*}£ | £\textbf{\%}£
+  numcmpOp     ::= £\textbf{\textless}£ | $\mathbf{\leq}$ | £\textbf{$\geq$}£ | £\textbf{\textgreater}£
+  cmpOp        ::= £\textbf{===}£ | £\textbf{!==}£ | £\textbf{==}£ | £\textbf{!==}£
+  boolOp       ::= £\textbf{||}£ | £\textbf{\&\&}£
+  preOp        ::= £\textbf{-}£ | £\textbf{!}£
+  assignOp     ::= £\textbf{-\,-}£ | £\textbf{++}£
 \end{lstlisting}
 
 
@@ -390,21 +435,21 @@ terms of evaluation of subexpression before evaluating the entire expression. A
 few points are worth further discussion, however.
 
 \begin{program}[t]
- \begin{minted}[numbersep=-12pt,linenos]{javascript}
+  \begin{minted}[numbersep=-12pt,linenos]{javascript}
 	function makeCounter(n) {
-	 var i = n;
-	 return function() {
+	  var i = n;
+	  return function() {
 		if (i>0) {
-		 i--;
+		  i--;
 		}
 		return i;
-	 }
+	  }
 	}
 
 	var count = makeCounter(10);
 	count(); // i is now 9, but the current scope is unchanged
- \end{minted}
- \caption{A function call with side effects}\label{lst:sideEffects}
+  \end{minted}
+  \caption{A function call with side effects}\label{lst:sideEffects}
 \end{program}
 
 \subsubsection*{Assignment}
@@ -418,23 +463,23 @@ $$\infer[\textsc{Assign1}]
   \begin{split}
   	&\mathtt{assignTarget} \not = \mathtt{vRef} \\
   	&\langle \mathtt{assignTarget}, s, \theta \rangle \rightarrow
-	  	\langle \mathtt{assignTarget'}, s', \theta'\rangle
+	\langle \mathtt{assignTarget'}, s', \theta'\rangle
   \end{split}
 }$$
 
 $$\infer[\textsc{Assign2}]
 {
   \langle\mathtt{vRef\approx e},s,\theta\rangle\rightarrow
-  	\langle\mathtt{vRef\approx e'},s',\theta'\rangle
+  \langle\mathtt{vRef\approx e'},s',\theta'\rangle
 }{
-	\langle\mathtt{e},s, \theta\rangle\rightarrow
-		\langle\mathtt{e'}, s', \theta'\rangle
+  \langle\mathtt{e},s, \theta\rangle\rightarrow
+  \langle\mathtt{e'}, s', \theta'\rangle
 }$$
 
 $$\infer[\textsc{Assign3}]
 {
   \langle \mathtt{vRef = v}, s, \theta \rangle \rightarrow
-  	\langle \mathtt{v}, s, \theta\oplus\{\textbf{addr}(vRef, s, \theta) : v\} \rangle
+  \langle \mathtt{v}, s, \theta\oplus\{\textbf{addr}(vRef, s, \theta) : v\} \rangle
 }
 {
   (vRef, s, \theta) \in dom(\textbf{addr})
@@ -456,9 +501,9 @@ could end up with assignments of the form \js{5 = 6;} which make little sense.
 This simplification has the consequence of deeming some valid JavaScript
 assignments illegal, such as the following expression:
 \begin{program}[H]
- \begin{minted}{js}
+  \begin{minted}{js}
 	(function(){ return {}; }).x = 5
- \end{minted}
+  \end{minted}
 \end{program}
 Although this is a valid JavaScript assignment according to the ECMAScript
 specification, it would be difficult to use in our operational semantics, since
@@ -471,17 +516,17 @@ $addr(vRef, s, \theta)$.
 
 $$\infer[\textsc{Func}]
 {\langle \mathtt{func}, s, \theta\rangle \rightarrow
-\langle\mathtt{[\![func, s]\!],} s, \theta\rangle}{}$$
+  \langle\mathtt{[\![func, s]\!],} s, \theta\rangle}{}$$
 
 $$\infer[\textsc{CallAnon}]
 {\langle\mathtt{[\![function(x_1, \dots, x_i)\{m\},s']\!](v_1, \dots, v_i)}, s, \theta\rangle\rightarrow
-	\langle\mathtt{[\![@body\{m\},s_o',\theta_o]\!]},s, \theta_o\rangle
+  \langle\mathtt{[\![@body\{m\},s_o',\theta_o]\!]},s, \theta_o\rangle
 }{
-	\begin{split}
-		&a_0, \dots, a_i\textbf{ are fresh} \\
-		&s_o' = s' \cup \{\mathbf{this}: a_0, \mathbf{x_1}:a_1, \dots, \mathbf{x_i}: a_i\} \\
-		&\theta_0 = \theta \oplus\{\mathbf{a_0}: undefined, \mathbf{a_1}:v_1, \dots, \mathbf{a_i}: v_i\}
-	\end{split}
+  \begin{split}
+	&a_0, \dots, a_i\textbf{ are fresh} \\
+	&s_o' = s' \cup \{\mathbf{this}: a_0, \mathbf{x_1}:a_1, \dots, \mathbf{x_i}: a_i\} \\
+	&\theta_0 = \theta \oplus\{\mathbf{a_0}: undefined, \mathbf{a_1}:v_1, \dots, \mathbf{a_i}: v_i\}
+  \end{split}
 }$$
 
 When a function is called in JavaScript, the scope available for variables is
@@ -508,11 +553,11 @@ safety.
 
 $$\infer[\textsc{CallBody1}]
 {\langle \mathtt{[\![@body\{m\}, s', \theta]\!]}, s, \theta\rangle  \rightarrow
-\langle \mathtt{[\![@body\{m\}, s'', \theta']\!]}, s, \theta'\rangle }
+  \langle \mathtt{[\![@body\{m\}, s'', \theta']\!]}, s, \theta'\rangle }
 { \begin{split}
-  & \mathtt{m} \not = \mathtt{return\ v;\ m''} \\
-  & \langle\mathtt{m}, s', \theta\rangle\rightarrow\langle \mathtt{m'},s'', \theta\rangle
-\end{split}
+  	& \mathtt{m} \not = \mathtt{return\ v;\ m''} \\
+  	& \langle\mathtt{m}, s', \theta\rangle\rightarrow\langle \mathtt{m'},s'', \theta\rangle
+  \end{split}
 }$$
 
 Concretely, $s$ is a function from variable identifiers to heap addresses, and
@@ -549,7 +594,7 @@ example introducing a new variable), and these changes are reflected in
 $\Gamma'$, which will be used for judging the type of subsequent expressions.
 
 $$\infer[\textsc{PropType}]{
-	\Gamma \vdash \mathtt{e.l}:T\ |_{C\cup\{\{l:T\}\succeq T_1\}}\ \Gamma_2
+  \Gamma \vdash \mathtt{e.l}:T\ |_{C\cup\{\{l:T\}\succeq T_1\}}\ \Gamma_2
 }{\begin{split}
 	&T \textbf{ is fresh} \\
 	&\Gamma\vdash\mathtt{e}:T_1\ |_C\ \Gamma_1
@@ -563,12 +608,12 @@ of the type $\{l: T\}$ for some $T$ (i.e.~if the type of \js{e} has at least the
 \subsubsection*{Return}
 
 $$\infer[\textsc{RetTypable1}]{
-	\Gamma \vdash \mathtt{return}\ |_C\ \Gamma'
+  \Gamma \vdash \mathtt{return}\ |_C\ \Gamma'
 }{
-	\Gamma \vdash \mathtt{return\ undefined}\ |_C\ \Gamma'
+  \Gamma \vdash \mathtt{return\ undefined}\ |_C\ \Gamma'
 }$$
 $$\infer[\textsc{RetTypable2}]{
-	\Gamma \vdash \mathtt{return\ e}\ |_C\ \Gamma'\cup\{return: T\}
+  \Gamma \vdash \mathtt{return\ e}\ |_C\ \Gamma'\cup\{return: T\}
 }{
   \begin{split}
 	&\Gamma \vdash \mathtt{e}\ |_C\ \Gamma'\\
@@ -576,7 +621,7 @@ $$\infer[\textsc{RetTypable2}]{
   \end{split}
 }$$
 $$\infer[\textsc{RetTypable3}]{
-	\Gamma \vdash \mathtt{return\ e}\ |_{C\cup\{T=T'\}}\ \Gamma'\cup\{return: T\}
+  \Gamma \vdash \mathtt{return\ e}\ |_{C\cup\{T=T'\}}\ \Gamma'\cup\{return: T\}
 }{
   \begin{split}
 	&\Gamma \vdash \mathtt{e}\ |_C\ \Gamma'\\
@@ -584,16 +629,85 @@ $$\infer[\textsc{RetTypable3}]{
   \end{split}
 }$$
 $$\infer[\textsc{RetTypable4}]{
-	\Gamma \vdash \mathtt{return\ e}\ |_{C\cup\{T=T'\}}\ \Gamma'
+  \Gamma \vdash \mathtt{return\ e}\ |_{C\cup\{T=T'\}}\ \Gamma'
 }{
   \begin{split}
 	&\Gamma \vdash \mathtt{e}:T\ |_C\ \Gamma'\\
 	&\Gamma'[``return"] = T'
   \end{split}
 }$$
-{\color{red} I also reference rules AnonVoid, NamedVoid, AnonFun, NamedFun,
-  IfTypable, WhileTypable and ForTypable in this section. Should I copy those
-  rules out here? }
+$$\infer[\textsc{AnonVoid}]{
+  \Gamma\vdash\mathtt{function(x_1, \dots, c_i)\ \{m\}}:[\![T_0, T_1, \dots, T_i\rightarrow T, \Gamma]\!]\ |_{C\cup \{T=\mathtt{undefined}\}} \Gamma
+}{
+  \begin{split}
+	&T, T_0, \dots, T_i\textit{ are fresh} \\
+  	&\Gamma_o = \Gamma\cup\{this:T_0, x_1:T_1, \dots, x_i:T_i, return: \mathtt{pending}\} \\ 
+  	&\Gamma_o \vdash \mathtt{m}\ |_C\ \Gamma'\\
+  	&\Gamma'[``return"] = \mathtt{pending}
+  \end{split}
+}$$
+$$\infer[\textsc{NamedVoid}]{
+  \Gamma\vdash\mathtt{function\ id(x_1, \dots, c_i)\ \{m\}}:[\![T_0, T_1, \dots, T_i\rightarrow T, \Gamma]\!]\ |_{C\cup \{T=\mathtt{undefined}\}} \Gamma
+}{
+  \begin{split}
+	&T, T_0, \dots, T_i\textit{ are fresh} \\
+  	&\Gamma_o = \Gamma\cup\{this:T_0, x_1:T_1, \dots, x_i:T_i, return: \mathtt{pending}\} \\ 
+	& \Gamma_o\cup \{ id: [\![T_0, T_1, \dots, T_i\rightarrow T, \Gamma]\!]\} \vdash \mathtt{m}\ |_C\ \Gamma'\\
+  	&\Gamma'[``return"] = \mathtt{pending}
+  \end{split}
+}$$
+$$\infer[\textsc{AnonFun}]{
+  \Gamma\vdash\mathtt{function(x_1, \dots, c_i)\ \{m\}}:[\![T_0, T_1, \dots, T_i\rightarrow T, \Gamma]\!]\ |_{C\cup \{T=T_k\}} \Gamma
+}{
+  \begin{split}
+	&T, T_0, \dots, T_i\textit{ are fresh} \\
+  	&\Gamma_o = \Gamma\cup\{this:T_0, x_1:T_1, \dots, x_i:T_i, return: \mathtt{pending}\} \\ 
+  	&\Gamma_o \vdash \mathtt{m}\ |_C\ \Gamma'\\
+  	&\Gamma'[``return"] = T_k \\
+	&T_k \neq IllDefined(T_k')
+  \end{split}
+}$$
+$$\infer[\textsc{NamedFun}]{
+  \Gamma\vdash\mathtt{function\ id(x_1, \dots, c_i)\ \{m\}}:[\![T_0, T_1, \dots, T_i\rightarrow T, \Gamma]\!]\ |_{C\cup \{T=T_k\}} \Gamma
+}{
+  \begin{split}
+	&T, T_0, \dots, T_i\textit{ are fresh} \\
+  	&\Gamma_o = \Gamma\cup\{this:T_0, x_1:T_1, \dots, x_i:T_i, return: \mathtt{pending}\} \\ 
+	& \Gamma_o\cup \{ id: [\![T_0, T_1, \dots, T_i\rightarrow T, \Gamma]\!]\} \vdash \mathtt{m}\ |_C\ \Gamma'\\
+  	&\Gamma'[``return"] = T_k \\
+	&T_k \neq IllDefined(T_k')
+  \end{split}
+}$$
+$$\infer[\textsc{IfTypable1}]{
+  \Gamma\vdash\ \mathtt{if\ (e)\ \{m_1\}\ else\ \{m_2\}}\ |_{C_0\cup C_1\cup C_2\cup\{T_0=\mathtt{boolean}\}}\ \Gamma_3
+}{
+  \begin{split}
+	&\Gamma\vdash \mathtt{e}:T_0\ |_{C_0}\ \Gamma_0 \\
+	&\Gamma_0\vdash \mathtt{m_1}\ |_{C_1}\ \Gamma_1 \\
+	&\Gamma_0\vdash \mathtt{m_2}\ |_{C_2}\ \Gamma_2 \\
+	&\Gamma_3 = merge(\Gamma_0, \Gamma_1, \Gamma_2)
+  \end{split}
+}$$
+$$\infer[\textsc{WhileTypable}]{
+  \Gamma\vdash\ \mathtt{while\ (e)\ \{m\}}\ |_{C_0\cup C_1\cup \{T_0=\mathtt{boolean}\}}\ \Gamma_2
+}{
+  \begin{split}
+	&\Gamma\vdash \mathtt{e}:T_0\ |_{C_0}\ \Gamma_0 \\
+	&\Gamma_0\vdash \mathtt{m}\ |_{C_1}\ \Gamma_1 \\
+	&\Gamma_2 = merge(\Gamma_0, \Gamma_1, \Gamma_0)
+  \end{split}
+}$$
+$$\infer[\textsc{ForTypable}]{
+  \Gamma\vdash\ \mathtt{for\ (e_1; e_2; e_3)\ \{m\}}\ |_{C_0\cup C_1\cup C_2\cup C_3\cup \{T_2=\mathtt{boolean}\}}\ \Gamma_4
+}{
+  \begin{split}
+	&\Gamma\vdash \mathtt{e_1}\ |_{C_0}\ \Gamma_0 \\
+	&\Gamma_0\vdash \mathtt{e_2} : T_2\ |_{C_1} \Gamma_1 \\
+	&\Gamma_1\vdash \mathtt{m}\ |_{C_2}\ \Gamma_2 \\
+	&\Gamma_2\vdash \mathtt{e_3}\ |_{C_3}\ \Gamma_3 \\
+	&\Gamma_4 = merge(\Gamma_1, \Gamma_3, \Gamma_1)
+  \end{split}
+}$$
 
 When a function has multiple return statements, we need to ensure that every
 possible value returned has the same type.  This parallels the situation with
@@ -618,9 +732,9 @@ a \texttt{number}, but sometimes it will return \texttt{undefined}.
 \begin{program}[H]
   \begin{minted}{javascript}
 	function isPositive(x) {
-		if (x>0) {
-			return true;
-		}
+	  if (x>0) {
+		return true;
+	  }
 	}
   \end{minted}
 \end{program}
@@ -667,12 +781,12 @@ is the property access on line 3. This is only a valid operation if \js{x} has
 a property \js{b}, which has a property \js{c} with property \js{d}. Indeed the
 type judgement for this statement will generate constraints of the form 
 \begin{equation}
- \begin{split}
- \label{eq:barC}
- \{b:T_b\} \succeq T_x' \\
- \{c:T_c\} \succeq T_b \\
- \{d:number\} \succeq T_c \\
-\end{split}
+  \begin{split}
+ 	\label{eq:barC}
+ 	\{b:T_b\} \succeq T_x' \\
+ 	\{c:T_c\} \succeq T_b \\
+ 	\{d:number\} \succeq T_c \\
+  \end{split}
 \end{equation}
 
 The problem is that these only constrain $T_x'$, and not $T_x$. $T_x$ is
@@ -685,43 +799,45 @@ non-root object type (i.e.~one which has an origin defined) is constrained as a
 subtype, it may either have the required properties itself, or find them
 further down the origin chain. Formally,
 \begin{equation}
- \begin{split}
-	T_1\enspace \succeq\enspace T_2\orig T_2' \iff \exists\ & T_a, T_b\ .\\
+  \begin{split}
+	T_1\enspace \succeq\enspace T_2\orig T_2' \iff \exists\ & T_a, T_b\ \qdot\\
 	& T_a\cup T_b = T_1 \quad\land \\
-	& \forall \left\{l: T\right\} \in T_a \enspace.\enspace (\{l: T'\}\in T_2\enspace \land \enspace T \succeq T') \quad\land \\
+	& \forall \left\{l: T\right\} \in T_a \qdot (\{l: T'\}\in T_2\enspace \land \enspace T \succeq T') \quad\land \\
 	& T_b \succeq T_2'
- \end{split}
- \label{succeq}
+  \end{split}
+  \label{succeq}
 \end{equation}
-{\color{red}\{Do I need to give some explanation of the formula above? I think
-  of it as splitting $T_1$ into two, half of which is present in $T_2$, and
-  half of which is present in $T_2'$ (which may itself have a further
-  origin)\}}
 and
 \begin{equation}
- T_1\orig T_1'\enspace \succeq \enspace T_2 \iff T_1\succeq T_2 \land T_1' \succeq T_2
+  T_1\orig T_1'\enspace \succeq \enspace T_2 \iff T_1\succeq T_2 \land T_1' \succeq T_2
 \end{equation}
+The intuition behind these formulae is to ensure that every element in the
+$T_1$ chain is present somewhere in the chain for $T_2$.  We can consider the
+properties of each object in the left hand chain separately, and can partition
+the object type $T_1$ into properties which are present directly in $T_2$, and
+properties which must be present further down the chain $T_2'$.
+
 
 \begin{program}[t]
- \centering
- \begin{minipage}[b]{0.45\linewidth}
+  \centering
+  \begin{minipage}[b]{0.45\linewidth}
  	\begin{minted}[numbersep=-12pt,linenos]{js}
-	function f(x) {
-	 x.b.c.d2 = true;
-	 x.b.c.d += 1;
-	 return x;
-	}	
+	  function f(x) {
+	 	x.b.c.d2 = true;
+	 	x.b.c.d += 1;
+	 	return x;
+	  }	
  	\end{minted}
  	\vspace{23mm}
- \end{minipage}
- \quad
- \begin{minipage}[b]{0.45\linewidth}
+  \end{minipage}
+  \quad
+  \begin{minipage}[b]{0.45\linewidth}
  	\resizebox{3in}{!}{
- 	 \def\svgwidth{200pt}
- 	 \import{../res/}{origin.pdf_tex}
+ 	  \def\svgwidth{200pt}
+ 	  \import{../res/}{origin.pdf_tex}
  	}
- \end{minipage}
- \caption{Property addition}\label{lst:propAdd}
+  \end{minipage}
+  \caption{Property addition}\label{lst:propAdd}
 \end{program}
 
 This system allows the constraint to propagate along the origin chain, finally
@@ -737,12 +853,12 @@ is trivially satisfied if the property did not exist. Formally, the definition
 is similar to
 \ref{succeq}:
 \begin{equation}
- \begin{split}
+  \begin{split}
 	T_1\enspace \succeq_o\enspace T_2&\orig T_2' \iff \\
-	& \forall \left\{l: T\right\} \in T_1 \enspace.\enspace (\{l: T'\}\in T_2\enspace \implies \enspace T \succeq T') \quad\land \\
+	& \forall \left\{l: T\right\} \in T_1 \qdot (\{l: T'\}\in T_2\enspace \implies \enspace T \succeq T') \quad\land \\
 	& T_b \succeq_o T_2'
- \end{split}
- \label{succeqo}
+  \end{split}
+  \label{succeqo}
 \end{equation}
 It would be possible to introduce some control-flow analysis to determine which 
 properties have been assigned to before, and only attach origin objects if the
@@ -782,12 +898,12 @@ essentially taking the intersection of the possible types.
 \subsubsection*{Function Closures}
 $$
 \infer[\textsc{V\_Closure}]{
-	\Gamma\vdash\mathtt{[\![func, s]\!]}: [\![T, \gamma]\!]\ |_C\ \Gamma
+  \Gamma\vdash\mathtt{[\![func, s]\!]}: [\![T, \gamma]\!]\ |_C\ \Gamma
 }{
-	\begin{split}
-		&dom(\gamma) \subseteq dom(s) \\
-		&\gamma \vdash \mathtt{func} : [\![T, \gamma]\!]\ |_C\ \gamma'
-	\end{split}
+  \begin{split}
+	&dom(\gamma) \subseteq dom(s) \\
+	&\gamma \vdash \mathtt{func} : [\![T, \gamma]\!]\ |_C\ \gamma'
+  \end{split}
 }$$
 
 The typing rules for function closures are analogous to the transition rules,
@@ -796,14 +912,14 @@ type. The restriction of $\gamma$'s domain is necessary to show that \js{func} w
 well-typed when using $s$ as scope in particular.
 
 $$\infer[\textsc{VoidBodyType}]{
-	\Gamma\vdash\mathtt{[\![@body\{m\},s,\theta]\!]}:T\ |_{C\cup\{T=T_k\}}\ \Gamma
+  \Gamma\vdash\mathtt{[\![@body\{m\},s,\theta]\!]}:T\ |_{C\cup\{T=T_k\}}\ \Gamma
 }{
-	\begin{split}
-		&\gamma\cup\{\mathbf{return}:\textrm{pending}\} \vdash \mathtt{m}\ |_C\ \gamma' \\
-		&\gamma \vdash (s, \theta) \\
-		&\gamma'[``return"] = T_k\\
-		&T_k \neq IllDefined(T_k')
-	\end{split}
+  \begin{split}
+	&\gamma\cup\{\mathbf{return}:\textrm{pending}\} \vdash \mathtt{m}\ |_C\ \gamma' \\
+	&\gamma \vdash (s, \theta) \\
+	&\gamma'[``return"] = T_k\\
+	&T_k \neq IllDefined(T_k')
+  \end{split}
 }$$
 
 When using the closure's type environment after a function call, we must first
@@ -843,22 +959,22 @@ attached to the node, so that future tools can build on the inference
 performed. Listing~\ref{lst:arrimpl} shows the \js{check} function
 corresponding to the typing rule \textsc{V\_Arr}, which is shown in figure~\ref{fig:arrrule}
 \begin{figure}[t]
-$$\infer[\textsc{V\_Arr}]{
-  \Gamma\vdash\mathtt{[e_1,\, \ldots,\ e_k]}:[T]\ |_C\ \Gamma_k	
-}{ 
+  $$\infer[\textsc{V\_Arr}]{
+  	\Gamma\vdash\mathtt{[e_1,\, \ldots,\ e_k]}:[T]\ |_C\ \Gamma_k	
+  }{ 
 	\begin{split}
-		&T \textrm{ is fresh} \\
-		&\Gamma\vdash \mathtt{e_1}:T_1\ |_{C_1}\ \Gamma_1 \\
-		&\vdots \\
-		&\Gamma_{k-1}\vdash \mathtt{e_k}:T_k\ |_{C_k}\ \Gamma_k \\
-		&C=\bigcup_{i=1}^kC_i \cup {T \succeq T_i'}
+	  &T \textrm{ is fresh} \\
+	  &\Gamma\vdash \mathtt{e_1}:T_1\ |_{C_1}\ \Gamma_1 \\
+	  &\vdots \\
+	  &\Gamma_{k-1}\vdash \mathtt{e_k}:T_k\ |_{C_k}\ \Gamma_k \\
+	  &C=\bigcup_{i=1}^kC_i \cup {T \succeq T_i'}
 	\end{split}	  
-}$$
-\label{fig:arrrule}
-\caption{Typing Rule \textsc{V\_Arr}}
+  }$$
+  \label{fig:arrrule}
+  \caption{Typing Rule \textsc{V\_Arr}}
 \end{figure}
 \begin{program}[t]
- \begin{minted}[linenos,numbersep=-12pt]{javascript}
+  \begin{minted}[linenos,numbersep=-12pt]{javascript}
     // Rule V_Arr
     UglifyJS.AST_Array.prototype.check = function(gamma, dynamics) {
 
@@ -878,11 +994,11 @@ $$\infer[\textsc{V\_Arr}]{
         // thread gamma through to the next element
         gamma = judgement.gamma;
       }
- 
+
       return new Judgement(T, C, gamma);
     };
- \end{minted}
- \caption{The implementation of \textsc{V\_Arr}}\label{lst:arrimpl}
+  \end{minted}
+  \caption{The implementation of \textsc{V\_Arr}}\label{lst:arrimpl}
 \end{program}
 
 
@@ -912,8 +1028,8 @@ present.
 
 \begin{program}
   \begin{minted}[mathescape]{javascript}
-		x = {a:1, b:2, c:3} // $x \succeq \{a:number, b:number, c:number\}$
-		x.c++;              // $x \preceq \{c:number\}$
+	x = {a:1, b:2, c:3} // $x \succeq \{a:number, b:number, c:number\}$
+	x.c++;              // $x \preceq \{c:number\}$
   \end{minted}
   \caption{An example of a program with multiple solutions}\label{lst:multSols}
 \end{program}
@@ -955,25 +1071,25 @@ completeness. Empirical observation through testing fragments of JavaScript has
 not revealed any `real' programs which suffer as a result of this
 approximation, however.
 
-The last case to consider is a constraint between two object types,$O_1\succeq
-O_2$. To simplify discussion, I will not consider object chains or optional
-constraints here, though the extension to these cases is apparent from
-equations~\ref{succeq}~--~\ref{succeqo}. {\color{red}Is it? It is to me...} We
-can check whether the constraint is satisfied by inspection -- iterate through
-all properties of $O_1$ and ensure they are present in $O_2$. If it is
-satisfied, we can simply move onto the next constraint. If it is not satisfied,
-however, we should not yet declare the program untypable. If the constraint was
-deemed unsatisfied, $O_1$ must have a property which is absent in $O_2$. Since
-the substitution from an abstract variable only represented a bound on the
-object, we may be able to `grow' $O_2$ by adding the missing properties.
-{\color{red}I don't think this is sound. Firstly, I'm not sure my $\succeq_c$
-  constraints always ensure that it is valid to grow $O_2$. Secondly, even if
-  it is valid to solve this equation by growing $O_2$, these changes won't be
-  constrained by constraints we've already solved and discarded. How do I
-  proceed at this point?  I think a correct solution will need to keep track of
-  the upper and lower bounds for each object type, and only collapse the bounds
-  down to a single object when we need to -- but that's not enough of a
-  solution to present here!}
+The last case to consider is a constraint between two object types, $O_1\succeq
+O_2$. To simplify discussion, I will not explicitly consider object chains or
+optional constraints here, though the extension to these cases is apparent from
+equations~\ref{succeq}~--~\ref{succeqo}. We can check whether the constraint is
+satisfied by inspection -- iterate through all properties of $O_1$ and ensure
+they are present in $O_2$. If it is satisfied, we can simply move onto the next
+constraint. If it is not satisfied, however, we should not yet declare the
+program untypable. If the constraint was deemed unsatisfied, $O_1$ must have a
+property which is absent in $O_2$. Since the substitution from an abstract
+variable only represented a bound on the object, we may be able to `grow' $O_2$
+by adding the missing properties.  
+{\color{red}I don't think this is sound.
+  Firstly, I'm not sure my $\succeq_c$ constraints always ensure that it is
+  valid to grow $O_2$. Secondly, even if it is valid to solve this equation by
+  growing $O_2$, these changes won't be constrained by constraints we've
+  already solved and discarded. How do I proceed at this point?  I think a
+  correct solution will need to keep track of the upper and lower bounds for
+  each object type, and only collapse the bounds down to a single object when
+  we need to -- but that's not enough of a solution to present here!}
 
 \subsubsection*{Subconstraints}
 Objects, functions and arrays all have sub-structures, such that once we are
@@ -1051,7 +1167,7 @@ different type of value depending on its parameters.
   \begin{minted}{javascript}
 	// jstyper import x
 	if (x) {
-		sum = x + 5;
+	  sum = x + 5;
 	}
   \end{minted}
   \caption{A simple use of imported variables}\label{lst:import1}
@@ -1079,10 +1195,10 @@ incorrect value.
   \begin{minted}{javascript}
 	// jstyper import x
 	var sum = 5 + (function(t) {
-		if (typeof t !== "number") 
-			throw new CastError("x is not a number");
-		return t;
-		})(x)*2;
+	  if (typeof t !== "number") 
+	  throw new CastError("x is not a number");
+	  return t;
+	})(x)*2;
   \end{minted}
   \caption{An example primitive wrapper}\label{lst:importPrim}
 \end{program}
@@ -1166,36 +1282,365 @@ allow.
 
 \chapter{Evaluation}\label{evaluation}
 
+My evaluation is split along the same division as my implementation. To verify
+that the specification of the subset has the desired properties, I provide
+inductive proofs of both progress and type preservation.  I also provide an
+extensive suite of tests to test the correctness of the inference
+implementation. Finally, the gradual typing compiler is evaluated with a series
+of tests both to verify correctness (i.e.~that the compiler does not change the
+output of a program), and to profile performance.
+
 \section{Evaluation of the Formal Specification}
 
-In order for the type checking process to be useful, we must show that a
-well-typed program has certain desirable properties. In particular, we want to
-show that there is always a well-defined sequence of transitions from the
-type-checked program down to a single value representing the result of the
-computation. The proof for this has two parts. Firstly, we show that, if a
-program is well typed to begin with, then any transition will result in a
-program which is also well-typed. This is the proof of \textit{preservation}.
-Using this, we know that the well-typed property of the initial program will be
-preserved under any sequence of transitions. The second part of the proof is to
-show that, if a program is well-typed, then either the program has already
-maximally reduced down to a single value, or some further transition must
-exist. This is the proof of \textit{progress}. Thus our initial program --
-which we have checked is well typed -- must have some transition, and the
-result will be another well-typed program, which itself must have a transition,
-and so on until the program has reduced to a single value, at which point no
-further transitions exist.
+We want to show that there is always a well-defined sequence of transitions
+from the type-checked program in the language down to a single value
+representing the result of the computation. Firstly, we show that, if a program
+is well typed to begin with, then any transition will result in a program which
+is also well-typed. This is the proof of \textit{preservation}.  Using this, we
+know that the well-typed property of the initial program will be preserved
+under any sequence of transitions. The second part of the proof is to show
+that, if a program is well-typed, then either the program has already maximally
+reduced down to a single value, or some further transition must exist. This is
+the proof of \textit{progress}. Thus our initial program -- which we have
+checked is well typed -- must have some transition, and the result will be
+another well-typed program, which itself must have a transition, and so on
+until the program has reduced to a single value, at which point no further
+transitions exist.
 
 \subsection{Proof of Preservation}
 
+We must split the proof of preservation into two parts -- a proof of
+preservation for expressions, and a proof of preservation for statements. For
+this proof, we will also require a definition of a \textit{well-typed store}.
+The intuition behind the definition is that a store is well-typed if all
+typable value references are well-defined within the store, and if the stored
+value itself has the same type as the value reference. We also require a
+definition of a \textit{strength} relation ($\sqsubseteq$) between type environments, which
+allows us to verify that the `output' type environment $\Gamma'$ after typing a
+statement can still make all the same judgements after a transition.
+
+
+\begin{definition}[Strength]
+  \begin{equation} \label{eqn:strength}
+	\Gamma_1 \sqsubseteq \Gamma_2 \eqdef 
+	\forall id\qdot \{id:T_1\}\in\Gamma_1 \implies \exists T_2 \qdot \{id:T_2\}\in\Gamma_2 \land T_1\succeq T_2
+  \end{equation}
+\end{definition}
+
+\begin{theorem}[Type preservation for expressions]\label{expPreservation}
+	If $\Gamma\vdash \mathtt{m}\ |_C\ \Gamma'$ and $\Gamma\vdash(s, \theta)$ and we have some
+	transition $\transition{m}{s}{\theta}{m'}{s'}{\theta'}$, then some $\gamma$ can augment $\Gamma$ such that
+	$\Gamma\cup\gamma\vdash\mathtt{m'}\ |_C'\ \Gamma''$ and $\Gamma\cup\gamma\vdash(s,\theta)$ and
+	$\Gamma'\sqsubseteq\Gamma''$.
+\end{theorem}
+\begin{theorem}[Type preservation for statements]\label{mPreservation}
+	If $\Gamma\vdash \mathtt{m}\ |_C\ \Gamma'$ and $\Gamma\vdash(s, \theta)$ and we have some
+	transition $\transition{m}{s}{\theta}{m'}{s'}{\theta'}$, then some $\gamma$ can augment $\Gamma$ such that
+	$\Gamma\cup\gamma\vdash\mathtt{m'}\ |_C'\ \Gamma''$ and $\Gamma\cup\gamma\vdash(s,\theta)$ and 
+	$\Gamma'\sqsubseteq\Gamma''$.
+\end{theorem}
+
+We also make use of a few useful lemmas.
+\begin{lemma}
+  \label{lm:strChain}
+  If $\Gamma_1 \sqsubseteq \Gamma_2$, and $\Gamma_1\vdash\mathtt{m}\ |_C\ \Gamma_1'$, 
+  then $\Gamma_2\vdash\mathtt{m}\ |_C\ \Gamma_2'$ and
+  $\Gamma_1'\sqsubseteq\Gamma_2'$ 
+\end{lemma}
+\begin{lemma}
+  \label{lm:ext}
+  If $\Gamma\vdash\mathtt{m}\ |_C\Gamma'$, then there exists some $\gamma$ such
+  that $\Gamma\!\cup\!\gamma=\Gamma'$.
+\end{lemma}
+\begin{lemma}
+  \label{lm:intersect}
+	The intersection of two types is a supertype to both types. 
+\end{lemma}
+
+\begin{proof}
+  The proof of Theorem~\ref{expPreservation} is by structural induction over transition rules.
+  Take 
+  \begin{multline*}
+	\Phi(e, s, \theta, e', s', \theta') \eqdef   \\
+	\forall\Gamma,T,C,\Gamma' \qdot
+	\Gamma\vdash\mathtt{e}:T\ |_C\ \Gamma' \implies (\exists\gamma,\Gamma'',C'\qdot
+    \Gamma\!\cup\!\gamma\vdash \mathtt{e'}:T\ |_{C'}\ \Gamma'' 
+%	\enspace\land\enspace T\preceq T'
+	\enspace\land\enspace \Gamma'\sqsubseteq\Gamma'')
+  \end{multline*} 
+  where $C$ and $C'$ are satisfiable sets of constraints. We show that for
+  all $e, s, \theta, e', s', \theta'$, if there exists some transition
+  $\transition{e}{s}{\theta}{e'}{s'}{\theta'}$, then
+  $\Phi(e,s,\theta,e',s',\theta')$ holds. We show this by considering all
+  possible last steps in the derivation of the transition judgement. The full
+  case analysis is presented in Appendix~\ref{app:preservation}, but the most
+  interesting cases are included below. In all cases, we begin by considering
+  arbitrary $\Gamma, T, C$ and $\Gamma'$, and assuming that $\Gamma\vdash\mathtt{e}:T\ |_C\ \Gamma'$.
+	
+  \begin{case}[Seq2]
+	$$\infer[\textsc{Seq2}]{
+	  \transition{m_1;\ m_2; \dots; m_i}{s}{\theta}{m_1';\ m_2; \dots; m_i}{s'}{\theta}
+	}{
+	 \transition{m_1}{s}{\theta}{m_1'}{s'}{\theta'} 
+	}$$
+
+	$m$ must be typable under rule \textsc{SeqTypable}, which requires as
+	premise that each $m_1\dots m_i$ are themselves typable. In particular, we
+	require that $\Gamma\vdash\mathtt{m_1}\ |_{C_1}\ \Gamma_1$, and using the
+	induction hypothesis this means that $\Gamma\vdash\mathtt{m_1'}\ |_{C}\
+	\Gamma_1'$ where $\Gamma_1\sqsubseteq\Gamma_1'$. Using
+	Lemma~\ref{lm:strChain}, $\Gamma_1'\vdash\mathtt{m_2}\ |_{C_2}\ \Gamma_2'$,
+	with $\Gamma_2\sqsubseteq\Gamma_2'$. We can repeat this for each statement
+	$\mathtt{m_3\dots m_i}$, eventually ending up with
+	$\Gamma_{i-1}'\vdash\mathtt{m_i}\ |_{C_i}\ \Gamma_i'$, with
+	$\Gamma_i\sqsubseteq\Gamma_i'$ This satisfies all the premises for rule
+	SeqTypable, and we can conclude that $\Gamma\vdash\mathtt{m_1'; \dots;
+	  m_i}\ |_{\bigcup_{k=0}^i{C_k}}\ \Gamma_i'$, which is what is required to
+	satisfy $\Phi(m,s,\theta,e',s',\theta')$.
+  
+  \end{case}
+
+  \begin{case}[If2]
+	$$\infer[\textsc{If2}]{
+	  \transition{if\ (true)\ \{m_1\}\ else\ \{m_2\}}{s}{\theta}{m_1}{s'}{\theta'}
+	}{}$$
+
+	The only type judgement which could result in $\typable{m}$ uses rule
+	\textsc{IfTypable2}. We first need to show that $m_1$ is typable under some
+	extension of $\Gamma$. One precondition for \textsc{IfTypable2} is that
+	$\Gamma\vdash\mathtt{e}:T\ |_{C_0}\ \Gamma_0$, and using
+	Lemma~\ref{lm:ext}, we can show that $\Gamma_0$ is a suitable extension of
+	$\Gamma$. Another precondition is that $\Gamma_0\vdash\mathtt{m_1}\ |_{C_1}\
+	\Gamma_1$. All that remains to prove, then, is that
+	$\Gamma'\sqsubseteq\Gamma_1$.
+
+	$\Gamma'=merge(\Gamma_0,\Gamma_1,\Gamma_2)$, so the elements of $\Gamma'$
+	are the intersection of the corresponding elements in $\Gamma_1$ and
+	$\Gamma_2$, and so in particular $$\forall id\qdot \{id:T_1\}\in\Gamma'
+	\implies \exists T_2 \qdot \{id:T_2\}\in\Gamma_1,$$ where $T_2 =
+	\Gamma_1(id)\cap\Gamma_2(id)$. Lemma~\ref{lm:intersect} tells us that the
+	intersection of two types is a supertype to both types. We can use this to
+	show that $T_2\succeq\Gamma_1(id)$, and hence that
+	$\Gamma'\sqsubseteq\Gamma_1$
+
+	Both conjuncts of the conclusion are thus satisfied, and $\Phi(m,s,\theta,m',s',\theta')$ holds.
+
+  \end{case} 
+
+\end{proof}
+
 \subsection{Proof of Progress}
 
-\section{Evaluation of the Implementation}
-\subsection{Testing Type Inference}
-\subsection{Testing and Profiling the Compiler}
-\subsubsection*{Correctness}
-\subsubsection*{Performance}
+We will split the proof of progress along the same lines as the proof of
+preservation.
 
-\printbibliography{}
+\begin{theorem}[Progress for expressions]\label{expProgress} If
+  $\typed{e}{T}$ and $\Gamma \vdash (s, \theta)$ then either $e$ is a value or
+  there exist some $e',s', \theta'$ such that
+  $\transition{e}{s}{\theta}{e'}{s'}{\theta'}$ \end{theorem}
+\begin{theorem}[Progress for statements]\label{mProgress}
+  If $\typable{m}$ and $\Gamma \vdash (s, \theta)$ then $m$ is either a
+  value or an irreducible return statement, or there exist some $m',s', \theta'$ such that
+  $\transition{m}{s}{\theta}{m'}{s'}{\theta'}$ 
+\end{theorem}
+
+\begin{proof}
+  The proof of theorem~\ref{expProgress} is by structural induction over the type judgements.
+  Take
+  \begin{multline*}
+  	\indHypTwo \eqdef \\
+  	\forall s,\theta\qdot (\Gamma \vdash (s,\theta))\implies e=\mathtt{v}\ \vee\ 
+ 	\exists e', s',\theta'\qdot \transition{e}{s}{\theta}{e'}{s'}{\theta'}
+  \end{multline*}
+
+  We show that for all $\Gamma, e, T, C, \Gamma'$, if $\typed{e}{T}$, then
+  $\indHypTwo$ is satisfied. We show this by considering the last rule used in
+  the derivation of $\typed{e}{T}$. The full case-by-case proof is outlined in
+  Appendix~\ref{app:progress}, but a few interesting cases are expanded upon
+  here. In all of the cases, we begin by considering an arbitrary store
+  $(s,\theta)$, and assuming that it is well typed under $\Gamma$. This gives
+  us the left hand side of $\indHypTwo$, and it remains to prove that
+  $e=\mathtt{v}$ or $\exists e', s',\theta' \qdot
+  \transition{e}{s}{\theta}{e'}{s'}{\theta'}$ in each case.
+
+  \begin{case}[IdType]
+
+	If the derivation of the type judgement of $e$ uses \textsc{IdType} as the
+	final step, then $e$ is of the form \texttt{id}. Clearly, $e$ is not a
+	value, so we must find a transition from $\langle e, s, \theta\rangle$. The
+	only transition rule of the right form is \textsc{Deref}. The precondition
+	of \textsc{IdType} tells us that we must have $id \in dom(\Gamma)$. Using
+	the assumption that the store is well-typed, we have that
+	$dom(\Gamma)\subseteq dom(s)$, and so in particular $id \in dom(s)$. This
+	is the only precondition required for \textsc{Deref}, so $\langle e,
+	s,\theta \rangle$ can reduce further using this rule, and $\indHypTwo$ is
+	satisfied.
+	
+  \end{case}
+
+  \begin{case}[PropType]\label{proptype}
+
+	$e$ is of the form $\mathtt{e_1.l}$. For this to be a valid type
+	judgement, $\typed{e_1}{T_1}$ must hold, according to the preconditions of
+	\textsc{PropType}. From the induction hypothesis, $e_1$ must be either a
+	value or further reducible.
+	\begin{subcase}
+	  $e_1$ is further reducible.
+	  The precondition for rule \textsc{Prop1} is
+	  satisfied, and $e$ is further reducible under this rule.
+  	\end{subcase}
+  	\begin{subcase}
+  	  $e_1$ is a value with type $T_1$.
+  	  The only value which will satisfy the constraint $\{\{l:T\}\succeq T_1\}$
+	  is an object literal containing property $l$. In this case, the rule
+	  \textsc{Prop2} is applicable to $\langle e, s, \theta\rangle$, and $e$ is
+	  further reducible.
+  	\end{subcase}
+	In both cases, $\indHypTwo$ is satisfied.
+
+  \end{case}
+
+  \begin{case}[VoidBodyType]\label{bodytype}
+
+	$e$ is of the form $\mathtt{[\![@body\{m\},\ s', \theta]\!]}$. The
+	preconditions of \textsc{VoidBodyType} tell us that there must exist some
+	$\gamma$ such that $\gamma \vdash(s', \theta)$ and $\gamma\vdash m\ |_C\
+	\gamma'$. From theorem~\ref{mProgress}, we can deduce that $m$ is either
+	a value, an irreducible return statement, or reduces further under the store $(s',
+	\theta)$.
+
+	\begin{subcase}
+	  $m$ is a value.
+	  In this case, $e$ is immediately of the right form to apply rule
+	  \textsc{CallBody2}, so $e$ can reduce further using this rule.
+	\end{subcase}
+
+	\begin{subcase}
+	  $m$ is an irreducible return statement.
+	  In this case, $e$ is of the right form to apply either rule \textsc{CallBody3} or
+	  \textsc{CallBody4} (\textsc{CallBody3} if the return statement has a
+	  value, or \textsc{CallBody4} if it simply has the form \texttt{return; m}).
+ 	  Either way, $e$ is further reducible.
+	\end{subcase}
+
+	\begin{subcase}
+	  $m$ reduces further with store s'.
+	  In other words, $\exists m', s'', \theta'\qdot \transition{m}{s'}{\theta}{m'}{s''}{\theta'}$.
+	  In this case, $e$ is of the right form to apply rule \textsc{CallBody3},
+	  and the preconditions are satisfied, so $e$ reduces further. 
+	\end{subcase}
+
+	In all cases, $\indHypTwo$ is satisfied.
+
+  \end{case}
+
+  \begin{case}[AssignType]\label{assigntype}
+
+	$e$ is of the form $\mathtt{e_0 = e_1}$, and the preconditions for \textsc{AssignType} give us that
+	$\typed{e_0}{T_0}$ and $\typed{e_1}{T_1}$. Using the
+	induction hypothesis, we can deduce that $e_0$ and $e_1$ are both either values
+	or further reducible. Syntactically, however, $e_0$ cannot be a value, because the left
+	hand side of an assignment must be some form of \texttt{assignTarget}.
+
+	\begin{subcase}
+	  $e_0$ reduces further and is not of the form $\mathtt{vRef}$. 
+	  The precondition for rule \textsc{Assign1} is thus satisfied, and $e$
+	  itself reduces further.
+	\end{subcase}
+
+	\begin{subcase}
+	  $e_0$ is of the form $\mathtt{vRef}$ and $e_1$ reduces further. 
+	  The precondition for rule \textsc{Assign2} is thus satisfied, and $e$
+	  itself reduces further.
+	\end{subcase}
+
+	\begin{subcase}
+	  $e_0$ is of the form vRef and $e_1$ is a value.
+	  The only rule we can use to reduce $e$ here is \textsc{Assign}. For this
+	  to be possible, we need to show that $(e_0, s, \theta) \in dom(addr)$.
+	  We have assumed that the store $(s,\theta)$ is well-typed, which tells us
+	  that, since $\typed{e_0}{T_0}$, we can deduce that $addr(e_0,s,\theta)$
+	  is indeed well-defined. Thus \textsc{Assign} is applicable, and $e$
+	  reduces further.  
+	\end{subcase}
+
+  \end{case}
+
+\end{proof}
+
+\begin{proof}
+
+  The proof of theorem~\ref{mProgress} is by structural induction, this time
+  over typability judgements. Take
+  \begin{multline*}
+  	\indHyp \eqdef
+  	\forall s,\theta\qdot (\Gamma \vdash (s,\theta))\implies \\
+  	m=\mathtt{v}\ \vee\ m=\mathtt{return\ v; m'} \vee
+  	\exists m', s',\theta'\qdot \transition{m}{s}{\theta}{m'}{s'}{\theta'}
+  \end{multline*}
+
+  We show that for all $\Gamma, m, C, \Gamma'$, if $\typable{m}$, then
+  $\indHyp$ is satisfied. The full case-by-case proof is again outlined in
+  Appendix~\ref{app:progress}
+  In all of the cases, we begin by considering an arbitrary store
+  $(s,\theta)$, and assuming that it is well typed under $\Gamma$. This gives
+  us the left hand side of $\indHyp$, and it remains to prove that
+  $m=\mathtt{v}$ or $m=\mathtt{return\ v; m'}$, or $\exists m', s',\theta'\qdot
+  \transition{m}{s}{\theta}{m'}{s'}{\theta'}$ in each case.
+
+  \begin{case}[RetTypable4]
+  	$m$ is of the form $\mathtt{return\ e}$, and we have $\typed{e}{T}$ from
+	the preconditions of \textsc{RetTypable4}. From Theorem~\ref{expProgress},
+	we know that $e$ is either a value or reduces further.
+
+  	\begin{subcase}
+  	  $e$ reduces further.
+  	  The preconditions are satisfied for rule \textsc{Ret1}, so $m$ reduces
+  	  further and $\indHyp$ is satisfied.  
+  	\end{subcase}
+
+  	\begin{subcase}
+  	  $e$ is a value.
+  	  In this case, $m$ is of the form $\mathtt{return v; m'}$, and $\indHyp$
+	  is satisfied.
+	\end{subcase}  
+
+  \end{case}
+
+  \begin{case}[SeqTypable]
+
+	$m$ is of the form $m_1; \dots; m_i$, and for each $i$ we have
+	$\typable{m_i}$ from the preconditions of \textsc{SeqTypable}. Using the
+	induction hypothesis, $m_1$ in particular is either a value, a return
+	statement, or reduces further.
+
+	\begin{subcase}
+	  $m_1$ is a value.
+	  $m$ is of the right format to apply rule \textsc{Seq1}, and $m$ reduces
+	  further. 
+	\end{subcase}
+
+	\begin{subcase}
+	  $m_1$ is a return statement.
+	  In this case, $m$ itself is also an irreducible return statement, so
+	  $\indHyp$ is satisfied. 
+	\end{subcase}
+
+	\begin{subcase}
+	  $m_1$ reduces further.
+	  The preconditions are satisfied for rule \textsc{Seq2}, so $m$ reduces
+	  further and $\indHyp$ is satisfied.
+	\end{subcase}
+
+  \end{case}
+\end{proof}
+
+
+\section{Testing Type Inference}
+
+\section{Testing and Profiling the Compiler}
+\subsection*{Correctness}
+\subsection*{Performance}
 
 \chapter{Conclusions}
 \section{Future work}
@@ -1204,4 +1649,5 @@ Union types, with discharge under type-checks
 Auto-detect imported vars by scope analysis \\
 Fine-grained object modification by control flow analysis
 
+\printbibliography{}
 \end{document}
