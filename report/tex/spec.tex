@@ -584,6 +584,13 @@
 }}
 
 
+\newcommand{\ottdruleCallBodyFour}[1]{\ottdrule[#1]{%
+}{
+ \langle   [\![ @body\{ \ottmv{return}  \ottsym{;}  \ottnt{m} \},  \ottnt{s'} ,  \Theta  ]\!]  ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottkw{undefined} ,  \ottnt{s} ,  \Theta  \rangle }{%
+{\ottdrulename{CallBody4}}{}%
+}}
+
+
 \newcommand{\ottdruleSeqOne}[1]{\ottdrule[#1]{%
 }{
  \langle  \ottnt{v}  \ottsym{;}  \ottnt{m_{{\mathrm{1}}}}  \ottsym{;} \, .. \, \ottsym{;}  \ottnt{m_{\ottmv{i}}} ,  \ottnt{s} ,  \Theta  \rangle  \rightarrow  \langle  \ottnt{m_{{\mathrm{1}}}}  \ottsym{;} \, .. \, \ottsym{;}  \ottnt{m_{\ottmv{i}}} ,  \ottnt{s} ,  \Theta  \rangle }{%
@@ -922,6 +929,7 @@
 \ottusedrule{\ottdruleCallBodyOne{}}
 \ottusedrule{\ottdruleCallBodyTwo{}}
 \ottusedrule{\ottdruleCallBodyThree{}}
+\ottusedrule{\ottdruleCallBodyFour{}}
 \ottusedrule{\ottdruleSeqOne{}}
 \ottusedrule{\ottdruleSeqTwo{}}
 \ottusedrule{\ottdruleAssignOne{}}
@@ -1147,9 +1155,9 @@
 
 \newcommand{\ottdruleAssignType}[1]{\ottdrule[#1]{%
 \ottpremise{ \Gamma   \vdash   \ottnt{assignTarget}  :  \ottnt{T_{{\mathrm{1}}}} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{1}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{1}}} }%
-\ottpremise{ \Gamma_{{\mathrm{1}}}   \vdash   \ottnt{e'}  :  \ottnt{T_{{\mathrm{2}}}} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{2}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }%
+\ottpremise{ \Gamma_{{\mathrm{1}}}   \vdash   \ottnt{e}  :  \ottnt{T_{{\mathrm{2}}}} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{2}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }%
 }{
- \Gamma   \vdash   \ottnt{assignTarget} \, \ottsym{=} \, \ottnt{e'}  :  \ottnt{T_{{\mathrm{2}}}} \hspace{5pt}| _{   \ottnt{C_{{\mathrm{1}}}}  \cup  \ottsym{\{}  \ottnt{T_{{\mathrm{1}}}} \,  {\color{red}\succeq_c}  \, \ottnt{T_{{\mathrm{2}}}}  \ottsym{\}}   } \hspace{5pt}   \Gamma_{{\mathrm{2}}}  \cup  \ottsym{\{}  \ottmv{id}  \ottsym{:}  \ottnt{T_{{\mathrm{1}}}}  \ottsym{\}}  }{%
+ \Gamma   \vdash   \ottnt{assignTarget} \, \ottsym{=} \, \ottnt{e}  :  \ottnt{T_{{\mathrm{2}}}} \hspace{5pt}| _{   \ottnt{C_{{\mathrm{1}}}}  \cup  \ottsym{\{}  \ottnt{T_{{\mathrm{1}}}} \,  {\color{red}\succeq_c}  \, \ottnt{T_{{\mathrm{2}}}}  \ottsym{\}}   } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }{%
 {\ottdrulename{AssignType}}{}%
 }}
 
@@ -1157,31 +1165,31 @@
 \newcommand{\ottdruleAssignTypeUndef}[1]{\ottdrule[#1]{%
 \ottpremise{\ottnt{T} \, \ottkw{is} \, \ottkw{fresh}}%
 \ottpremise{ \ottmv{id}  \notin  \ottsym{dom(}  \Gamma  \ottsym{)} }%
-\ottpremise{ \Gamma   \vdash   \ottnt{e'}  :  \ottnt{T_{{\mathrm{1}}}} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{1}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{1}}} }%
+\ottpremise{ \Gamma   \vdash   \ottnt{e}  :  \ottnt{T_{{\mathrm{1}}}} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{1}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{1}}} }%
 }{
- \Gamma   \vdash   \ottmv{id} \, \ottsym{=} \, \ottnt{e'}  :  \ottnt{T_{{\mathrm{1}}}} \hspace{5pt}| _{   \ottnt{C_{{\mathrm{1}}}}  \cup  \ottsym{\{}  \ottnt{T} \,  {\color{red}\succeq_c}  \, \ottnt{T_{{\mathrm{1}}}}  \ottsym{\}}   } \hspace{5pt}   \Gamma_{{\mathrm{2}}}  \cup  \ottsym{\{}  \ottmv{id}  \ottsym{:}  \ottnt{T}  \ottsym{\}}  }{%
+ \Gamma   \vdash   \ottmv{id} \, \ottsym{=} \, \ottnt{e}  :  \ottnt{T_{{\mathrm{1}}}} \hspace{5pt}| _{   \ottnt{C_{{\mathrm{1}}}}  \cup  \ottsym{\{}  \ottnt{T} \,  {\color{red}\succeq_c}  \, \ottnt{T_{{\mathrm{1}}}}  \ottsym{\}}   } \hspace{5pt}   \Gamma_{{\mathrm{2}}}  \cup  \ottsym{\{}  \ottmv{id}  \ottsym{:}  \ottnt{T}  \ottsym{\}}  }{%
 {\ottdrulename{AssignTypeUndef}}{}%
 }}
 
 
 \newcommand{\ottdrulePropAssignType}[1]{\ottdrule[#1]{%
-\ottpremise{ \Gamma   \vdash   \ottnt{e'}  :  \ottnt{T'} \hspace{5pt}| _{  \ottnt{C'}  } \hspace{5pt}  \Gamma' }%
-\ottpremise{ \Gamma'   \vdash   \ottmv{id}  :  \ottnt{T_{{\mathrm{0}}}} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{0}}}}  } \hspace{5pt}  \Gamma'' }%
-\ottpremise{ \Gamma'   \vdash   \ottmv{id}  \ottsym{.}  \ottmv{l_{{\mathrm{1}}}}  :  \ottnt{T_{{\mathrm{1}}}} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{1}}}}  } \hspace{5pt}  \Gamma'' }%
-\ottpremise{ \Gamma'   \vdash   \ottmv{id}  \ottsym{.}  \ottmv{l_{{\mathrm{1}}}}  \ottsym{.}  \ottmv{l_{\ottmv{k}}}  :  \ottnt{T_{\ottmv{k}}} \hspace{5pt}| _{  \ottnt{C_{\ottmv{k}}}  } \hspace{5pt}  \Gamma'' }%
-\ottpremise{\Gamma_{{\mathrm{1}}}  \ottsym{=}   \Gamma_{\ottmv{k}}  \cup  \ottsym{\{}  \ottmv{id}  \ottsym{:}  \ottsym{\{}  \ottmv{l_{{\mathrm{1}}}}  \ottsym{:}  \ottsym{\{}  \ottmv{l_{\ottmv{k}}}  \ottsym{:}  \ottsym{\{}  \ottmv{l}  \ottsym{:}  \ottnt{T'}  \ottsym{\}}  \multimapinv  \ottnt{T_{\ottmv{k}}}  \ottsym{\}}  \multimapinv  \ottnt{T_{{\mathrm{1}}}}  \ottsym{\}}  \multimapinv  \ottnt{T_{{\mathrm{0}}}}  \ottsym{\}} }%
+\ottpremise{ \Gamma   \vdash   \ottmv{id}  :  \ottnt{T_{{\mathrm{0}}}} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{0}}}}  } \hspace{5pt}  \Gamma }%
+\ottpremise{ \Gamma   \vdash   \ottmv{id}  \ottsym{.}  \ottmv{l_{{\mathrm{1}}}}  :  \ottnt{T_{{\mathrm{1}}}} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{1}}}}  } \hspace{5pt}  \Gamma }%
+\ottpremise{ \Gamma   \vdash   \ottmv{id}  \ottsym{.}  \ottmv{l_{{\mathrm{1}}}}  \ottsym{.}  \ottmv{l_{\ottmv{k}}}  :  \ottnt{T_{\ottmv{k}}} \hspace{5pt}| _{  \ottnt{C_{\ottmv{k}}}  } \hspace{5pt}  \Gamma }%
+\ottpremise{ \Gamma   \vdash   \ottnt{e}  :  \ottnt{T'} \hspace{5pt}| _{  \ottnt{C'}  } \hspace{5pt}  \Gamma_{{\mathrm{1}}} }%
+\ottpremise{\Gamma'  \ottsym{=}   \Gamma_{{\mathrm{1}}}  \cup  \ottsym{\{}  \ottmv{id}  \ottsym{:}  \ottsym{\{}  \ottmv{l_{{\mathrm{1}}}}  \ottsym{:}  \ottsym{\{}  \ottmv{l_{\ottmv{k}}}  \ottsym{:}  \ottsym{\{}  \ottmv{l}  \ottsym{:}  \ottnt{T'}  \ottsym{\}}  \multimapinv  \ottnt{T_{\ottmv{k}}}  \ottsym{\}}  \multimapinv  \ottnt{T_{{\mathrm{1}}}}  \ottsym{\}}  \multimapinv  \ottnt{T_{{\mathrm{0}}}}  \ottsym{\}} }%
 \ottpremise{\ottnt{C}  \ottsym{=}  \ottsym{\{}  \ottnt{T_{\ottmv{k}}} \,  \succeq_o  \, \ottsym{\{}  \ottmv{l}  \ottsym{:}  \ottnt{T'}  \ottsym{\}}  \ottsym{\}}}%
 }{
- \Gamma   \vdash   \ottmv{id}  \ottsym{.}  \ottmv{l_{{\mathrm{1}}}}  \ottsym{.}  \ottmv{l_{\ottmv{k}}}  \ottsym{.}  \ottmv{l} \, \ottsym{=} \, \ottnt{e'}  :  \ottnt{T'} \hspace{5pt}| _{     \bigcup \limits_{ \ottmv{j} = \ottsym{0} }^ \ottmv{i}   \ottnt{C_{\ottmv{j}}}    \cup    \ottnt{C'}  \cup  \ottnt{C}     } \hspace{5pt}  \Gamma_{{\mathrm{1}}} }{%
+ \Gamma   \vdash   \ottmv{id}  \ottsym{.}  \ottmv{l_{{\mathrm{1}}}}  \ottsym{.}  \ottmv{l_{\ottmv{k}}}  \ottsym{.}  \ottmv{l} \, \ottsym{=} \, \ottnt{e}  :  \ottnt{T'} \hspace{5pt}| _{     \bigcup \limits_{ \ottmv{j} = \ottsym{0} }^ \ottmv{i}   \ottnt{C_{\ottmv{j}}}    \cup    \ottnt{C'}  \cup  \ottnt{C}     } \hspace{5pt}  \Gamma' }{%
 {\ottdrulename{PropAssignType}}{}%
 }}
 
 
 \newcommand{\ottdruleNumAssignType}[1]{\ottdrule[#1]{%
 \ottpremise{ \Gamma_{{\mathrm{1}}}   \vdash   \ottnt{assignTarget}  :  \ottnt{T_{{\mathrm{1}}}} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{1}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{1}}} }%
-\ottpremise{ \Gamma   \vdash   \ottnt{e'}  :  \ottnt{T_{{\mathrm{2}}}} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{2}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }%
+\ottpremise{ \Gamma   \vdash   \ottnt{e}  :  \ottnt{T_{{\mathrm{2}}}} \hspace{5pt}| _{  \ottnt{C_{{\mathrm{2}}}}  } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }%
 }{
- \Gamma   \vdash   \ottnt{assignTarget} \, \ottnt{numOp}  \ottsym{=} \, \ottnt{e'}  :  \ottnt{T_{{\mathrm{1}}}} \hspace{5pt}| _{     \ottnt{C_{{\mathrm{1}}}}  \cup  \ottnt{C_{{\mathrm{2}}}}    \cup    \ottsym{\{}  \ottnt{T_{{\mathrm{2}}}} \,  =  \, \ottnt{T_{{\mathrm{1}}}}  \ottsym{\}}  \cup  \ottsym{\{}  \ottnt{T_{{\mathrm{1}}}} \,  =  \, \ottkw{number}  \ottsym{\}}     } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }{%
+ \Gamma   \vdash   \ottnt{assignTarget} \, \ottnt{numOp}  \ottsym{=} \, \ottnt{e}  :  \ottnt{T_{{\mathrm{1}}}} \hspace{5pt}| _{     \ottnt{C_{{\mathrm{1}}}}  \cup  \ottnt{C_{{\mathrm{2}}}}    \cup    \ottsym{\{}  \ottnt{T_{{\mathrm{2}}}} \,  =  \, \ottnt{T_{{\mathrm{1}}}}  \ottsym{\}}  \cup  \ottsym{\{}  \ottnt{T_{{\mathrm{1}}}} \,  =  \, \ottkw{number}  \ottsym{\}}     } \hspace{5pt}  \Gamma_{{\mathrm{2}}} }{%
 {\ottdrulename{NumAssignType}}{}%
 }}
 
@@ -1452,7 +1460,7 @@
 \ottall
 
 \begin{verbatim}
-Definition rules:        103 good    0 bad
-Definition rule clauses: 287 good    0 bad
+Definition rules:        104 good    0 bad
+Definition rule clauses: 288 good    0 bad
 \end{verbatim}
 \end{document}

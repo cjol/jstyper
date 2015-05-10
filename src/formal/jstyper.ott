@@ -739,31 +739,31 @@ Jop :: '' ::=
 		% update gamma, so might as well update it in the formal system too.
 
 		G  |- assignTarget : T1 |C1 G1
-		G1 |- e' : T2 |C2 G2
+		G1 |- e : T2 |C2 G2
 		------------------------------------------------------	 	:: AssignType 
-		G  |- assignTarget = e' : T2 |C1 u { T1 >c T2 } G2 u {id: T1}
+		G  |- assignTarget = e : T2 |C1 u { T1 >c T2 } G2
 
 		T is fresh
 		id !in dom(G)
-		G  |- e' : T1 |C1 G1
+		G  |- e : T1 |C1 G1
 		------------------------------------------------------	 	:: AssignTypeUndef
-		G  |- id = e' : T1 |C1 u { T >c T1 } G2 u {id: T}
+		G  |- id = e : T1 |C1 u { T >c T1 } G2 u {id: T}
 
 		% dots make list comprehensions hard to express in OTT
 		
-		G  |- e' : T' |C' G'
-		G' |- id : T0 |C0 G''
-		G' |- id.l1 : T1 |C1 G''
-		G' |- id.l1.lk : Tk |Ck G''
-		G1 = Gk u {id: { l1 :{ lk: {l:T'}~>Tk }~>T1 }~>T0 }
+		G |- id : T0 |C0 G
+		G |- id.l1 : T1 |C1 G
+		G |- id.l1.lk : Tk |Ck G
+		G |- e : T' |C' G1
+		G' = G1 u {id: { l1 :{ lk: {l:T'}~>Tk }~>T1 }~>T0 }
 		C = { Tk >o {l:T'} }
 		------------------------------------------------------	 	:: PropAssignType
-		G  |- id.l1.lk.l = e' : T' |(U j=0-i Cj) u (C' u C) G1
+		G  |- id.l1.lk.l = e : T' |(U j=0-i Cj) u (C' u C) G'
 
 		G1 |- assignTarget : T1 |C1 G1
-		G  |- e' : T2 |C2 G2
+		G  |- e : T2 |C2 G2
 		------------------------------------------------------	 	:: NumAssignType
-		G  |- assignTarget numOp= e' : T1 |(C1 u C2) u ({ T2 = T1 } u {T1 = number}) G2
+		G  |- assignTarget numOp= e : T1 |(C1 u C2) u ({ T2 = T1 } u {T1 = number}) G2
 
 
 

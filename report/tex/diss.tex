@@ -7,6 +7,7 @@
 \usepackage{docmute}  % only needed to allow inclusion of proposal.tex
 \usepackage[sorting=none,backend=bibtex]{biblatex}
 \usepackage[super]{nth}
+\usepackage{subfig}
 
 \usepackage{amsmath}
 \usepackage{amsthm}
@@ -15,7 +16,8 @@
 \usepackage{proof}
 \usepackage{mathtools}
 \usepackage{enumitem}
-\setlistdepth{9} % Magically makes the 'too deeply nested' error go away on some cases
+\usepackage{showkeys}
+\setlistdepth{20} % Magically makes the 'too deeply nested' error go away on some cases
 
 \usepackage{listings}
 \usepackage{verbatim}
@@ -1309,36 +1311,31 @@ transitions exist.
 
 \subsection{Proof of Preservation}
 
-We must split the proof of preservation into two parts -- a proof of
-preservation for expressions, and a proof of preservation for statements. For
-this proof, we will also require a definition of a \textit{well-typed store}.
-The intuition behind the definition is that a store is well-typed if all
-typable value references are well-defined within the store, and if the stored
-value itself has the same type as the value reference. We also require a
-definition of a \textit{strength} relation ($\sqsubseteq$) between type environments, which
-allows us to verify that the `output' type environment $\Gamma'$ after typing a
-statement can still make all the same judgements after a transition.
+For this proof, we require a definition of a \textit{well-typed store}.  The
+intuition behind the definition is that a store is well-typed if all typable
+value references are well-defined within the store, and if the stored value
+itself has the same type as the value reference. We also require a definition
+of a \textit{strength} relation ($\sqsubseteq$) between type environments,
+which allows us to verify that the `output' type environment $\Gamma'$ after
+typing a statement can still make all the same judgements after a transition.
 
-
+\begin{definition}[Well-typed store]
+  \begin{equation} \label{eqn:typed-store}
+  	\begin{split}
+  	\Gamma\vdash(s,\theta)\eqdef \\
+  	  dom(\Gamma) \subseteq dom(s) \land\ & \\
+  	  \Gamma \vdash vRef:T|_C\ \Gamma' \implies & addr(vRef,s, \theta)\textrm{ is defined}\ \land \\
+  	  & \Gamma\vdash\theta(addr(vRef,s,\theta)):T'|_{C'}\ \Gamma'' \\
+	  & T\succeq T'
+  	\end{split}
+  \end{equation}
+\end{definition}
 \begin{definition}[Strength]
   \begin{equation} \label{eqn:strength}
 	\Gamma_1 \sqsubseteq \Gamma_2 \eqdef 
 	\forall id\qdot \{id:T_1\}\in\Gamma_1 \implies \exists T_2 \qdot \{id:T_2\}\in\Gamma_2 \land T_1\succeq T_2
   \end{equation}
 \end{definition}
-
-\begin{theorem}[Type preservation for expressions]\label{expPreservation}
-	If $\Gamma\vdash \mathtt{m}\ |_C\ \Gamma'$ and $\Gamma\vdash(s, \theta)$ and we have some
-	transition $\transition{m}{s}{\theta}{m'}{s'}{\theta'}$, then some $\gamma$ can augment $\Gamma$ such that
-	$\Gamma\cup\gamma\vdash\mathtt{m'}\ |_C'\ \Gamma''$ and $\Gamma\cup\gamma\vdash(s,\theta)$ and
-	$\Gamma'\sqsubseteq\Gamma''$.
-\end{theorem}
-\begin{theorem}[Type preservation for statements]\label{mPreservation}
-	If $\Gamma\vdash \mathtt{m}\ |_C\ \Gamma'$ and $\Gamma\vdash(s, \theta)$ and we have some
-	transition $\transition{m}{s}{\theta}{m'}{s'}{\theta'}$, then some $\gamma$ can augment $\Gamma$ such that
-	$\Gamma\cup\gamma\vdash\mathtt{m'}\ |_C'\ \Gamma''$ and $\Gamma\cup\gamma\vdash(s,\theta)$ and 
-	$\Gamma'\sqsubseteq\Gamma''$.
-\end{theorem}
 
 We also make use of a few useful lemmas.
 \begin{lemma}
@@ -1347,86 +1344,243 @@ We also make use of a few useful lemmas.
   then $\Gamma_2\vdash\mathtt{m}\ |_C\ \Gamma_2'$ and
   $\Gamma_1'\sqsubseteq\Gamma_2'$ 
 \end{lemma}
-\begin{lemma}
-  \label{lm:ext}
-  If $\Gamma\vdash\mathtt{m}\ |_C\Gamma'$, then there exists some $\gamma$ such
-  that $\Gamma\!\cup\!\gamma=\Gamma'$.
-\end{lemma}
+%\begin{lemma}
+%  \label{lm:ext}
+%  If $\Gamma\vdash\mathtt{m}\ |_C\Gamma'$ and $\Gamma\vdash(s,\theta)$, then
+%  $\Gamma'\vdash(s,\theta)$ and there exists some $\gamma$ such that
+%  $\Gamma\!\cup\!\gamma=\Gamma'$, 
+%\end{lemma}
 \begin{lemma}
   \label{lm:intersect}
 	The intersection of two types is a supertype to both types. 
 \end{lemma}
 
-\begin{proof}
-  The proof of Theorem~\ref{expPreservation} is by structural induction over transition rules.
-  Take 
-  \begin{multline*}
-	\Phi(e, s, \theta, e', s', \theta') \eqdef   \\
-	\forall\Gamma,T,C,\Gamma' \qdot
-	\Gamma\vdash\mathtt{e}:T\ |_C\ \Gamma' \implies (\exists\gamma,\Gamma'',C'\qdot
-    \Gamma\!\cup\!\gamma\vdash \mathtt{e'}:T\ |_{C'}\ \Gamma'' 
-%	\enspace\land\enspace T\preceq T'
+The proofs of Lemmas~\ref{lm:strChain} and~\ref{lm:ext} follow from a fairly trivial induction
+over the structure of the type judgement derivations. The proof of Lemma~\ref{lm:intersect} considers the 
+two well-defined cases according to the definition of $\cap$. The base case, where $T_1$ and $T_2$ are not 
+objects, is trivial. When $T_1$ and $T_2$ are objects, we show that each property present in the intersection
+type can only have arisen if it was present in both object types, and hence that the intersection
+must be a supertype.
+
+We must split the proof of preservation into two parts -- a proof of
+preservation for expressions, and a proof of preservation for statements. The
+full case analysis is presented in Appendix~\ref{app:preservation}, but the
+most interesting cases are included below. Both proofs follow the same
+structure -- considering each transition rule in turn -- and so I do not
+distinguish which cases belong to which theorem below.
+
+\begin{theorem}[Type preservation for expressions]\label{expPreservation}
+	If $\Gamma\vdash \mathtt{e}:T\ |_C\ \Gamma'$ and $\Gamma\vdash(s, \theta)$ and we have some
+	transition $\transition{e}{s}{\theta}{e'}{s'}{\theta'}$, then some $\gamma$ can augment $\Gamma$ such that
+	$\Gamma\!\cup\!\gamma\vdash\mathtt{e'}:T\ |_C'\ \Gamma''$ and $\Gamma\!\cup\!\gamma\vdash(s,\theta)$ and
+	$\Gamma'\sqsubseteq\Gamma''$.
+\end{theorem}
+\begin{theorem}[Type preservation for statements]\label{mPreservation}
+	If $\Gamma\vdash \mathtt{m}\ |_C\ \Gamma'$ and $\Gamma\vdash(s, \theta)$ and we have some
+	transition $\transition{m}{s}{\theta}{m'}{s'}{\theta'}$, then some $\gamma$ can augment $\Gamma$ such that
+	$\Gamma\!\cup\!\gamma\vdash\mathtt{m'}\ |_C'\ \Gamma''$ and $\Gamma\!\cup\!\gamma\vdash(s,\theta)$ and 
+	$\Gamma'\sqsubseteq\Gamma''$.
+\end{theorem}
+
+ \begin{proof}
+   Take 
+   \begin{multline*}
+ 	\Phi(m, s, \theta, m', s', \theta') \eqdef 
+\	\forall\Gamma,C,\Gamma' \qdot
+	\Gamma\vdash\mathtt{m}\ |_C\ \Gamma' 
+	\enspace\land\enspace\Gamma\vdash (s,\theta)
+	\implies \\
+   	(\exists\gamma,\Gamma'',C'\qdot
+    \Gamma\!\cup\!\gamma\vdash \mathtt{m'}\ |_{C'}\ \Gamma'' 
+	\enspace\land\enspace\Gamma\!\cup\!\gamma\vdash (s',\theta')
 	\enspace\land\enspace \Gamma'\sqsubseteq\Gamma'')
   \end{multline*} 
-  where $C$ and $C'$ are satisfiable sets of constraints. We show that for
-  all $e, s, \theta, e', s', \theta'$, if there exists some transition
-  $\transition{e}{s}{\theta}{e'}{s'}{\theta'}$, then
-  $\Phi(e,s,\theta,e',s',\theta')$ holds. We show this by considering all
-  possible last steps in the derivation of the transition judgement. The full
-  case analysis is presented in Appendix~\ref{app:preservation}, but the most
-  interesting cases are included below. In all cases, we begin by considering
-  arbitrary $\Gamma, T, C$ and $\Gamma'$, and assuming that $\Gamma\vdash\mathtt{e}:T\ |_C\ \Gamma'$.
+
+  where $C$ and $C'$ are satisfiable sets of constraints. The transition may
+  cause a change in the store, which wouldn't be reflected in $\Gamma$, so we
+  use the extension $\Gamma\!\cup\!\gamma$ rather than simply $\Gamma$. In the
+  case that $\mathtt{m}$ is an expression, we also require that the judged
+  types of $\mathtt{m}$ and $\mathtt{m'}$ are the same. We show that for all
+  $m, s, \theta, m', s', \theta'$, if there exists some transition
+  $\transition{m}{s}{\theta}{m'}{s'}{\theta'}$, then
+  $\Phi(m,s,\theta,m',s',\theta')$ holds. We show this by considering all
+  possible last steps in the derivation of the transition judgement. In all
+  cases, we begin by considering arbitrary $\Gamma, C$ and $\Gamma'$, and
+  assuming that $\mathtt{m}$ is typable and that the store is well-typed. This leaves us to find
+  a suitable $\gamma$ and show three things to prove $\Phi(m,s,\theta,m',s',\theta')$:
+
+  \begin{gather}
+	\Gamma\!\cup\!\gamma\vdash\mathtt{m'}\ |_C'\ \Gamma'' \label{sub:type}\\
+	\Gamma\!\cup\!\gamma\vdash(s',\theta') \label{sub:store} \\
+	\Gamma' \sqsubseteq \Gamma'' \label{sub:env}.
+  \end{gather}
+  For expressions, we require a slightly stronger statement for~\eqref{sub:type} -- that
+  the judged type of $\mathtt{m'}$ be the same as the judged type for $\mathtt{m}$.
 	
   \begin{case}[Seq2]
 	$$\infer[\textsc{Seq2}]{
-	  \transition{m_1;\ m_2; \dots; m_i}{s}{\theta}{m_1';\ m_2; \dots; m_i}{s'}{\theta}
+	  \transition{m_1;\ m_2; \dots; m_i}{s}{\theta}{m_1';\ m_2; \dots; m_i}{s'}{\theta'}
 	}{
 	 \transition{m_1}{s}{\theta}{m_1'}{s'}{\theta'} 
 	}$$
 
-	$m$ must be typable under rule \textsc{SeqTypable}, which requires as
-	premise that each $m_1\dots m_i$ are themselves typable. In particular, we
-	require that $\Gamma\vdash\mathtt{m_1}\ |_{C_1}\ \Gamma_1$, and using the
-	induction hypothesis this means that $\Gamma\vdash\mathtt{m_1'}\ |_{C}\
-	\Gamma_1'$ where $\Gamma_1\sqsubseteq\Gamma_1'$. Using
-	Lemma~\ref{lm:strChain}, $\Gamma_1'\vdash\mathtt{m_2}\ |_{C_2}\ \Gamma_2'$,
-	with $\Gamma_2\sqsubseteq\Gamma_2'$. We can repeat this for each statement
-	$\mathtt{m_3\dots m_i}$, eventually ending up with
-	$\Gamma_{i-1}'\vdash\mathtt{m_i}\ |_{C_i}\ \Gamma_i'$, with
-	$\Gamma_i\sqsubseteq\Gamma_i'$ This satisfies all the premises for rule
-	SeqTypable, and we can conclude that $\Gamma\vdash\mathtt{m_1'; \dots;
-	  m_i}\ |_{\bigcup_{k=0}^i{C_k}}\ \Gamma_i'$, which is what is required to
-	satisfy $\Phi(m,s,\theta,e',s',\theta')$.
+	In this case, the suitable $\gamma$ is the empty type environment. $m$ must
+	be typable under rule \textsc{SeqTypable}, which requires as premise that
+	each $m_1, \dots, m_i$ themselves be typable. In particular, we
+	require that 
+	$$\Gamma\vdash\mathtt{m_1}\ |_{C_1}\ \Gamma_1,$$ 
+	and using the assumption that $\Gamma\vdash(s,\theta)$ with the induction hypothesis gives us that
+	\begin{gather*}
+	\Gamma\vdash\mathtt{m_1'}\ |_{C}\ \Gamma_1' \\
+	\Gamma\vdash(s',\theta') \\
+	\Gamma_1\sqsubseteq\Gamma_1'.
+  \end{gather*}
+  	This gives us~\eqref{sub:type} directly. Using
+	Lemma~\ref{lm:strChain}, and knowing that $\Gamma_1\vdash\mathtt{m_2}\ |_{C_2}\ \Gamma_2$
+   	we can determine that 
+	\begin{gather*}
+	  \Gamma_1'\vdash\mathtt{m_2}\ |_{C_2}\ \Gamma_2' \\
+	  \Gamma_2\sqsubseteq\Gamma_2'.
+  	\end{gather*}
+	We can repeat this for each statement $\mathtt{m_3\dots m_i}$, eventually ending up with
+	\begin{gather*}
+		\Gamma_{i-1}'\vdash\mathtt{m_i}\ |_{C_i}\ \Gamma_i' \\
+		\Gamma_i\sqsubseteq\Gamma_i'
+	\end{gather*}
+	Which gives us~\eqref{sub:env}, and satisfies all the premises for rule
+	\textsc{SeqTypable}. We can then conclude that 
+	$$\Gamma\vdash\mathtt{m_1'; \dots; m_i}\ |_{\bigcup_{k=0}^i{C_k}}\ \Gamma_i',$$
+	giving us~\eqref{sub:store}, and $\Phi(m,s,\theta,m',s',\theta')$ is satisfied.
   
   \end{case}
 
   \begin{case}[If2]
 	$$\infer[\textsc{If2}]{
-	  \transition{if\ (true)\ \{m_1\}\ else\ \{m_2\}}{s}{\theta}{m_1}{s'}{\theta'}
+	  \transition{if\ (true)\ \{m_1\}\ else\ \{m_2\}}{s}{\theta}{m_1}{s}{\theta}
 	}{}$$
 
-	The only type judgement which could result in $\typable{m}$ uses rule
-	\textsc{IfTypable2}. We first need to show that $m_1$ is typable under some
-	extension of $\Gamma$. One precondition for \textsc{IfTypable2} is that
-	$\Gamma\vdash\mathtt{e}:T\ |_{C_0}\ \Gamma_0$, and using
-	Lemma~\ref{lm:ext}, we can show that $\Gamma_0$ is a suitable extension of
-	$\Gamma$. Another precondition is that $\Gamma_0\vdash\mathtt{m_1}\ |_{C_1}\
-	\Gamma_1$. All that remains to prove, then, is that
-	$\Gamma'\sqsubseteq\Gamma_1$.
+	 The only type judgement which could result in $\typable{m}$ uses rule
+	\textsc{IfTypable1}. One precondition for \textsc{IfTypable1} is that
+	$$\Gamma\vdash\mathtt{e}:T\ |_{C_0}\ \Gamma_0,$$ 
+	In fact, since $\mathtt{e} = \mathtt{true}$, it must be the case that $\Gamma=\Gamma_0$.
+	By assumption, $\Gamma\vdash(s,\theta)$, and the store is unchanged by the transition, so~\eqref{sub:store}
+	is satisfied. Another precondition of \textsc{IfTypable1} is that 
+	$$\Gamma_0\vdash\mathtt{m_1}\ |_{C_1}\ \Gamma_1.$$
+	This gives us~\eqref{sub:type} directly, and all that remains to show is that $\Gamma'\sqsubseteq \Gamma_1$ for~\eqref{sub:env}.
 
 	$\Gamma'=merge(\Gamma_0,\Gamma_1,\Gamma_2)$, so the elements of $\Gamma'$
 	are the intersection of the corresponding elements in $\Gamma_1$ and
-	$\Gamma_2$, and so in particular $$\forall id\qdot \{id:T_1\}\in\Gamma'
-	\implies \exists T_2 \qdot \{id:T_2\}\in\Gamma_1,$$ where $T_2 =
-	\Gamma_1(id)\cap\Gamma_2(id)$. Lemma~\ref{lm:intersect} tells us that the
+	$\Gamma_2$, and in particular 
+	$$\forall id\qdot \{id:T'\}\in\Gamma'\implies \exists T_1 \qdot \{id:T_1\}\in\Gamma_1,$$
+   	where $T' =	T_2\cap\Gamma_2(id)$. Lemma~\ref{lm:intersect} tells us that the
 	intersection of two types is a supertype to both types. We can use this to
-	show that $T_2\succeq\Gamma_1(id)$, and hence that
-	$\Gamma'\sqsubseteq\Gamma_1$
+	show that $T'\succeq T_1$, and hence that $\Gamma'\sqsubseteq\Gamma_1$.~\eqref{sub:env} is thus satisfied,
+	and hence $\Phi(m,s,\theta,m',s',\theta')$.
 
-	Both conjuncts of the conclusion are thus satisfied, and $\Phi(m,s,\theta,m',s',\theta')$ holds.
+  \end{case}
 
-  \end{case} 
+  \begin{case}[Assign]
+	$$\infer[\textsc{Assign}]{
+	  \transition{vRef = v}{s}{\theta}{v}{s}{\theta\oplus\{addr(vRef, s, \theta): v\}}	
+	}{
+		(vRef, s, \theta)\in dom(addr)	
+	}$$
 
+	Syntactically, there are three rules which could have determined that
+	$\mathtt{e}$ is typable -- \textsc{AssignType}, \textsc{AssignTypeUndef} or
+	\textsc{PropAssignType}. 
+	
+	If the rule had been \textsc{AssignTypeUndef}, then $\mathtt{vRef}$ would
+	have to be of the form $\mathtt{id}$. The precondition, that $(vRef,s,
+	\theta)\in dom(addr)$, can only hold if $id\in dom(s)$. Since
+	$\Gamma\vdash(s,\theta)$ this would mean that $id\in\Gamma$, but this
+	violates a precondition of \textsc{AssignTypeUndef}, so we can rule out
+	this rule from the derivation.
+  
+	Let $\theta'=\theta\oplus\{addr(vRef,s,\theta):v\}$ in the following discussion.
+
+	\begin{subcase}[AssignType]
+	  We will use an empty $\gamma$ for this case, so $\Gamma\!\cup\!\gamma=\Gamma$.
+	  An inspection of the possible typing rules for $\mathtt{vRef}$
+	  (\textsc{IdType, PropType} or \textsc{ArrayType}), shows that there can
+	  be no difference between $\Gamma_1$ and $\Gamma$.
+	  We can then deduce~\eqref{sub:type} from the second precondition of \textsc{AssignType}:
+	  $$\Gamma\vdash\mathtt{v}:T_2\ |_{C_2}\ \Gamma_2.$$ 
+	  We can also determine that $\Gamma=\Gamma_2$, since $\mathtt{v}$ is a value, and
+	  so~\eqref{sub:env} is satisfied. By assumption, $\Gamma\vdash(s,\theta)$, so
+	   we just need to show that
+	  $\Gamma$ can handle the addition of the new heap address for~\eqref{sub:store}.
+
+ 	  The scope is unchanged, and so $dom(\Gamma)\subseteq dom(s)$ remains true.
+	  We know that $\Gamma\vdash\mathtt{vRef}:T_1|_{C_1}\Gamma$ from the premise of 
+	  \textsc{AssignType}. We also know that $addr(vRef, s, \theta')$ is 
+	  well defined, and that $\theta'(addr(vRef, s, \theta')) = v$ 
+	  from the transition rule \textsc{Assign}. We've already determined
+	  that $\mathtt{v}$ has type $T_2$, and the constraints of \textsc{AssignType}
+	  give us that $T_1\succeq T_2$. Hence $\Gamma\vdash(s,\theta')$ is satisfied,
+	  and $\Phi(\mathtt{e},s,\theta,\mathtt{e'},s',\theta')$ holds.
+  	\end{subcase}
+
+	\begin{subcase}[PropAssignType]
+
+	  $$\infer[\textsc{PropAssignType}]{
+  		\Gamma\vdash\mathtt{id.l_1.\cdots.l_k.l = e}:\ T\ |_C\ \Gamma_1
+	  }{
+  		\begin{split}
+		  &\Gamma\vdash\mathtt{id}:T_0\ |_{C_0}\ \Gamma \\
+		  &\Gamma\vdash\mathtt{id.l_1}:T_1\ |_{C_1}\ \Gamma \\
+		  &\vdots \\
+		  &\Gamma\vdash\mathtt{id.l_1.\cdots.l_k}:T_k\ |_{C_k}\ \Gamma \\
+		  &\Gamma\vdash\mathtt{e}:T'\ |_{C'}\ \Gamma_1 \\
+		  &\Gamma' = \Gamma_1\cup\{\textbf{id}: \{ \mathbf{l_1}: \{\cdots \{\mathbf{l_k}:\{\mathbf{l}: T'\}\orig T_k \} \cdots\} \orig T_1\}\orig T_0\} \\
+		  &C = \{T_k \succeq_o \{\mathbf{l}:T'\}\} \cup C' \cup \bigcup_{j=0}^{i}{C_j}
+  		\end{split}
+	  }$$
+
+		The complication of this case comes from
+		the fact that the output type environment, $\Gamma_1$, is larger than the input, $\Gamma$.
+		To handle this, then, we do not use an empty $\gamma$, but instead use
+		$$\gamma=\{\textbf{id}: \{ \mathbf{l_1}: \{\cdots \{\mathbf{l_k}:\{\mathbf{l}: T'\}\orig T_k \} \cdots\} \orig T_1\}\orig T_0\}.$$
+		We can trivially show that~\eqref{sub:type} holds because $\mathtt{m'}$ is a value.
+		$$\Gamma\!\cup\!\gamma\vdash\mathtt{v}:T'\ |_{C'}\ \Gamma\!\cup\!\gamma$$
+		$\Gamma\!\cup\!\gamma=\Gamma_1$, and so~\eqref{sub:env} is also easily
+		satisfied. We now must show $\Gamma\!\cup\!\gamma\vdash(s,
+		\theta')$, for which we use the assumption that
+		$\Gamma\vdash(s,\theta)$. Note that
+		$dom(\Gamma)=dom(\Gamma\!\cup\!\gamma)$, since the first precondition
+		of \textsc{PropAssignType} requires that $id\in dom(\Gamma)$.
+
+		For the value reference $\mathtt{id.l_1.\cdots.l_k.l}$, clearly we have that
+		$$\Gamma\!\cup\!\gamma\vdash\mathtt{id.l_1.\cdots.l_k.l}:T'\ |_\varnothing\ \Gamma\!\cup\!\gamma,$$
+		which is of the right type to satisfy the conclusion
+		of~\eqref{eqn:typed-store}, since
+		$$\theta'(addr(\mathtt{id.l_1.\cdots.l_k.l},s, \theta')) = \mathtt{v}.$$
+		For sub-references of $\mathtt{id.l_1.\cdots.l_k.l}$ (such as $\mathtt{id.\cdots.l_i}$), we will have
+		\begin{gather*}
+		  \Gamma\!\cup\!\gamma\vdash\mathtt{id.\cdots.l_i}:\{l_{i+1}:T_{i+1}\}\orig T_i\ |_\varnothing\ \Gamma\!\cup\!\gamma \\
+		  \theta'(addr(\mathtt{id.\cdots.l_i},s,\theta'))	= \{l_{i+1}:a_{i+1}, p_0:a_0,\cdots,p_k:a_k\} \\
+		  \Gamma\!\cup\!\gamma\vdash\mathtt{\{l_{i+1}:a_{i+1}, p_0:a_0,\cdots,p_k:a_k\}} 
+			  :\{l_{i+1}:T_{i+1}', p_0:T_{p_0},\cdots p_k:T_{p_k}\}\ |_\varnothing\ \Gamma\!\cup\!\gamma
+	  	\end{gather*}
+	  	We want to show that $\{l_{i+1}:T_{i+1}\}\orig T_i\succeq \{l_{i+1}:T_{i+1}', p_0:T_{p_0},\cdots p_k:T_{p_k}\}$, which we can 
+		do by splitting the two parts of the origin chain on the left, and demonstrating that both
+		are supertypes.
+
+		Because $\Gamma\vdash(s,\theta)$, we must have that $T_i\succeq\{p_0:T_{p_0},\cdots p_k:T_{p_k}\}$, and so 
+		$$T_i\succeq\{l_{i+1}:T_{i+1}', p_0:T_{p_0},\cdots p_k:T_{p_k}\}.$$
+		$\{l_{i+1}:T_{i+1}\}\succeq \{l_{i+1}:T_{i+1}', p_0:T_{p_0},\cdots p_k:T_{p_k}\}$ clearly
+		holds as long as $T_{i+1}\succeq T_{i+1}'$ does. In fact, we can show that this does hold
+		by considering the sub-reference $\mathtt{id.\cdots.l_i.l_{i+1}}$ as an induction
+		step, using $\mathtt{vRef}$ as the base case.
+
+		Finally, for all other value references, $\gamma$ is not involved, and
+		nor is the extension to $\theta$, and so
+		$$\Gamma\vdash(s,\theta)\implies\Gamma\!\cup\!\gamma\vdash(s,\theta')$$ 
+	  
+	  \end{subcase}
+
+  \end{case}
+	
 \end{proof}
 
 \subsection{Proof of Progress}
@@ -1500,39 +1654,39 @@ preservation.
 
   \end{case}
 
-  \begin{case}[VoidBodyType]\label{bodytype}
+  	\begin{case}[VoidBodyType]\label{bodytype}
 
-	$e$ is of the form $\mathtt{[\![@body\{m\},\ s', \theta]\!]}$. The
-	preconditions of \textsc{VoidBodyType} tell us that there must exist some
-	$\gamma$ such that $\gamma \vdash(s', \theta)$ and $\gamma\vdash m\ |_C\
-	\gamma'$. From theorem~\ref{mProgress}, we can deduce that $m$ is either
-	a value, an irreducible return statement, or reduces further under the store $(s',
-	\theta)$.
+	  $e$ is of the form $\mathtt{[\![@body\{m\},\ s', \theta]\!]}$. The
+	  preconditions of \textsc{VoidBodyType} tell us that there must exist some
+	  $\gamma$ such that $\gamma \vdash(s', \theta)$ and $\gamma\vdash m\ |_C\
+	  \gamma'$. From theorem~\ref{mProgress}, we can deduce that $m$ is either
+	  a value, an irreducible return statement, or reduces further under the store $(s',
+	  \theta)$.
 
-	\begin{subcase}
-	  $m$ is a value.
-	  In this case, $e$ is immediately of the right form to apply rule
-	  \textsc{CallBody2}, so $e$ can reduce further using this rule.
-	\end{subcase}
+	  \begin{subcase}
+	  	$m$ is a value.
+	  	In this case, $e$ is immediately of the right form to apply rule
+	  	\textsc{CallBody2}, so $e$ can reduce further using this rule.
+	  \end{subcase}
 
-	\begin{subcase}
-	  $m$ is an irreducible return statement.
-	  In this case, $e$ is of the right form to apply either rule \textsc{CallBody3} or
-	  \textsc{CallBody4} (\textsc{CallBody3} if the return statement has a
-	  value, or \textsc{CallBody4} if it simply has the form \texttt{return; m}).
- 	  Either way, $e$ is further reducible.
-	\end{subcase}
+	  \begin{subcase}
+	  	$m$ is an irreducible return statement.
+	  	In this case, $e$ is of the right form to apply either rule \textsc{CallBody3} or
+	  	\textsc{CallBody4} (\textsc{CallBody3} if the return statement has a
+	  	value, or \textsc{CallBody4} if it simply has the form \texttt{return; m}).
+ 	  	Either way, $e$ is further reducible.
+	  \end{subcase}
 
-	\begin{subcase}
-	  $m$ reduces further with store s'.
-	  In other words, $\exists m', s'', \theta'\qdot \transition{m}{s'}{\theta}{m'}{s''}{\theta'}$.
-	  In this case, $e$ is of the right form to apply rule \textsc{CallBody3},
-	  and the preconditions are satisfied, so $e$ reduces further. 
-	\end{subcase}
+	  \begin{subcase}
+	  	$m$ reduces further with store s'.
+	  	In other words, $\exists m', s'', \theta'\qdot \transition{m}{s'}{\theta}{m'}{s''}{\theta'}$.
+	  	In this case, $e$ is of the right form to apply rule \textsc{CallBody3},
+	  	and the preconditions are satisfied, so $e$ reduces further. 
+	  \end{subcase}
 
-	In all cases, $\indHypTwo$ is satisfied.
+	  In all cases, $\indHypTwo$ is satisfied.
 
-  \end{case}
+  	\end{case}
 
   \begin{case}[AssignType]\label{assigntype}
 
@@ -1637,6 +1791,73 @@ preservation.
 
 
 \section{Testing Type Inference}
+
+As development progressed, a series of automatic unit tests
+ensured that my type inference implementation was producing the correct output.
+
+\begin{figure}
+\centering
+
+\subfloat[A Jasmine test failure]{
+  \includegraphics[width=75mm]{../res/jasmine-fail.png}
+}
+\subfloat[An example test]{
+  \includegraphics[width=75mm]{../res/jasmine-fail.png}
+}
+
+\hspace{0mm}
+
+\newsavebox{\inputbox}
+\begin{lrbox}{\inputbox}
+\begin{minipage}{75mm}
+  \begin{minted}[]{javascript}
+  // jstyper start
+  // jstyper import x
+
+  var y = x.f();
+  y += 5;
+
+  // jstyper end
+  \end{minted}
+\end{minipage}
+\end{lrbox}
+\subfloat[An example input]{
+  \usebox{\inputbox}
+}
+\newsavebox{\outputbox}
+\begin{lrbox}{\outputbox}
+\begin{minipage}{75mm}
+  \begin{minted}[]{javascript}
+  // jstyper import x
+  // y: number
+  var y = mimic({
+      kind: "object",
+      memberTypes: {
+          f: {
+              kind: "function",
+              argTypes: [ {
+                  kind: "abstract"
+              } ],
+              returnType: {
+                  kind: "primitive",
+                  type: "number"
+              }
+          }
+      }
+  }, x).f();
+
+  // y: number
+  y += 5;
+\end{minted}
+\end{minipage}
+\end{lrbox}
+\subfloat[An example output]{
+  \usebox{\outputbox}
+}
+\caption{Demonstration of the testing procedure}
+\end{figure}
+
+\end{document}
 
 \section{Testing and Profiling the Compiler}
 \subsection*{Correctness}

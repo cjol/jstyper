@@ -32,7 +32,6 @@ var evalResults = [];
 var wrapperFunctions = fs.readFileSync("./js/wrappers.js");
 testDir('custom', "Custom Test");
 testDir('sunspider', "Sunspider Test");
-console.log(util.inspect(evalResults, false, null));
 
 function testDir(dir, name) {
 
@@ -61,9 +60,9 @@ function testDir(dir, name) {
 			describe("'" + stem + "'", function() {
 
 				if (!fs.existsSync(resultPath)) {
-					it("should have a test", function() {
-						pending("Test hasn't been written yet");
-					});
+					// it("should have a test", function() {
+					// 	pending("Test hasn't been written yet");
+					// });
 					return;
 				}
 
@@ -72,13 +71,13 @@ function testDir(dir, name) {
 				var expected = JSON.parse(resfile);
 
 				if (expected.incomplete) {
-					it("can't be useful until the test framework is upgraded.", function() {
-						if (expected.reason === undefined) {
-							pending();
-						} else {
-							pending(expected.reason);
-						}
-					});
+					// it("can't be useful until the test framework is upgraded.", function() {
+					// 	if (expected.reason === undefined) {
+					// 		pending();
+					// 	} else {
+					// 		pending(expected.reason);
+					// 	}
+					// });
 					return;
 				}
 
