@@ -1,6 +1,7 @@
 // for reading tests
 var fs = require("fs");
 var util = require('util');
+var wrapperFunctions = fs.readFileSync("./js/wrappers.js");
 
 // for type-checking and compilation
 var jstyper = require("../jstyper");
@@ -32,6 +33,7 @@ var evalResults = [];
 var wrapperFunctions = fs.readFileSync("./js/wrappers.js");
 testDir('custom', "Custom Test");
 testDir('sunspider', "Sunspider Test");
+testDir('real', "Real-world Test");
 
 function testDir(dir, name) {
 
@@ -113,9 +115,28 @@ function testDir(dir, name) {
 					}
 
 					fs.writeFileSync("./tests/" + dir + "/compiled/" + file, result.src);					
-					// TODO: Further tests to check gradual typing is correct
-					// Further tests to check execution
-
+					if (expected.evaluation !== undefined) {
+						var evalSrc = "doCount=false;" + wrapperFunctions + "; \n\n" + result.src + "var results = [];for (var i = 0; i<jstyperCheckValues.length; i++) {results.push(eval(jstyperCheckValues[i]));}return results;"
+						var f = new Function("jstyperCheckValues", evalSrc);
+						
+						if (expected.evaluation.success) {
+							var oKeys = Object.keys(expected.evaluation.variables);
+							var values = f(oKeys);
+							var assertValues = function(i) {
+								return function() {
+									expect(values[i]).toEqual(expected.evaluation.variables[oKeys[i]]);
+								};
+							};
+							for (var i = 0; i<oKeys.length; i++) {
+								it('should correctly evaluate the value of ' + oKeys[i],
+									assertValues(i));
+							}
+						} else {
+							it('should throw a CastError', function() {
+								expect(function(){f([]);}).toThrowError(/^CastError/);
+							});
+						}
+					}
 				}
 			});
 		});

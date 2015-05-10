@@ -15,5 +15,8 @@
 				"innerType": "boolean"
 			}
 		}
+	},
+	"evaluation": {
+		"success": false
 	}
 }

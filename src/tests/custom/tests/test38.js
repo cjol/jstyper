@@ -1,3 +1,8 @@
+var x = {
+    f: function() {
+        return 7;
+    }
+};
 // jstyper start
 // jstyper import x
 

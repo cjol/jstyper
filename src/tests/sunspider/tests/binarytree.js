@@ -1,3 +1,4 @@
+var ret;
 // jstyper start
 // jstyper import Math
 // jstyper import shiftLeft

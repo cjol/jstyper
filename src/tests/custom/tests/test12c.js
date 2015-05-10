@@ -1,4 +1,5 @@
 // expected result: fail
+p = true;
 // jstyper start
 // jstyper import p
 var y = {};

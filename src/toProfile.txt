@@ -4,3 +4,7 @@ sunspider sieve.js
 sunspider partial.js
 sunspider cordic.js
 sunspider spectral.js
+real test1.js
+real rgbcol.js
+real objfilter.js
+real objAcc.js

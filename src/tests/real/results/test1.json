@@ -5,7 +5,11 @@
 	"evaluation": {
 		"success": true,
 		"variables": {
-			"result": 1036.2570468750941
+			"r.length": 3,
+			"total": 60,
+			"r[0]": "true",
+			"r[1]": "true",
+			"r[2]": "true"
 		}
 	}
 }

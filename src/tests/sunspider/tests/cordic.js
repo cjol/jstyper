@@ -26,8 +26,9 @@ var Angles = [
   FIXED(0.027977) 
               ];
 
+var Target = 28.027;
 
-function cordicsincos() {
+function cordicsincos(Target) {
     var X;
     var Y;
     var TargetAngle;
@@ -37,7 +38,7 @@ function cordicsincos() {
     X = FIXED(AG_CONST);         /* AG_CONST * cos(0) */
     Y = 0;                       /* AG_CONST * sin(0) */
 
-    TargetAngle = FIXED(28.027);
+    TargetAngle = FIXED(Target);
     CurrAngle = 0;
     for (Step = 0; Step < 12; Step++) {
         var NewX;
@@ -53,17 +54,20 @@ function cordicsincos() {
             CurrAngle -= Angles[Step];
         }
     }
+    return FLOAT(X) * FLOAT(Y);
 }
 
 ///// End CORDIC
 
 function cordic( runs ) {
+  var a = 0;
   for ( var i = 0 ; i < runs ; i++ ) {
-      cordicsincos();
+      a += cordicsincos(Target);
   }
+  return a;
 }
 
-cordic(2500);
+var result = cordic(2500);
 
 // jstyper end
 function shiftRight(x, y) {

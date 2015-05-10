@@ -11,5 +11,13 @@
 				"innerType": "number"
 			}
 		}
+	},
+	"evaluation": {
+		"success": true,
+		"variables": {
+			"x": 3,
+			"y": 3,
+			"z": 3
+		}
 	}
 }

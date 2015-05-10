@@ -1,7 +1,7 @@
 {
 	"success": true,
 	"types": {
-		"4": {
+		"9": {
 			"4": "number",
 			"8": {
 				"type": "wrapper",
@@ -19,8 +19,14 @@
 				}
 			}
 		},
-		"5": {
+		"10": {
 			"0": "number"
+		}
+	},
+	"evaluation": {
+		"success":true,
+		"variables": {
+			"y": 12	
 		}
 	}
 }

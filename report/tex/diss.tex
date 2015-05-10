@@ -1826,15 +1826,14 @@ preservation.
 
 \section{Testing Type Inference}
 
-As development progressed, a series of automatic unit tests
-ensured that my type inference implementation was producing the correct output.
-The test specification was written using Jasmine testing framework. Rather than
-writing a full explicit test specification for each test, however, I wrote
-a single specification which obtained the expected results for each test from
-a JSON file. Figure~\ref{fig:jasmine} gives an example test, expectation JSON,
-and Jasmine output. I produced 96 such tests along the course of development,
-testing 391 individual types, giving me confidence that my implementation behaves
-correctly.
+As development progressed, a series of automatic unit tests ensured that my
+type inference implementation was producing the correct output.  The test
+specification was written using the Jasmine JavaScript testing
+framework.\footnote{http://jasmine.github.io/} The expected results for each
+test were written in a JSON file. Figure~\ref{fig:jasmine} gives an example
+test, expectation JSON, and Jasmine output. I produced 91 such tests along the
+course of development, verifying 391 individual types, giving me confidence
+that my implementation behaves correctly.
 
 \newsavebox{\testbox}
 \begin{lrbox}{\testbox}
@@ -1911,15 +1910,17 @@ In the midst of development, however, it would often be tedious to make small
 modifications to several files in order to do a quick `sanity check' of
 different variations on a test. To allow me to quickly carry out these informal
 tests, I also built a dynamic web interface to the compiler, shown in
-Figure~\ref{fig:web-interface}.  The compiler runs on the server, and the client makes a
-request to recompile the input each time the user stops typing. This gives a
-very responsive interface, and quickly allowed me to verify that variations on
-a particular test did not introduce any new problems. When testing the type inference,
-it was mainly the inserted type annotations which were of interest. The interface was
-also useful when it came to testing the gradual typing, however, as I was able to see
-the generated wrappers `live' as I edited the source code. Using a web browser to do
-this enabled me to run both the original and the compiled code immediately, to check
-that the output was identical.
+Figure~\ref{fig:web-interface}.  The compiler runs on the server, and the
+client makes a request to recompile the input each time the user stops typing.
+This gives a very responsive interface, and quickly allowed me to verify that
+variations on a particular test did not introduce any new problems. When
+testing the type inference, it was mainly the inserted type annotations which
+were of interest. The interface was also useful when it came to testing the
+gradual typing, however, as I was able to see the generated wrappers `live' as
+I edited the source code. Using a web browser to do this enabled me to run both
+the original and the compiled code immediately, to check that the output was
+identical.
+
 \begin{figure}
   \centering
   \includegraphics[width=160mm]{../res/web-interface.png}
@@ -1927,8 +1928,54 @@ that the output was identical.
   types of any variables which occur in the succeeding line.}
   \label{fig:web-interface}
 \end{figure}
+
 \section{Testing and Profiling the Compiler}
+
 \subsection*{Correctness}
+
+To test the correctness of the compiler, the test procedure outlined above was
+extended. An ``executedValues" property was added to some JSON file, containing
+key--value pairs indicating the expected value of different variables after
+execution of the compiled file. The compiled file should always return the same
+values as the uncompiled file, except in the case that the dynamic code
+contains a type error. In this situation, the values determined from the
+uncompiled file are clearly not reliable, so we instead merely check that the
+compiled code throws a cast error when executed.
+
+Few of my unit tests performed meaningful calculations, and so judging the
+correctness of these tests was not particularly enlightening. As such, I wrote
+10 more representative examples of JavaScript computing a meaningful result, in
+order to verify that the program result was unchanged. In 3 of these, a
+deliberate dynamic type error was inserted, such that types were coerced in the
+uncompiled code, and the original result was actually incorrect.  In these 3
+tests, a CastError was correctly thrown by the \texttt{mimic} function, and the
+result in the other 7 tests was correctly calculated.
+
+In addition to these, I ran my compiler on 6 tests from the SunSpider benchmark
+suite.\footnote{https://www.webkit.org/perf/sunspider/sunspider.html} The
+SunSpider suite of tests is designed to avoid `microbenchmarks', and aims to
+reflect real-world use of JavaScript. Many of the tests were therefore
+inappropriate for my purposes, since they involved manipulation of DOM objects.
+Others involved object inheritance, which I was unfortunately unable to
+implement before the end of the project, leaving me with relatively few to test
+with. The tests I selected, however, required very little modification in order
+to pass the type checker, which was a good indication that `real' JavaScript
+programmers implicitly follow a fairly static typing discipline. The main
+changes were syntactic (replacing \js{new Array(1,2,3)} with the literal
+\js{[1,2,3]}, for example). In a few cases, I left fragments untyped, because
+some language feature was unavailable. For example, my language does not
+support bitwise-shift operators, but I can replace such shifts with a call to a
+dynamic \js{shiftLeft} function, which is defined outside the typed world. I
+employed a similar procedure to support the \js{Math} object, which is built in
+to browsers, and so the type-checker cannot simply examine the definition of
+\js{Math} to determine its type signature.
+
+Since the SunSpider tests were fairly well statically typed, there were no
+occasions for dynamic type errors to be thrown. Wrapping the \js{Math} object
+and shift operators as described above, however, had no detrimental effect on
+the results computed, and so I am confident that my gradual typing compiler is
+sound.
+
 \subsection*{Performance}
 
 \chapter{Conclusions}

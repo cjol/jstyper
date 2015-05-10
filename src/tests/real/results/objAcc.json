@@ -5,7 +5,9 @@
 	"evaluation": {
 		"success": true,
 		"variables": {
-			"result": 1036.2570468750941
+			"acc.biggestResult": 77,
+			"acc.totals": 14100,
+			"acc.bigFunc({size:function(){return 21;}})": 231
 		}
 	}
 }

@@ -12,10 +12,6 @@
 		}
 	},
 	"evaluation": {
-		"success": true,
-		"variables": {
-			"result1":"no",
-			"result2":"yes"
-		}
+		"success": false
 	}
 }

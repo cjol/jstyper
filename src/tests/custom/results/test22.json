@@ -35,17 +35,6 @@
 		}
 	},
 	"evaluation": {
-		"before": {
-			"success": true,
-			"variables": {
-				"x": 2
-			}
-		},
-		"after": {
-			"success": false,
-			"exception": {
-
-			}
-		}
+		"success": false
 	}
 }

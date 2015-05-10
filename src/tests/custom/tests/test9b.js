@@ -15,5 +15,4 @@ function yesIfBiggerThanFive(z) {
 	return returnVal;
 }
 
-var result1 = yesIfBiggerThanFive(2);
-var result2 = yesIfBiggerThanFive(7);
+var result = yesIfBiggerThanFive(true);

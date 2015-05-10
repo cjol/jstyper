@@ -1,4 +1,12 @@
 var counts;
+
+function CastError(message) {
+  this.name = 'CastError';
+  this.message = 'CastError: ' + message || '';
+}
+
+CastError.prototype = new Error();
+CastError.prototype.constructor = CastError;
 function resetCounters() {
 	counts = {
 		mimic:0,
@@ -20,7 +28,7 @@ function mimic(t, obj) {
 	// console.log("Made mimic for ", obj);
 	// obj is untrusted, but the context is safe
 	if (t.kind === "function") {
-		if (typeof obj !== "function") throw new Error(typeof obj + " is not a function");
+		if (typeof obj !== "function") throw new CastError(typeof obj + " is not a function");
 
 		// f is a type-safe version of obj, which can be used in the typed world
 		var f = function() {
@@ -28,13 +36,13 @@ function mimic(t, obj) {
 			if (doCount) counts.mimicFunCall++;
 			// +1 is because of 'this'
 			if (arguments.length + 1 !== t.argTypes.length) {
-				throw new Error("function has the wrong number of parameters");
+				throw new CastError("function has the wrong number of parameters");
 			}
 			var args = [];
 
 			for (var i = 0; i < arguments.length; i++) {
 				args[i] = guard(t.argTypes[i + 1], arguments[i]);
-				args[i] = arguments[i];
+				// args[i] = arguments[i];
 			}
 
 			// TODO: bind 'this' correctly? alert doesn't work, apparently because it needs this===window
@@ -52,7 +60,7 @@ function mimic(t, obj) {
 		return f;
 
 	} else if (t.kind === "object") {
-		if (typeof obj !== "object") throw new Error(typeof obj + " is not an object");
+		if (typeof obj !== "object") throw new CastError(typeof obj + " is not an object");
 
 		var x = {};
 
@@ -77,20 +85,20 @@ function mimic(t, obj) {
 
 		// Note that we tolerate (and don't protect) extra properties
 		for (var i in t.memberTypes) {
-			if (!(i in obj)) throw new Error("object is lacking property " + i);
+			if (!(i in obj)) throw new CastError("object is lacking property " + i);
 			definer(i);
 		}
 
 		return x;
 	} else if (t.kind === "primitive") {
-		if (typeof obj !== t.type) throw new Error(typeof obj + " is not a " + t.type);
+		if (typeof obj !== t.type) throw new CastError(typeof obj + " is not a " + t.type);
 		return obj;
 	} else if (t.kind === "abstract") {
 		// maybe dynamic?
 		return obj;
 	} else {
 		console.error(t);
-		throw new Error("Unexpected kind");
+		throw new CastError("Unexpected kind");
 	}
 }
 
@@ -111,7 +119,7 @@ function guard(t, obj) {
 			if (doCount) counts.guardFunCall++;
 			// +1 is because of 'this'
 			if (arguments.length + 1 !== t.argTypes.length) {
-				throw new Error("function has the wrong number of parameters");
+				throw new CastError("function has the wrong number of parameters");
 			}
 
 			// obj's code is safe, so it needs to intereact with safe mimics rather than the dirty data from outside
@@ -165,7 +173,7 @@ function guard(t, obj) {
 		return obj;
 	} else {
 		console.error(t);
-		throw new Error("Unexpected kind");
+		throw new CastError("Unexpected kind");
 	}
 }
 
