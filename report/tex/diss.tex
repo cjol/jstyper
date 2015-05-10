@@ -1245,6 +1245,40 @@ will check the callback's parameters (wrapping them in a mimic if necessary),
 call the callback itself, then pass on the return value into the untyped world
 (wrapping it in a guard if necessary). 
 
+The implementation itself is fairly straightforward once the wrapper types 
+have been determined. The compiler generates an AST representation of function
+call to the function \texttt{mimic}, providing as parameters both a representation
+of the desired type, and the unsafe variable itself. This is used to replace the 
+variable's node in the original AST. UglifyJS then takes the modified AST and 
+performs the code generation stage of the compiler. Alongside this, I prepared
+a JavaScript file containing the implementation of the \texttt{mimic} function. 
+The function is thus called whenever the imported variable is accessed. If the
+desired type of the variable is a primitive, then a simple type check is performed 
+before returning it. If the variable is of a higher-order type, then additional
+wrappers are created as described above.
+\begin{program}
+  \begin{minted}[linenos, numbersep=-12pt]{javascript}
+	var y = mimic({
+	    kind: "object",
+	    memberTypes: {
+	        f: {
+	            kind: "function",
+	            argTypes: [ {
+	                kind: "abstract"
+	            } ],
+	            returnType: {
+	                kind: "primitive",
+	                type: "number"
+	            }
+	        }
+	    }
+	}, x).f();
+  \end{minted}
+  \caption{An example of the function call generated to ensure that the 
+  dynamic variable \texttt{x} has a function property \texttt{f} which returns a number.}
+	\label{lst:importPrim}
+\end{program}
+
 With this system of guards and wrappers, we control the boundary between the
 typed and untyped worlds. Unchecked data is given a mimic to ensure it is safe
 in the well-typed world, and type safe data is given a guard to ensure its
@@ -1794,71 +1828,105 @@ preservation.
 
 As development progressed, a series of automatic unit tests
 ensured that my type inference implementation was producing the correct output.
+The test specification was written using Jasmine testing framework. Rather than
+writing a full explicit test specification for each test, however, I wrote
+a single specification which obtained the expected results for each test from
+a JSON file. Figure~\ref{fig:jasmine} gives an example test, expectation JSON,
+and Jasmine output. I produced 96 such tests along the course of development,
+testing 391 individual types, giving me confidence that my implementation behaves
+correctly.
 
-\begin{figure}
-\centering
-
-\subfloat[A Jasmine test failure]{
-  \includegraphics[width=75mm]{../res/jasmine-fail.png}
-}
-\subfloat[An example test]{
-  \includegraphics[width=75mm]{../res/jasmine-fail.png}
-}
-
-\hspace{0mm}
-
-\newsavebox{\inputbox}
-\begin{lrbox}{\inputbox}
-\begin{minipage}{75mm}
-  \begin{minted}[]{javascript}
-  // jstyper start
-  // jstyper import x
-
-  var y = x.f();
-  y += 5;
-
-  // jstyper end
-  \end{minted}
-\end{minipage}
-\end{lrbox}
-\subfloat[An example input]{
-  \usebox{\inputbox}
-}
-\newsavebox{\outputbox}
-\begin{lrbox}{\outputbox}
-\begin{minipage}{75mm}
-  \begin{minted}[]{javascript}
-  // jstyper import x
-  // y: number
-  var y = mimic({
-      kind: "object",
-      memberTypes: {
-          f: {
-              kind: "function",
-              argTypes: [ {
-                  kind: "abstract"
-              } ],
-              returnType: {
-                  kind: "primitive",
-                  type: "number"
-              }
+\newsavebox{\testbox}
+\begin{lrbox}{\testbox}
+\begin{minipage}[c]{75mm}
+  \begin{minted}[]{json}
+  {
+   "success": true,
+   "types": {
+     "3": {
+      "4": {
+       "type": "object",
+       "memberTypes": {
+         "hello": "string",
+         "myValue": {
+          "type": "object",
+          "memberTypes": {
+            "i": "boolean"
           }
+         },
+         "extra":"number"
+       }
       }
-  }, x).f();
-
-  // y: number
-  y += 5;
+     }
+   }
+  }
 \end{minted}
 \end{minipage}
 \end{lrbox}
-\subfloat[An example output]{
-  \usebox{\outputbox}
+
+\newsavebox{\inputbox}
+\begin{lrbox}{\inputbox}
+\begin{minipage}[c][111mm]{75mm}
+  \begin{minted}[linenos]{javascript}
+// jstyper start
+
+var x = {
+  "hello": "world",
+  myValue: {
+    i:true
+  }
+};
+var y = {
+  "hello": "jupiter",
+  myValue: {
+    i:false  
+  },
+  extra:5
+};
+
+x = y;
+// jstyper end
+
+
+  \end{minted}
+\end{minipage}
+\end{lrbox}
+\begin{figure}
+\centering
+\subfloat[Example input source code]{
+  \usebox{\inputbox}
+}
+\subfloat[A corresponding (incorrect) test specification]{
+	\usebox{\testbox}
+}
+
+\subfloat[Jasmine test failure]{
+  \parbox[c]{150mm}{\includegraphics[width=150mm]{../res/jasmine-fail.png}}
 }
 \caption{Demonstration of the testing procedure}
+\label{fig:jasmine}
 \end{figure}
 
-\end{document}
-
+In the midst of development, however, it would often be tedious to make small
+modifications to several files in order to do a quick `sanity check' of
+different variations on a test. To allow me to quickly carry out these informal
+tests, I also built a dynamic web interface to the compiler, shown in
+Figure~\ref{fig:web-interface}.  The compiler runs on the server, and the client makes a
+request to recompile the input each time the user stops typing. This gives a
+very responsive interface, and quickly allowed me to verify that variations on
+a particular test did not introduce any new problems. When testing the type inference,
+it was mainly the inserted type annotations which were of interest. The interface was
+also useful when it came to testing the gradual typing, however, as I was able to see
+the generated wrappers `live' as I edited the source code. Using a web browser to do
+this enabled me to run both the original and the compiled code immediately, to check
+that the output was identical.
+\begin{figure}
+  \centering
+  \includegraphics[width=160mm]{../res/web-interface.png}
+  \caption{The web interface. Annotations are inserted as comments indicating the 
+  types of any variables which occur in the succeeding line.}
+  \label{fig:web-interface}
+\end{figure}
 \section{Testing and Profiling the Compiler}
 \subsection*{Correctness}
 \subsection*{Performance}
