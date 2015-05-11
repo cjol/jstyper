@@ -1,5 +1,5 @@
 # table headers
-echo "name, oTime, oBytes, oAlloc, oDealloc, cTime, cBytes, cAlloc, cDealloc,mimics, guards, mimicReadProps, mimicWriteProps, mimicFunCalls, guardReadProps, guardWriteProps, guardFunCalls"; 
+echo "name, oTime, oBytes, oAlloc, oDealloc, cTime, cBytes, cAlloc, cDealloc, mimics, guards, mimicReadProps, mimicWriteProps, mimicFunCalls, guardReadProps, guardWriteProps, guardFunCalls"; 
 
 while read p; do
 	a=($p); 

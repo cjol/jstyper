@@ -13,7 +13,7 @@ function filter(xs, p) {
 }
 
 var total = 0;
-for (var i=0; i<20; i++) {
+for (var i=0; i<2048; i++) {
 	var r = filter(["true", "true", "false", "false", "true"], JSON.parse);	
 	total += r.length;
 }

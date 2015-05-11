@@ -1,15 +1,18 @@
+var mPI = Math.PI;
+var mSin = Math.sin;
 // lightly adapted from http://dromaeo.com/tests/sunspider-3d-morph.html
 // jstyper start
-// jstyper import Math
+// jstyper import mPI
+// jstyper import mSin
 
 var loops = 60;
 var nx = 120;
 var nz = 120;
 
 function morph(a,f) {
-    var PI2nx = Math.PI * 8/nx;
-    var sin = Math.sin;
-    var f30 = -(50 * sin(f*Math.PI*2));
+    var PI2nx = mPI * 8/nx;
+    var sin = mSin;
+    var f30 = -(50 * sin(f*mPI*2));
     
     for (var i = 0; i < nz; ++i) {
         for (var j = 0; j < nx; ++j) {

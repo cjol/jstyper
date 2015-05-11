@@ -67,7 +67,7 @@ function cordic( runs ) {
   return a;
 }
 
-var result = cordic(2500);
+var result = cordic(2048);
 
 // jstyper end
 function shiftRight(x, y) {

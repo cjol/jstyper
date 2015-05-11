@@ -13,6 +13,8 @@ function resetCounters() {
 		guard:0,
 		mimicReadProp:0,
 		mimicWriteProp:0,
+		mimicFunc:0,
+		mimicMaxCalls:0,
 		mimicFunCall:0,
 		guardReadProp:0,
 		guardWriteProp:0,
@@ -24,16 +26,21 @@ resetCounters();
 
 // TODO: How can I deal with infinite recursion here?
 function mimic(t, obj) {
-	if (doCount) counts.mimic++;
 	// console.log("Made mimic for ", obj);
 	// obj is untrusted, but the context is safe
 	if (t.kind === "function") {
 		if (typeof obj !== "function") throw new CastError(typeof obj + " is not a function");
+		if (doCount) counts.mimic++;
 
 		// f is a type-safe version of obj, which can be used in the typed world
+		if (doCount) counts.mimicFun++;
 		var f = function() {
 
-			if (doCount) counts.mimicFunCall++;
+			if (doCount) {
+				counts.mimicFunCall++;
+				this.calls++;
+				if (this.calls>counts.mimicMaxCalls) this.mimicMaxCalls = this.calls;
+			}
 			// +1 is because of 'this'
 			if (arguments.length + 1 !== t.argTypes.length) {
 				throw new CastError("function has the wrong number of parameters");
@@ -56,10 +63,12 @@ function mimic(t, obj) {
 			var result = obj.apply(thisType, args);
 			return mimic(t.returnType, result);
 		};
+		f.calls = 0;
 		return f;
 
 	} else if (t.kind === "object") {
 		if (typeof obj !== "object") throw new CastError(typeof obj + " is not an object");
+		if (doCount) counts.mimic++;
 
 		var x = {};
 
@@ -110,9 +119,9 @@ function mimic(t, obj) {
 function guard(t, obj) {
 	// console.log("Made guard for ", obj);
 	// obj is safe and needs protecting from the context around it
-	if (doCount) counts.guard++;
 
 	if (t.kind === "function") {
+		if (doCount) counts.guard++;
 
 		var f = function() {
 			if (doCount) counts.guardFunCall++;
@@ -137,6 +146,7 @@ function guard(t, obj) {
 		return f;
 
 	} else if (t.kind === "object") {
+		if (doCount) counts.guard++;
 
 		var x = {};
 

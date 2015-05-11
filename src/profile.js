@@ -19,8 +19,10 @@ if (process.argv[2][0] === "-") {
 			r.mimicFunCall + ", " +
 			r.guardReadProp + ", " +
 			r.guardWriteProp + ", " +
-			r.guardFunCall
-		)
+			r.guardFunCall + ", " + 
+			r.mimicFunc + ", " + 
+			r.mimicMaxCalls
+		);
 	} else {
 		throw Error("Incorrect usage (the only legal parameter is -count)");
 	}

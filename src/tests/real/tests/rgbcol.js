@@ -3,17 +3,18 @@
 // jstyper import getRGBColour
 // jstyper import getBrightness
 var totalBrightness = 0;
-for (var i=1; i<89; i++) {
-	var s = {
-		x:i/10,
-		y:i%10,
-		colour: getNthColour(i)
-	};
-	s.rgb = getRGBColour(s);
-	s.brightness = getBrightness(s);
-	totalBrightness += s.brightness;
+for (var j=0; j<2048/89; j++) {
+	for (var i=1; i<89; i++) {
+		var s = {
+			x:i/10,
+			y:i%10,
+			colour: getNthColour(i)
+		};
+		s.rgb = getRGBColour(s);
+		s.brightness = getBrightness(s);
+		totalBrightness += s.brightness;
+	}
 }
-
 // jstyper end
 function getNthColour(n) {
 	return "#" + (n+10) + (10 + n%7 + n%30) + "FF";

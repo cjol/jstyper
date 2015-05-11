@@ -15,7 +15,7 @@ function filter(xs, p) {
 }
 
 var total = 0;
-for (var i=0; i<100; i++) {
+for (var i=0; i<2048; i++) {
 	var r = filter([{keep:t}, {keep:f},{keep:f},{keep:t},{keep:f}, {keep:f},{keep:f},{keep:t},{keep:f},{keep:t},{keep:f},{keep:t},{keep:f}], 
 		predicate);	
 	total += r.length;
