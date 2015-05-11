@@ -8,3 +8,4 @@ real test1.js
 real rgbcol.js
 real objfilter.js
 real objAcc.js
+real priceCallback.js

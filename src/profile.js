@@ -1,4 +1,4 @@
-var memwatch = require("memwatch");
+// var memwatch = require("memwatch");
 var util = require('util');
 var fs = require("fs");
 var wrapperFunctions = fs.readFileSync("./js/wrappers.js");

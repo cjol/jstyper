@@ -1945,11 +1945,11 @@ compiled code throws a cast error when executed.
 Few of my unit tests performed meaningful calculations, and so judging the
 correctness of these tests was not particularly enlightening. As such, I wrote
 10 more representative examples of JavaScript computing a meaningful result, in
-order to verify that the program result was unchanged. In 3 of these, a
+order to verify that the program result was unchanged. In half of these, a
 deliberate dynamic type error was inserted, such that types were coerced in the
-uncompiled code, and the original result was actually incorrect.  In these 3
+uncompiled code, and the original result was actually incorrect.  In these 5
 tests, a CastError was correctly thrown by the \texttt{mimic} function, and the
-result in the other 7 tests was correctly calculated.
+result in the other 5 tests was correctly calculated.
 
 In addition to these, I ran my compiler on 6 tests from the SunSpider benchmark
 suite.\footnote{https://www.webkit.org/perf/sunspider/sunspider.html} The

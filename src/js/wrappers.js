@@ -42,7 +42,6 @@ function mimic(t, obj) {
 
 			for (var i = 0; i < arguments.length; i++) {
 				args[i] = guard(t.argTypes[i + 1], arguments[i]);
-				// args[i] = arguments[i];
 			}
 
 			// TODO: bind 'this' correctly? alert doesn't work, apparently because it needs this===window
@@ -127,7 +126,6 @@ function guard(t, obj) {
 
 			for (var i = 0; i < arguments.length; i++) {
 				args[i] = mimic(t.argTypes[i + 1], arguments[i]);
-				args[i] = arguments[i];
 			}
 
 			// obj is already safe so I don't need to wrap it with a mimic

@@ -17,7 +17,7 @@ for (var i=0; i<100; i++) {
 // jstyper end
 
 function accumulate(f) {
-	var o = {size:7};
+	var o = {size:function(){return 7}};
 	if (f(o) > acc.biggestResult) {
 		acc.bigFunc = f;
 		acc.biggestResult = f(o);
