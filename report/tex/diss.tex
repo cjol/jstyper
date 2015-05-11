@@ -1996,12 +1996,66 @@ garbage collector may have already cleaned up some of the used memory by the
 time the heap dump is triggered. Nevertheless, it provides a useful indication
 of the memory footprint.
 
+Figure~\ref{fig:slowdown} shows the effect on runtime speed for each test. 
+There is a strong correlation between the number of indirect accesses
+and the slowdown factor, which lines up with what I would expect. Each time a
+property is accessed, or a function called through a guard or a mimic, we 
+introduce some overhead. I would expect this overhead to vary in size depending 
+on the complexity of the item being retrieved -- a longer delay would be introduced
+by recreating an object than simple checking the type of a primitive. More fine-grained
+analysis of the nature of the property accesses would reveal this, though a larger
+set of tests would be required for this to be feasible.
+
+Although I expected to find the same correlation between indirect accesses and
+memory footprint, none was immediately apparent (Figure~\ref{fig:mem1}). My
+suspicion for the cause of this was the lifespan of the wrapped objects. Since
+most of the tests performs their computation in a loop, many objects are not
+referencable at the end of an iteration, and so the JavaScript garbage
+collector can destroy these objects before creating new ones. This replacement
+would not show up by simply comparing the heap size before and after the test
+is run. I calculated an approximate metric for the lifespan of a wrapper by
+dividing the number of wrappers created by the number of indirect accesses.
+This provides an estimate for the average number of property accesses per
+wrapper created. Since we would expect a longer-lived object to be used more
+times, we can use this as an approximate proxy for lifespan. According to this
+metric, all tests did indeed use fairly short-lived wrappers which would allow
+for the kind of optimisation discussed above. Plotting lifespan against memory
+use shows a weak correlation (Figure~\ref{fig:mem2}), which may suggest that
+using short-lived dynamic objects would limit the impact on overall memory use.
+
+Although the SunSpider tests were chosen to reflect real-world usage of
+JavaScript, they do not actually present a very representative example of
+dynamically typed programming. The wrapped objects have fairly simple types (no 
+more complex than a function between primitive types), and actually behave 
+as if they were statically typed. That such code is touted as representative of
+real JavaScript strengthens my belief that in practice most programmers obey a 
+static typing discipline even when the programming language itself does not enforce it.
+If this is indeed the case, then any impact on runtime performance should be minimal,
+as few wrappers should be required.
+
 \chapter{Conclusions}
+
+Although statically typing a dynamically typed programming language may appear to be like
+fitting a square peg in a round hole, in practice my approach has been successful. The 
+additional safety guarantees which I have proven about such statically typed programs
+are valuable, and future integration within code intelligence tools could offer even 
+greater benefits to JavaScript developers. Some work could be done to take the project 
+further, and some ideas in this direction are included below.
+
 \section{Future work}
-Prototypal Inheritance, Strings as objects \\
-Union types, with discharge under type-checks
-Auto-detect imported vars by scope analysis \\
-Fine-grained object modification by control flow analysis
+
+\subsection{Constraint Solution}
+As indicated in chapter 3, my approach to solving constraints is not quite satisfactory. 
+Although it appears functional in practice, a more rigorous approach would ensure the
+soundness guarantees are preserved. Preliminary investigation into the work of
+XXX\cite{something} may be useful in this regard.
+
+\subsection{Language Features}
+Support of more language features would make 
+Prototypal Inheritance, Strings as
+objects \\ Union types, with discharge under type-checks Auto-detect imported
+vars by scope analysis \\ Fine-grained object modification by control flow
+analysis
 
 \printbibliography{}
 \end{document}
