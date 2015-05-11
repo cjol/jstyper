@@ -13,7 +13,7 @@ function processData(datum) {
 generateData(processData);
 // jstyper end
 function generateData(callback) {
-	for (var i=0; i<200; i++) {
+	for (var i=0; i<2048; i++) {
 		var d = callback({
 			price:i%13
 		});

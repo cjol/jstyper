@@ -5,7 +5,7 @@ var acc = {
 // jstyper start
 // jstyper import concat
 // jstyper import accumulate
-for (var i=0; i<100; i++) {
+for (var i=0; i<2048; i++) {
 	accumulate(function(x) {return x.size*x.size;});
 	accumulate(function(x) {return x.size%x.size;});
 	accumulate(function(x) {return x.size/x.size;});

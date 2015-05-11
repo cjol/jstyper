@@ -6,7 +6,7 @@
 		"success": true,
 		"variables": {
 			"acc.biggestResult": 77,
-			"acc.totals": 14100,
+			"acc.totals": 288768,
 			"acc.bigFunc({size:21})": 231
 		}
 	}

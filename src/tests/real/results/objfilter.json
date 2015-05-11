@@ -5,7 +5,7 @@
 	"evaluation": {
 		"success": true,
 		"variables": {
-			"total":500
+			"total":10240
 		}
 	}
 }
