@@ -1947,7 +1947,7 @@ correctness of these tests was not particularly enlightening. As such, I wrote
 10 more representative examples of JavaScript computing a meaningful result, in
 order to verify that the program result was unchanged. In half of these, a
 deliberate dynamic type error was inserted, such that types were coerced in the
-uncompiled code, and the original result was actually incorrect.  In these 5
+uncompiled code, and the original result was actually incorrect. In these 5
 tests, a CastError was correctly thrown by the \texttt{mimic} function, and the
 result in the other 5 tests was correctly calculated.
 
@@ -1977,6 +1977,24 @@ the results computed, and so I am confident that my gradual typing compiler is
 sound.
 
 \subsection*{Performance}
+
+Enclosing dynamic variables within a wrapper will inevitably incur a cost in
+terms of both speed and memory use. This is likely to be a particularly large
+problem with data of higher order type, since the contents will need
+re-wrapping each time a property is read, for example. In order to evaluate the
+extent of the performance hit, I analysed the runtime performance of the 11
+gradual typing tests above (the tests containing cast Errors were obviously
+of no use here).
+
+The speed of the computation was an easy measurement to make -- simply time how
+long a few iterations of the test take to complete both with and without the
+inserted wrappers. To measure the memory footprint, I used a plugin for Node
+called \textit{memwatch}, which can trigger a heap dump, and calculated the
+difference in usage before and after the test was run. This is not an ideal
+indication of memory use during the course of the test itself, since the
+garbage collector may have already cleaned up some of the used memory by the
+time the heap dump is triggered. Nevertheless, it provides a useful indication
+of the memory footprint.
 
 \chapter{Conclusions}
 \section{Future work}
