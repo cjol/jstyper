@@ -9,6 +9,8 @@
 \usepackage[super]{nth}
 \usepackage{subfig}
 
+% \usepackage{showkeys}
+
 \usepackage{amsmath}
 \usepackage{amsthm}
 \usepackage{txfonts}
@@ -16,8 +18,8 @@
 \usepackage{proof}
 \usepackage{mathtools}
 \usepackage{enumitem}
-\usepackage{showkeys}
 \setlistdepth{20} % Magically makes the 'too deeply nested' error go away on some cases
+\usepackage{array}
 
 \usepackage{listings}
 \usepackage{verbatim}
@@ -116,7 +118,7 @@ the server, and now even being targeted by other languages'
 compilers~\cite{asm}. As the scale of JavaScript applications has increased,
 so too has the complexity of development projects. Assurance that a program is
 bug-free has become more critical, both for online companies which rely on
-JavaScript for e-commerce, and for the people that use their applications. A
+JavaScript for e-commerce, and for the people who use their applications. A
 security bug in an online banking application, for example, could be
 devastating. JavaScript's weak typing discipline, however, makes it hard to
 reason about a program's correctness, and limits the information available to
@@ -124,7 +126,7 @@ development tools. This problem is exacerbated by JavaScript's type
 \textit{coercion}, which permits expressions which would normally be deemed
 untypable by, for example, converting any object to the value \js{true} when
 placed in a context expecting a boolean. This can result in silent propagation
-of type errors, providing no errors to the developer.
+of type errors, providing no explicit errors to the developer.
 
 Static type checking catches potential bugs earlier in the development cycle,
 Static type checking catches potential bugs earlier in the development cycle,
@@ -959,7 +961,7 @@ containing the type (if the node was an expression node), an array of
 constraints, and a modified type environment. The inferred type is also
 attached to the node, so that future tools can build on the inference
 performed. Listing~\ref{lst:arrimpl} shows the \js{check} function
-corresponding to the typing rule \textsc{V\_Arr}, which is shown in figure~\ref{fig:arrrule}
+corresponding to the typing rule \textsc{V\_Arr}, which is shown in Figure~\ref{fig:arrrule}
 \begin{figure}[t]
   $$\infer[\textsc{V\_Arr}]{
   	\Gamma\vdash\mathtt{[e_1,\, \ldots,\ e_k]}:[T]\ |_C\ \Gamma_k	
@@ -1036,19 +1038,50 @@ present.
   \caption{An example of a program with multiple solutions}\label{lst:multSols}
 \end{program}
 
-Although these problems are introduced by subtyping constraints, in practice it
-is only object types which will encounter them. Primitive types like numbers or
-strings, for example, lack any kind of substructure and so a subtype constraint
+Although these problems are introduced by subtyping constraints, in practice
+they will only arise for object types. Primitive types like numbers or strings,
+for example, lack any kind of substructure and so a subtype constraint
 involving a primitive type can essentially be treated as a straight equation
 constraint. Function and array types do have substructure, but solving a
-subtype constraint involving these types simply involves passing on the
-constraint to a lower level of structure. Table {\color{red}X} summarises these
-solution methods for constraints between different kinds of type. Since most
-types can be handled easily, it would be nice to find a solution for objects in
-terms of substitution, and hence retain the benefits of the linear-time
-unification algorithm. 
+subtype constraint for these types simply involves passing on the constraint to
+a lower level of structure. Table~\ref{tab:crc} summarises these solution
+methods. Since most types can be handled easily using substitution, it would be
+nice to find a solution for objects in and hence retain the benefits of the
+linear-time unification algorithm. 
 
-{\color{red}Table of constraint resolution goes here.}
+\begin{table}
+\begin{center}
+    \begin{tabular}{ | m{3.5cm} | m{2.5cm} | m{2.5cm} | m{3.4cm} | m{3cm} |}
+    \hline
+	& $T$ is primitive  &
+   		$T=[T_1]$ &
+ 	   	$T=(T_1, \dots \rightarrow T_r)$ &
+ 	   	$T$ is abstract \\[5pt] \hline
+	$T'$ is primitive   &
+   		\parbox[t]{3cm}{if $T\neq T'$ fail\\ else continue}&
+ 	   	fail &
+ 	   	fail &
+ 	   	\parbox[t][1.1cm]{3cm}{sub [T'/T] \\ and continue} \\[10pt] \hline
+	$T'=[T_1']$          &
+   	  fail &
+   	  \parbox[t]{3cm}{solve \\$T_1\succeq T_1'$} &
+   	  fail &
+ 	   	\parbox[t][1.1cm]{3cm}{sub [T'/T] \\ and continue} \\ \hline
+	$T'=(T_1', \dots \rightarrow T_r')$ &
+   		fail &
+ 	   	fail &
+ 	   	\parbox[t][2.3cm]{3cm}{solve \\$T_1'\succeq T_1$,\\ \dots,\\ $T_r\succeq T_r'$} &
+ 	   	\parbox[t]{3cm}{sub [T'/T] \\ and continue} \\ \hline
+	$T'$ is abstract    &
+ 	   	\parbox[t][1.1cm]{3cm}{sub [T/T'] \\ and continue} &
+ 	   	\parbox[t]{3cm}{sub [T/T'] \\ and continue}   &
+ 	   	\parbox[t]{3cm}{sub [T/T'] \\ and continue}  &
+   	  push constraint to back of queue \\ \hline
+    \end{tabular}
+\end{center}
+\caption{Simple substitution cases for the constraint $T\succeq T'$}
+\label{tab:crc}
+\end{table}
 
 \subsubsection*{Object Subtype Constraints} 
 Let $A$ be an abstract type, and $O$ be a concrete object type. For the
@@ -1074,24 +1107,46 @@ not revealed any `real' programs which suffer as a result of this
 approximation, however.
 
 The last case to consider is a constraint between two object types, $O_1\succeq
-O_2$. To simplify discussion, I will not explicitly consider object chains or
-optional constraints here, though the extension to these cases is apparent from
-equations~\ref{succeq}~--~\ref{succeqo}. We can check whether the constraint is
-satisfied by inspection -- iterate through all properties of $O_1$ and ensure
-they are present in $O_2$. If it is satisfied, we can simply move onto the next
-constraint. If it is not satisfied, however, we should not yet declare the
-program untypable. If the constraint was deemed unsatisfied, $O_1$ must have a
-property which is absent in $O_2$. Since the substitution from an abstract
-variable only represented a bound on the object, we may be able to `grow' $O_2$
-by adding the missing properties.  
-{\color{red}I don't think this is sound.
-  Firstly, I'm not sure my $\succeq_c$ constraints always ensure that it is
-  valid to grow $O_2$. Secondly, even if it is valid to solve this equation by
-  growing $O_2$, these changes won't be constrained by constraints we've
-  already solved and discarded. How do I proceed at this point?  I think a
-  correct solution will need to keep track of the upper and lower bounds for
-  each object type, and only collapse the bounds down to a single object when
-  we need to -- but that's not enough of a solution to present here!}
+O_2$. We can check whether the constraint is satisfied by inspection -- iterate
+through all properties of $O_1$ and ensure they are present in $O_2$. If all
+are present, we constrain the corresponding properties of both objects and move
+on.  If some property is missing, however, a conservative type checker must
+deem the program untypable. Although this system is provably sound, it is very
+much incomplete, and most interesting programs will fail the type checker. 
+
+My initial attempt to solve this involved the gradual `discovery' of new properties.
+In certain contexts, it would be safe to add properties to $O_2$ in order to make the
+constraint satisfiable. An example of one such context is shown in Listing~\ref{lst:discConst}.
+The types of parameters and imported variables are suitable for this kind of discovery, since 
+we do not have an initial assignment of an object, which would normally provide a reasonable
+approximation of the object type. My implementation does exactly this -- when initialising a type
+for a function parameter, a \js{shouldInfer} flag is set which will allow discovery 
+of new properties when the type is involved in a constraint. After the new properties are 
+discovered, they will be reflected in the function type -- and if the function is called with 
+values lacking these properties then the type checker will fail.
+
+\begin{program}
+  \begin{minted}[mathescape]{javascript}
+	function f(x) {
+		x.foo += 1;   // $T_x \preceq\{foo:number\}$
+		return x.bar; // $T_x \preceq\{bar:T\}$
+	}
+  \end{minted}
+  \caption{A context in which it would be safe to add the property \js{bar} to $T_x$}
+  \label{lst:discConst}
+\end{program}
+
+Although this method appears to work in practice, it is not clear that the
+discovery behaviour is truly sound. Constraints are solved sequentially, then
+discarded. One constraint, say $C_1$, has the form $T\succeq T'$. Some later
+constraint might also involve $T$, say, $T\preceq X$.  I may add new properties
+to $T$ to solve this constraint -- but these additions may not be present in
+$T'$. In this case $T$ is no longer a valid supertype for $T'$, and $C_1$ is
+not satisfied. When I discard $C_1$, I have not logged the `upper bound' on the
+members allowed in $T$, and so growing through any later constraints may
+violate $C_1$ Keeping explicit track of the upper and lower bounds for object
+types may provide a more rigorous approach. These bounds could then be
+collapsed down to some particular object when required.
 
 \subsubsection*{Subconstraints}
 Objects, functions and arrays all have sub-structures, such that once we are
@@ -1996,6 +2051,12 @@ garbage collector may have already cleaned up some of the used memory by the
 time the heap dump is triggered. Nevertheless, it provides a useful indication
 of the memory footprint.
 
+\begin{figure}
+  \parbox[c]{150mm}{\includegraphics[width=150mm]{../res/speed.pdf}}
+  \caption{Test}
+  \label{fig:slowdown}
+\end{figure}
+
 Figure~\ref{fig:slowdown} shows the effect on runtime speed for each test. 
 There is a strong correlation between the number of indirect accesses
 and the slowdown factor, which lines up with what I would expect. Each time a
@@ -2006,6 +2067,16 @@ by recreating an object than simple checking the type of a primitive. More fine-
 analysis of the nature of the property accesses would reveal this, though a larger
 set of tests would be required for this to be feasible.
 
+\begin{figure}
+  \parbox[c]{150mm}{\includegraphics[width=150mm]{../res/mem1.pdf}}
+  \caption{Test}
+  \label{fig:mem1}
+\end{figure}
+\begin{figure}
+  \parbox[c]{150mm}{\includegraphics[width=150mm]{../res/mem2.pdf}}
+  \caption{Test}
+  \label{fig:mem2}
+\end{figure}
 Although I expected to find the same correlation between indirect accesses and
 memory footprint, none was immediately apparent (Figure~\ref{fig:mem1}). My
 suspicion for the cause of this was the lifespan of the wrapped objects. Since
@@ -2048,14 +2119,36 @@ further, and some ideas in this direction are included below.
 As indicated in chapter 3, my approach to solving constraints is not quite satisfactory. 
 Although it appears functional in practice, a more rigorous approach would ensure the
 soundness guarantees are preserved. Preliminary investigation into the work of
-XXX\cite{something} may be useful in this regard.
+Fran\c{c}ois Pottier~\cite{pottier1998type} indicates that his approach may be of use here.
 
 \subsection{Language Features}
-Support of more language features would make 
-Prototypal Inheritance, Strings as
-objects \\ Union types, with discharge under type-checks Auto-detect imported
-vars by scope analysis \\ Fine-grained object modification by control flow
-analysis
+
+Support of more language features would make the inference tool immediately
+able to type a much larger set of existing JavaScript programs. One of the main
+such features is prototypal inheritance. In JavaScript, each object has a
+special \js{prototype} property, which corresponds to the object's parent in
+the inheritance chain. Property accesses may then retrieve the item from the
+object itself if present, or from the object prototype if not. I believe my 
+system of origin chains could be extended to support this method of inheritance 
+in a straightforward manner by adding the prototype object's type as the origin
+for the descendant object.
+
+Another feature which may be useful is the inclusion of limited union types.
+Since JavaScript has no explicit mechanism for overloading, it is common for
+functions to be called with parameters of varying types. The function then
+inspects the types of the arguments provided and dispatches them to the
+appropriate logic. Currently such functions would need to be excluded from the
+static type system, but it would be possible to keep track of the parameters
+as having a union type, which could then be discharged by explicit type checks.
+
+\subsection{Fine-grained object modification}
+
+Currently I am able to handle the dynamic addition of properties to objects. 
+Although the monotonic growth of objects makes analysis easier, property deletion
+can be quite common in some programs.~\cite{JSBehaviour} It may also be possible
+to use control flow analyses to allow modification of property types, although
+in practice allowing this behaviour may negate many of the benefits of the type system, which 
+would normally interpret an attempt to change a property's type as a potential bug.
 
 \printbibliography{}
 \end{document}

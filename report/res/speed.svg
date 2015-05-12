@@ -13,7 +13,7 @@
    style="overflow: hidden;"
    id="svg5121"
    version="1.1"
-   inkscape:version="0.91 r"
+   inkscape:version="0.48.5 r10040"
    sodipodi:docname="speed.svg">
   <metadata
      id="metadata5273">
@@ -23,7 +23,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -42,8 +42,8 @@
      showgrid="false"
      inkscape:snap-object-midpoints="true"
      inkscape:zoom="0.90156114"
-     inkscape:cx="1433.1975"
-     inkscape:cy="489.87955"
+     inkscape:cx="1300.095"
+     inkscape:cy="445.51207"
      inkscape:window-x="0"
      inkscape:window-y="27"
      inkscape:window-maximized="1"
@@ -78,11 +78,12 @@
      style="fill:#ffffff;fill-opacity:0;stroke:none;stroke-width:0" />
   <rect
      x="1637"
-     y="453"
+     y="-484.09186"
      width="36"
-     height="18"
+     height="4.1837425"
      id="rect5159"
-     style="fill:#3366cc;fill-opacity:0.4;stroke:none;stroke-width:0" />
+     style="fill:#3366cc;fill-opacity:0.4;stroke:none"
+     transform="scale(1,-1)" />
   <rect
      style="fill:#ffffff;fill-opacity:0;stroke:none;stroke-width:0"
      id="rect5163"
@@ -726,16 +727,16 @@
      transform="scale(1,-1)" />
   <text
      xml:space="preserve"
-     style="font-style:normal;font-weight:normal;font-size:40px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:sans-serif"
      x="1679.3092"
-     y="469.34775"
+     y="489.34775"
      id="text8958"
      sodipodi:linespacing="125%"><tspan
        sodipodi:role="line"
        id="tspan8960"
        x="1679.3092"
-       y="469.34775"
-       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:17.875px;font-family:Arial;-inkscape-font-specification:Arial">Trend Line (r<tspan
-   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:17.875px;font-family:Arial;-inkscape-font-specification:Arial;baseline-shift:super"
+       y="489.34775"
+       style="font-size:17.875px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Arial;-inkscape-font-specification:Arial">Trend Line (r<tspan
+   style="font-size:17.875px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;baseline-shift:super;font-family:Arial;-inkscape-font-specification:Arial"
    id="tspan8962">2</tspan>=0.931)</tspan></text>
 </svg>
