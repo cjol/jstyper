@@ -2088,8 +2088,10 @@ garbage collector may have already cleaned up some of the used memory by the
 time the heap dump is triggered. More detailed analysis tools are not 
 commonly available for Node, however.
 
-\begin{figure}
-  \parbox[c]{150mm}{\includegraphics[width=150mm]{../res/speed.pdf}}
+\begin{figure}[H]
+  \resizebox{150mm}{!}{
+ 	\import{../res/}{speed.pdf_tex}
+  }
   \caption{Slowdown / Indirect Access}
   \label{fig:slowdown}
 \end{figure}
@@ -2104,16 +2106,6 @@ by recreating an object than by simple checking the type of a primitive. More fi
 analysis of the nature of the property accesses would reveal this, though a larger
 set of tests would be required for this to be instructive.
 
-\begin{figure}
-  \parbox[c]{150mm}{\includegraphics[width=150mm]{../res/mem1.pdf}}
-  \caption{Heap Usage / Indirect Access}
-  \label{fig:mem1}
-\end{figure}
-\begin{figure}
-  \parbox[c]{150mm}{\includegraphics[width=150mm]{../res/mem2.pdf}}
-  \caption{Heap Usage / Accesses per Wrapper}
-  \label{fig:mem2}
-\end{figure}
 Although I expected to find the same correlation between indirect accesses and
 memory footprint, none was immediately apparent (Figure~\ref{fig:mem1}). My
 suspicion for the cause of this was the lifespan of the wrapped objects. Since
@@ -2134,6 +2126,21 @@ against memory use shows a weak correlation (Figure~\ref{fig:mem2}), which may
 suggest that using short-lived dynamic objects would limit the impact on
 overall memory use.
 
+\begin{figure}[H]
+
+  \resizebox{150mm}{!}{
+ 	\import{../res/}{mem1.pdf_tex}
+  }
+  \caption{Heap Usage / Indirect Access}
+  \label{fig:mem1}
+\end{figure}
+\begin{figure}[H]
+  \resizebox{150mm}{!}{
+ 	\import{../res/}{mem2.pdf_tex}
+  }
+  \caption{Heap Usage / Accesses per Wrapper}
+  \label{fig:mem2}
+\end{figure}
 Although the SunSpider tests were chosen to reflect real-world usage of
 JavaScript, they present very few examples of truly dynamic behaviour.
 The wrapped objects have fairly simple types (no 

@@ -1,0 +1,78 @@
+%% Creator: Inkscape inkscape 0.48.5, www.inkscape.org
+%% PDF/EPS/PS + LaTeX output extension by Johan Engelen, 2010
+%% Accompanies image file 'speed.pdf' (pdf, eps, ps)
+%%
+%% To include the image in your LaTeX document, write
+%%   \input{<filename>.pdf_tex}
+%%  instead of
+%%   \includegraphics{<filename>.pdf}
+%% To scale the image, write
+%%   \def\svgwidth{<desired width>}
+%%   \input{<filename>.pdf_tex}
+%%  instead of
+%%   \includegraphics[width=<desired width>]{<filename>.pdf}
+%%
+%% Images with a different path to the parent latex file can
+%% be accessed with the `import' package (which may need to be
+%% installed) using
+%%   \usepackage{import}
+%% in the preamble, and then including the image with
+%%   \import{<path to file>}{<filename>.pdf_tex}
+%% Alternatively, one can specify
+%%   \graphicspath{{<path to file>/}}
+%% 
+%% For more information, please see info/svg-inkscape on CTAN:
+%%   http://tug.ctan.org/tex-archive/info/svg-inkscape
+%%
+\begingroup%
+  \makeatletter%
+  \providecommand\color[2][]{%
+    \errmessage{(Inkscape) Color is used for the text in Inkscape, but the package 'color.sty' is not loaded}%
+    \renewcommand\color[2][]{}%
+  }%
+  \providecommand\transparent[1]{%
+    \errmessage{(Inkscape) Transparency is used (non-zero) for the text in Inkscape, but the package 'transparent.sty' is not loaded}%
+    \renewcommand\transparent[1]{}%
+  }%
+  \providecommand\rotatebox[2]{#2}%
+  \ifx\svgwidth\undefined%
+    \setlength{\unitlength}{592.44091797bp}%
+    \ifx\svgscale\undefined%
+      \relax%
+    \else%
+      \setlength{\unitlength}{\unitlength * \real{\svgscale}}%
+    \fi%
+  \else%
+    \setlength{\unitlength}{\svgwidth}%
+  \fi%
+  \global\let\svgwidth\undefined%
+  \global\let\svgscale\undefined%
+  \makeatother%
+  \begin{picture}(1,0.38755983)%
+    \put(0,0){\includegraphics[width=\unitlength]{speed.pdf}}%
+    \put(-0.74069346,0.39808446){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\begin{minipage}{0.15886419\unitlength}\raggedright SlowdonLSlowdown\end{minipage}}}%
+    \put(0.12324209,0.05322284){\color[rgb]{0.26666667,0.26666667,0.26666667}\makebox(0,0)[b]{\smash{0}}}%
+    \put(0.29884315,0.05322284){\color[rgb]{0.26666667,0.26666667,0.26666667}\makebox(0,0)[b]{\smash{75,000}}}%
+    \put(0.47444422,0.05322284){\color[rgb]{0.26666667,0.26666667,0.26666667}\makebox(0,0)[b]{\smash{150,000}}}%
+    \put(0.65004529,0.05322284){\color[rgb]{0.26666667,0.26666667,0.26666667}\makebox(0,0)[b]{\smash{225,000}}}%
+    \put(0.82564635,0.05322284){\color[rgb]{0.26666667,0.26666667,0.26666667}\makebox(0,0)[b]{\smash{300,000}}}%
+    \put(0.11340524,0.06952452){\color[rgb]{0.26666667,0.26666667,0.26666667}\makebox(0,0)[rb]{\smash{1x}}}%
+    \put(0.11340524,0.1398447){\color[rgb]{0.26666667,0.26666667,0.26666667}\makebox(0,0)[rb]{\smash{4x}}}%
+    \put(0.11340524,0.21016489){\color[rgb]{0.26666667,0.26666667,0.26666667}\makebox(0,0)[rb]{\smash{7x}}}%
+    \put(0.11340524,0.28048507){\color[rgb]{0.26666667,0.26666667,0.26666667}\makebox(0,0)[rb]{\smash{10x}}}%
+    \put(0.11340524,0.35080525){\color[rgb]{0.26666667,0.26666667,0.26666667}\makebox(0,0)[rb]{\smash{13x}}}%
+    \put(0.04991465,0.17673622){\color[rgb]{0,0,0}\rotatebox{90}{\makebox(0,0)[lt]{\begin{minipage}{0.0216859\unitlength}\centering Slowdown\end{minipage}}}}%
+    \put(0.29663516,0.03618121){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\begin{minipage}{0.35561456\unitlength}\centering Indirect Property Accesses\end{minipage}}}%
+    \put(0.85532522,0.32752261){\color[rgb]{0.13333333,0.13333333,0.13333333}\makebox(0,0)[lb]{\smash{fannkuch.js}}}%
+    \put(0.85532522,0.30607429){\color[rgb]{0.13333333,0.13333333,0.13333333}\makebox(0,0)[lb]{\smash{sieve.js}}}%
+    \put(0.85532522,0.28462588){\color[rgb]{0.13333333,0.13333333,0.13333333}\makebox(0,0)[lb]{\smash{partial.js}}}%
+    \put(0.85532522,0.26317754){\color[rgb]{0.13333333,0.13333333,0.13333333}\makebox(0,0)[lb]{\smash{cordic.js}}}%
+    \put(0.85532522,0.24172918){\color[rgb]{0.13333333,0.13333333,0.13333333}\makebox(0,0)[lb]{\smash{spectral.js}}}%
+    \put(0.85532522,0.2202808){\color[rgb]{0.13333333,0.13333333,0.13333333}\makebox(0,0)[lb]{\smash{test1.js}}}%
+    \put(0.85532522,0.19883244){\color[rgb]{0.13333333,0.13333333,0.13333333}\makebox(0,0)[lb]{\smash{rgbcol.js}}}%
+    \put(0.85532522,0.17738406){\color[rgb]{0.13333333,0.13333333,0.13333333}\makebox(0,0)[lb]{\smash{objfilter.js}}}%
+    \put(0.85532522,0.15593569){\color[rgb]{0.13333333,0.13333333,0.13333333}\makebox(0,0)[lb]{\smash{objAcc.js}}}%
+    \put(0.8553252,0.13448734){\color[rgb]{0.13333333,0.13333333,0.13333333}\makebox(0,0)[lb]{\smash{priceCallback.js}}}%
+    \put(0.85341843,0.11705242){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\begin{minipage}{0.12018076\unitlength}\raggedright Trend Line \scriptsize{($r^2=0.931$)}\end{minipage}}}%
+  \end{picture}%
+\endgroup%
