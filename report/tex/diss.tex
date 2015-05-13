@@ -93,6 +93,11 @@
 \newcommand\qdot{\mathbin{\scalebox{1.5}{.}}\enspace}
 \begin{document}
 
+
+
+
+
+
 \chapter{Introduction}\label{introduction}
 
 Types are a way of grouping together values which support similar operations.
@@ -125,17 +130,16 @@ reason about a program's correctness, and limits the information available to
 development tools. This problem is exacerbated by JavaScript's type
 \textit{coercion}, which permits expressions which would normally be deemed
 untypable by, for example, converting any object to the value \js{true} when
-placed in a context expecting a boolean. This can result in silent propagation
+placed in a context expecting a boolean. This can result in the silent propagation
 of type errors, providing no explicit errors to the developer.
 
 Static type checking catches potential bugs earlier in the development cycle,
-Static type checking catches potential bugs earlier in the development cycle,
 and can allow programs to run faster, without needing to check types before
 every operation. However, it is impossible for a static type checker to
-precisely identify all potential type errors, because it cannot know precisely
-what the program will do when it runs. If such a type checker existed, it could
-be used to determine whether any given program will terminate or not -- which
-would violate the undecidability of the halting problem. Instead, a
+precisely identify all potential type errors, because it cannot know what the
+program's behaviour will be when it runs. If such a type checker did exist, it
+could be used to determine whether any given program will terminate or not --
+which would violate the undecidability of the halting problem. Instead, a
 conservative approximation is made, and some programs which would never
 actually exhibit a type error will fail a static type check. This approximation
 can be frustrating for developers, who will need to satisfy the type checker by
@@ -166,7 +170,7 @@ of the inherently dynamic nature of the language. Many traditional JavaScript
 programming idioms are legitimately untypable. JavaScript has no
 mechanism for overloading functions, for example, so many developers write
 functions expecting different parameter types from call-to-call, and use manual
-type checks to handle them (see listing~\ref{lst:dynamicIdiom}). Flow and
+type checks to handle them (see Listing~\ref{lst:dynamicIdiom}). Flow and
 TypeScript allow for untypable functions using a special `any' type, which will
 never trigger a static type error. The obvious disadvantage here is that the
 static analysis can no longer make any guarantees about the soundness of the
@@ -185,8 +189,8 @@ program, as certain parts of it have effectively not been checked.
 	  }
  	}	
   \end{minted}
-  \label{lst:dynamicIdiom}
   \caption{Dynamic idioms in JavaScript}
+  \label{lst:dynamicIdiom}
 \end{program}
 Additionally, JavaScript code rarely operates in isolation in modern web
 applications. Even if a program passes the static type checker, some external
@@ -202,10 +206,10 @@ guarantee that the program is free of dynamic type errors, we instead
 guarantee that only dynamic properties of the code are able to cause runtime
 errors -- that the well-typed code ``can't be blamed"~\cite{cantblame} for
 any type errors which arise. This is achieved by protecting the boundaries
-between the type-safe and type- unsafe `worlds'. Conversions are made from
-dynamic types to static types, and although this conversion process may
+between the type-safe and type-unsafe `worlds'. Conversions are made from the
+dynamic values, and although this conversion process may
 generate an error (for example trying to convert a \texttt{number} to a
-\texttt{string}), the type safety of the well- typed world is provably
+\texttt{string}), the type safety of the well-typed world is provably
 preserved.
 
 In this project, I have defined a formal operational semantics and a type
@@ -216,13 +220,29 @@ order to create a static type checker, and this implementation has been checked
 by a large suite of tests. In doing this, I realised that the subset of
 JavaScript initially planned to be supported was insufficient for `real-world'
 code, and added arrays and object growth to both the specification and
-implementation. This enabled me to test my implementation using seven tests
-from the Mozilla SunSpider JavaScript benchmark suite. The only extension task
-left incomplete is the inclusion of object inheritance via object prototypes,
-but I present a starting point to this, which could fruitfully be built upon in
+implementation. This enabled me to test my implementation using five tests from
+the Mozilla SunSpider JavaScript benchmark suite. Finally, I integrated ideas
+from research in the field of gradual typing to allow type-checked code to
+inter-operate safely with unchecked code. The only extension task left
+incomplete is the inclusion of object inheritance via object prototypes, but I
+present a starting point to this, which could fruitfully be built upon in
 future work.
 
-\chapter{Preparation}\label{preparation} \section{Background}
+\begin{figure}
+  \centering
+  \includegraphics[width=160mm]{../res/web-interface.png}
+  \caption{The web interface to my type inference system. Annotations are inserted as comments indicating the 
+  types of any variables which occur in the succeeding line.}
+  \label{fig:web-interface}
+\end{figure}
+
+
+
+
+
+
+\chapter{Preparation}\label{preparation} 
+\section{Background}
 
 Before development could begin, an understanding of the theoretical
 underpinnings of the project was required. Several of the undergraduate courses
@@ -244,55 +264,57 @@ sufficiently accessible, however, for me to explore the area.
 which usefully complement the inference-based analyses, for example by checking
 that a variable has been defined before use.
 
-In relation to JavaScript itself, I began the project with a strong informal
-grasp of the language. The ECMAScript 5 specification~\cite{ecmaSpec} offered a
-more rigorous definition, which would be required in defining my own
-operational semantics. Some work has already been done attempting to formalise
-the semantics of JavaScript~\cite{guha2010essence}, providing useful inspiration in designing my own
-operational semantics. Carrying out any kind of static analysis on a dynamic
-language will result in false negatives, where a safe statement is incorrectly
-deemed unsafe. This is preferable to a false positive in terms of guaranteeing
-safe operation of the program, but still frustrating for the developer. It can
-be important, therefore, to understand the manner in which a language is
-actually used. There is little benefit in devising solutions to the problem of
-typing dynamic idioms which are hardly ever used, and so I looked through the
-results of Richards, Lebresne, Burg and Vitek~\cite{JSBehaviour}, who have
-analysed the dynamic behaviour of real JavaScript programs in operation on the
-internet. Finally, it was educational to look at
-TypeScript~\cite{ts,understandingTS}, to learn from the decisions the
-TypeScript team had made, the solutions they had already found, and to fully
-understand the limitations of their solution. I also attended a talk on Flow by
-one of the authors, with similar ambitions.
+I began the project with a strong informal grasp of the JavaScript language.
+JavaScript implementations are guided by the ECMAScript
+specification~\cite{ecmaSpec}, which offered a more rigorous definition,
+required to define my own operational semantics. Some work has already been
+done attempting to formalise the semantics of
+JavaScript~\cite{guha2010essence}, providing useful inspiration in designing my
+own operational semantics. 
+
+Carrying out any kind of static analysis on a dynamic language will result in
+false negatives, where a safe statement is incorrectly deemed unsafe. This is
+preferable to a false positive in terms of guaranteeing safe operation of the
+program, but still frustrating for the developer. It can be important,
+therefore, to understand the manner in which a language is actually used. There
+is little benefit in devising solutions to the problem of typing dynamic idioms
+which are hardly ever used, and so I looked through the results of Richards,
+Lebresne, Burg and Vitek~\cite{JSBehaviour}, who have analysed the dynamic
+behaviour of real JavaScript programs in operation on the internet. It
+was educational to look at TypeScript~\cite{ts,understandingTS}, to learn from
+the design decisions which had been made, the solutions they had already found,
+and to fully understand the limitations of their solution. I also attended a
+talk on Flow by one of the authors, with similar ambitions.
 
 \section{Development Plan}
 
 The project consisted of four discrete tasks: designing a formal specification
-to describe the operational semantics and type judgements for my subset,
+to describe the operational semantics and type judgements for my subset;
 proving that the subset as specified was sound and implementing both the type
-inference system and the gradual typing compiler. Orthogonally to this, the
-language was divided into discrete features, such as if-statements, binary
-operations and loops. This division meant the project lent itself to an
-incremental build model, whereby each build increment introduced a new language
-feature to the specification, proof and implementations. This allowed
-development to proceed systematically, offering sensible opportunities for
-regression testing after each iteration, with only few changes since the last
-test. This strategy also minimised development risk by allowing me to cease
-development at the end of any iteration and still have a successful system,
-albeit supporting fewer features than planned.
+inference system and the gradual typing compiler. Orthogonally to this
+separation of tasks, the language was divided into discrete features, such as
+if-statements, binary operations and loops. This division meant the project
+lent itself to an incremental build model, whereby each build increment
+introduced a new language feature to the specification, proof and
+implementations. This allowed development to proceed systematically, offering
+sensible opportunities for regression testing after each iteration, with only
+few changes since the last test. This strategy also minimised development risk
+by allowing me to cease development at the end of any iteration and still have
+a successful system, albeit supporting fewer features than planned.
 
 I used Git for version control, with the primary repository hosted on GitHub
-which also served as a remote backup of my work. To amplify the benefit of my
+also serving as a remote backup of my work. To amplify the benefit of my
 regression tests for bug detection, I set up continuous integration such that
 each time the GitHub repository was updated, the code was downloaded to a
-private VPS, and the full test suite ran automatically. If any tests failed, an
+private VPS, and the full test suite run automatically. If any tests failed, an
 email warning was sent to me, so I was immediately alerted of the problem I had
 introduced, and could fix it while the changes which had triggered it were
 still fresh in my mind. If all tests passed, the new code was deployed to a web
-server, such that a live demo was always accessible online at
-\href{http://jstyper.clittle.com}{http://jstyper.clittle.com}.
+server, such that a live demo was always accessible online.\footnote{
+\href{http://jstyper.clittle.com}{http://jstyper.clittle.com}}
 
-Within each iteration, I began with the specification, as a kind of
-requirements analysis. The specification was written using
+Within each iteration, I began with the specification.
+The specification was written using
 Ott~\cite{sewell2007ott}, a tool which I learnt to use as the project
 progressed. The iteration would be considered complete when each of the other
 components conformed to the specification. For the two development tasks, I
@@ -307,21 +329,22 @@ Many developers view theoretical computer science as carrying little practical
 benefit for them, when the truth is that concrete implementations of the theory
 can bring huge practical benefits. It was thus important to me to integrate
 smoothly within the existing JavaScript ecosystem rather than enforce a
-non-standard workflow for JavaScript developers, thereby reducing the barriers
-to entry and making the benefits of static typing more easily discoverable.
-Languages like OCaml, although commonly used for this kind of project within
-the academic community, are unlikely to be present on a web developer's
-computer. Indeed, this is a problem Chaudhuri mentioned having for Flow, which
-has been released as an open source project but suffers from a lack of
-contributors because the project's main users are not able to understand or
-make meaningful contributions to the type checker's code. Instead, I decided to
-write the type inference system in JavaScript, thus ensuring it could run on
-any system. This decision opened the door for writing a self-hosting compiler,
-which could type-check and compile its own source code. It also potentially
-made it possible for type checking and compilation to happen in the browser,
-though in practice this is likely only advantageous in fairly unusual
-circumstances. Instead, development focussed on running the compiler using
-Node.js~\cite{nodejs}, a JavaScript interpreter designed for use outside the browser.
+non-standard workflow for JavaScript developers. This would reduce the barriers
+to entry and make the advantages of static typing more easily discoverable to
+those who would most benefit from it. Languages like OCaml, although commonly
+used for this kind of project within the academic community, are less likely to be
+present on a web developer's computer. Indeed, this is a problem Chaudhuri
+mentioned having for Flow, which has been released as an open source project
+but suffers from a lack of contributors because the project's main users are
+not able to understand or make meaningful contributions to code base.
+Instead, I decided to write the type inference system in JavaScript, thus
+ensuring it could run on any system. This decision opened the door for writing
+a self-hosting compiler, which could type-check and compile its own source
+code. It also potentially made it possible for type checking and compilation to
+happen in the browser, though in practice this would likely only be advantageous in
+fairly unusual circumstances. Instead, development focussed on running the
+compiler using Node.js~\cite{nodejs}, a JavaScript interpreter designed for use
+outside the browser.
 
 As an interpreted language, JavaScript is not compiled prior to execution, but
 it is often compressed to speed up download times to client computers. A number
@@ -330,24 +353,29 @@ analyses to, for example, eliminate unused variables from the source code
 (known as \textit{minification}). Although I was not interested in such
 analyses, it seemed sensible to integrate with a standard abstract syntax tree
 (AST) format, and use existing parsing and code-generation solutions.
-UglifyJS~\cite{uglify} is one of the most-used minification libraries for
-JavaScript, and has separate components for parsing and code generation but
-uses a custom (albeit well-documented) AST format. Esprima~\cite{esprima} is
-another JavaScript parser which is marginally faster and uses the SpiderMonkey
-AST format standardised by Mozilla. Various analysis tools and code generators
-exist for this format, but I decided that the UglifyJS format was actually more
-useful for my purposes, and parse speeds was not a priority. For example, the
-SpiderMonkey AST has a single representation of any unary expression, when in
-practice it can be useful to distinguish between prefix and suffix expressions.
-Additionally, UglifyJS uses object inheritance to define its node types, where
-Esprima prefers plain objects. 
+UglifyJS\footnote{\href{http://lisperator.net/uglifyjs}{http://lisperator.net/uglifyjs}} is one of the
+most-used minification libraries for JavaScript, and has separate components
+for parsing and code generation but uses a custom (albeit well-documented) AST
+format. Esprima\footnote{\href{http://esprima.org}{http://esprima.org}} is another JavaScript parser
+which is marginally faster and uses the SpiderMonkey AST format standardised by
+Mozilla. Various analysis tools and code generators exist for this format, but
+I decided that the UglifyJS format was actually more useful for my purposes,
+and parse speeds was not a priority. For example, the SpiderMonkey AST has a
+single representation of any unary expression, when in practice it can be
+useful to distinguish between prefix and suffix expressions.  Additionally,
+UglifyJS uses object inheritance to define its node types, where Esprima
+prefers flat objects. 
+
+
+
 
 \chapter{Implementation}\label{implementation}
 
-There were two components to implement for the project -- the formal
-specification of the language and the executable type inference system itself.
-The language I specified was a subset of JavaScript, chosen to be expressive
-enough to represent actual JavaScript programs while being free of some of the
+There were three components to implement for the project -- the formal
+specification of the language; the executable type inference system itself and
+a gradual typing compiler to protext the boundaries of the typed world.  The
+language I specified was a subset of JavaScript, chosen to be expressive enough
+to represent actual JavaScript programs while being free of some of the
 complications of implementation. For example, storage of variables was
 simplified to just a scope and a heap, without modelling the special cases of
 the global scope, nor worrying about removal of unused data by the garbage
@@ -355,36 +383,7 @@ collector.
 
 \section{Language Definition}
 
-\begin{lstlisting}[mathescape, escapechar=£]
-  v            ::= $b$ | $n$ | $str$ | £\textbf{undefined}£ | £\textbf{null}£ | £\textbf{\{}£$l_1$:$v_1$, $\dots$, $l_i$:$v_i$£\textbf{\}}£
-  | £\textbf{[}£$v_1$, $\dots$, $v_i$£\textbf{]}£ | £[\![£$func$, s£]\!]£
-  func         ::= £\textbf{function}£ $id$£\textbf{(}£$x_1$, $\dots$, $x_i$£\textbf{)}£ £\textbf{\{}£ $m$ £\textbf{\}}£ 
-  | £\textbf{function}£ £\textbf{(}£$x_1$, $\dots$, $x_i$£\textbf{)}£ £\textbf{\{}£ $m$ £\textbf{\}}£
-  e            ::= $v$ | $id$ | $e$ $op$ $e'$ | £\textbf{\{}£$l_1$:$e_1$, $\dots$, $l_i$:$e_i$£\textbf{\}}£ 
-  | £\textbf{[}£$e_1$, $\dots$ $e_i$£\textbf{]}£ | $e$£\textbf{.}£l | $e$£\textbf{[}£$e'$£\textbf{]}£ 
-  | $e$£\textbf{(}£$e_1$, $\dots$, $e_i$£\textbf{)}£ | $func$
-  | $assignTarget$ $\approx$ $e$ | $assignTarget$ $assignOp$ 
-  | $assignOp$ $assignTarget$ | $preOp$ e
-  m            ::= $e$ | $m_1$; $\dots$; $m_i$ | £\textbf{var}£ $vd_1$, $\dots$ $vd_i$ 
-  | £\textbf{if}£ £\textbf{(}£$e$£\textbf{)}£ £\textbf{\{}£$m_1$£\textbf{\}}£ | £\textbf{if}£ £\textbf{(}£$e$£\textbf{) \{}£$m_1$£\textbf{\} else \{}£$m_2$£\textbf{\}}£ | £\textbf{while}£ £\textbf{(}£$e$£\textbf{)}£ £\textbf{\{}£$m$£\textbf{\}}£ 
-  | £\textbf{for}£ £\textbf{(}£$e_1$; $e_2$; $e_3$£\textbf{)}£ £\textbf{\{}£$m$£\textbf{\}}£ | £\textbf{for}£ £\textbf{(}£$varDec$; $e_2$; $e_3$£\textbf{)}£ £\textbf{\{}£$m$£\textbf{\}}£ 
-  | £\textbf{@def function}£ $id$£\textbf{(}£$x_1$, $\dots$, $x_i$£\textbf{)}£ £\textbf{\{}£$m$£\textbf{\}}£
-  | £\textbf{return}£ $e$ | £\textbf{return}£  | £\textbf{$\epsilon$}£
-  assignTarget ::= $vRef$ | $assignTarget$£\textbf{[}£$e$£\textbf{]}£ | $assignTarget$£\textbf{.}£l
-  vRef         ::= $id$ | $vRef$£\textbf{.}£l | $vRef$£\textbf{[}£$n$£\textbf{]}£
-  vd           ::= $id$ | $id$£\textbf{=}$e$£
-  op           ::= $numOp$ | $cmpOp$ | $numcmpOp$ | $boolOp$
-  $\approx$             ::=  £\textbf{=}£ | $numOp$£\textbf{=}£
-  numOp        ::= £\textbf{+}£ | £\textbf{-}£ | £\textbf{/}£ | £\textbf{*}£ | £\textbf{\%}£
-  numcmpOp     ::= £\textbf{\textless}£ | $\mathbf{\leq}$ | £\textbf{$\geq$}£ | £\textbf{\textgreater}£
-  cmpOp        ::= £\textbf{===}£ | £\textbf{!==}£ | £\textbf{==}£ | £\textbf{!==}£
-  boolOp       ::= £\textbf{||}£ | £\textbf{\&\&}£
-  preOp        ::= £\textbf{-}£ | £\textbf{!}£
-  assignOp     ::= £\textbf{-\,-}£ | £\textbf{++}£
-\end{lstlisting}
-
-
-The subset includes primitive constants; object and array literals;
+The subset chosen includes primitive constants; object and array literals;
 arithmetic and logical binary and unary operators; dereferencing from and
 assignment to object properties and array elements; functions and function expressions; and basic control flow via \js{if ... else ...} and loops.  
 Where features of JavaScript were omitted, they largely tended to be features
@@ -408,20 +407,52 @@ operator to represent more than one method signature. Even where a feature is
 missing, however, the gradual typing mechanism usually allows code fragments
 relying on these features to bypass the type checker.
 
+\begin{listing}
+\begin{lstlisting}[mathescape, escapechar=£]
+  v            ::= $b$ | $n$ | $str$ | £\textbf{undefined}£ | £\textbf{null}£ | £\textbf{\{}£$l_1$:$v_1$, $\dots$, $l_i$:$v_i$£\textbf{\}}£
+                 | £\textbf{[}£$v_1$, $\dots$, $v_i$£\textbf{]}£ | £[\![£$func$, s£]\!]£
+  e            ::= $v$ | $id$ | $e$ $op$ $e'$ | £\textbf{\{}£$l_1$:$e_1$, $\dots$, $l_i$:$e_i$£\textbf{\}}£ 
+                 | £\textbf{[}£$e_1$, $\dots$ $e_i$£\textbf{]}£ | $e$£\textbf{.}£l | $e$£\textbf{[}£$e'$£\textbf{]}£ 
+                 | $e$£\textbf{(}£$e_1$, $\dots$, $e_i$£\textbf{)}£ | $func$
+                 | $assignTarget$ $\approx$ $e$ | $assignTarget$ $assignOp$ 
+                 | $assignOp$ $assignTarget$ | $preOp$ e
+  m            ::= $e$ | $m_1$; $\dots$; $m_i$ | £\textbf{var}£ $vd_1$, $\dots$ $vd_i$ 
+                 | £\textbf{if}£ £\textbf{(}£$e$£\textbf{)}£ £\textbf{\{}£$m_1$£\textbf{\}}£ | £\textbf{if}£ £\textbf{(}£$e$£\textbf{) \{}£$m_1$£\textbf{\} else \{}£$m_2$£\textbf{\}}£ | £\textbf{while}£ £\textbf{(}£$e$£\textbf{)}£ £\textbf{\{}£$m$£\textbf{\}}£ 
+                 | £\textbf{for}£ £\textbf{(}£$e_1$; $e_2$; $e_3$£\textbf{)}£ £\textbf{\{}£$m$£\textbf{\}}£ | £\textbf{for}£ £\textbf{(}£$varDec$; $e_2$; $e_3$£\textbf{)}£ £\textbf{\{}£$m$£\textbf{\}}£ 
+                 | £\textbf{@def function}£ $id$£\textbf{(}£$x_1$, $\dots$, $x_i$£\textbf{)}£ £\textbf{\{}£$m$£\textbf{\}}£
+                 | £\textbf{return}£ $e$ | £\textbf{return}£  | £\textbf{$\epsilon$}£
+  func         ::= £\textbf{function}£ $id$£\textbf{(}£$x_1$, $\dots$, $x_i$£\textbf{)}£ £\textbf{\{}£ $m$ £\textbf{\}}£ 
+                 | £\textbf{function}£ £\textbf{(}£$x_1$, $\dots$, $x_i$£\textbf{)}£ £\textbf{\{}£ $m$ £\textbf{\}}£
+  assignTarget ::= $vRef$ | $assignTarget$£\textbf{[}£$e$£\textbf{]}£ | $assignTarget$£\textbf{.}£l
+  vRef         ::= $id$ | $vRef$£\textbf{.}£l | $vRef$£\textbf{[}£$n$£\textbf{]}£
+  vd           ::= $id$ | $id$£\textbf{=}$e$£
+  op           ::= $numOp$ | $cmpOp$ | $numcmpOp$ | $boolOp$
+  $\approx$             ::=  £\textbf{=}£ | $numOp$£\textbf{=}£
+  numOp        ::= £\textbf{+}£ | £\textbf{-}£ | £\textbf{/}£ | £\textbf{*}£ | £\textbf{\%}£
+  numcmpOp     ::= £\textbf{\textless}£ | $\mathbf{\leq}$ | £\textbf{$\geq$}£ | £\textbf{\textgreater}£
+  cmpOp        ::= £\textbf{===}£ | £\textbf{!==}£ | £\textbf{==}£ | £\textbf{!==}£
+  boolOp       ::= £\textbf{||}£ | £\textbf{\&\&}£
+  preOp        ::= £\textbf{-}£ | £\textbf{!}£
+  assignOp     ::= £\textbf{-\,-}£ | £\textbf{++}£
+\end{lstlisting}
+\caption{Language Definition}
+\label{lst:langdef}
+\end{listing}
+
 \section{Formal Specification}
 
 The specification of my JavaScript subset has two components -- a definition of
 the operational semantics, and a definition of the typing judgement used. The
 executable type inference system has the job of verifying that the initial
 program, as typed by the developer, is well-typed. If the specification is
-correctly defined, this property can then be proved to be preserved throughout the
+correctly defined, this property can then be proven to be preserved throughout the
 execution of the program.
 
 \subsection{Operational Semantics}
 The operational semantics takes the form of {\color{red}60} inductive rules
 describing all possible transitions from one step of computation to another. A
 step of computation is described by a configuration triple of the form
-$$\langle m, s, \theta\rangle.$$ $m$ is the program code remaining to be
+$$\langle \mathtt{m}, s, \theta\rangle.$$ $\mathtt{m}$ is the program code remaining to be
 executed, $s$ represents the current scope (the set of variables accessible at
 this program point); and $\theta$ represents the heap, where variable values
 are stored.
@@ -431,30 +462,30 @@ $$\infer[\textsc{Seq2}]
 
 A transition rule is described by a series of premises, which, if true,
 indicate that the conclusion must also be true. For example, the rule
-\textsc{Seq2} tells us that, if some statement $m_1$ can reduce to $m_1'$ using
+\textsc{Seq2} tells us that, if some statement $\mathtt{m_1}$ can reduce to $\mathtt{m_1'}$ using
 the store $(s,\theta)$, then it must also be possible to reduce any sequence of
-statements beginning with $m_1$ with the same effects on the store. Most of the
-rules follow an intuitive understanding of JavaScript's execution semantics, in
-terms of evaluation of subexpression before evaluating the entire expression. A
+statements beginning with $\mathtt{m_1}$ with the same effects on the store. Most of the
+rules follow an intuitive understanding of JavaScript's execution semantics --
+the result of a subexpression is used to determine the type of the enclosing exprression. A
 few points are worth further discussion, however.
 
-\begin{program}[t]
-  \begin{minted}[numbersep=-12pt,linenos]{javascript}
-	function makeCounter(n) {
-	  var i = n;
-	  return function() {
-		if (i>0) {
-		  i--;
-		}
-		return i;
-	  }
-	}
-
-	var count = makeCounter(10);
-	count(); // i is now 9, but the current scope is unchanged
-  \end{minted}
-  \caption{A function call with side effects}\label{lst:sideEffects}
-\end{program}
+%\begin{program}[t]
+%  \begin{minted}[numbersep=-12pt,linenos]{javascript}
+%	function makeCounter(n) {
+%	  var i = n;
+%	  return function() {
+%		if (i>0) {
+%		  i--;
+%		}
+%		return i;
+%	  }
+%	}
+%
+%	var count = makeCounter(10);
+%	count(); // i is now 9, but the current scope is unchanged
+%  \end{minted}
+%  \caption{A function call with side effects}\label{lst:sideEffects}
+%\end{program}
 
 \subsubsection*{Assignment}
 
@@ -486,16 +517,16 @@ $$\infer[\textsc{Assign3}]
   \langle \mathtt{v}, s, \theta\oplus\{\textbf{addr}(vRef, s, \theta) : v\} \rangle
 }
 {
-  (vRef, s, \theta) \in dom(\textbf{addr})
+  (\texttt{vRef}, s, \theta) \in dom(\textbf{addr})
 }$$
 
 Legal assignment targets are not limited in the ECMAScript specification by
 syntax, but rather by whether or not expressions resolve to a reference. For my
-specification, I have simplified this in order to make a decision about whether
+specification, I have simplified this by making a decision about whether
 an assignment is valid on the basis of syntax alone. I have done this by
 specifying that the only valid left hand side of an assignment is a value
-reference (\textit{vRef}) or an expression which will reduce down to a value
-reference (\textit{assignTarget}). A value reference represents a value stored
+reference (\textit{vRef}) or an expression which will reduce down to one
+(\textit{assignTarget}). A value reference represents a value stored
 on the heap. A variable identifier \js{x}, for example, is a valid value
 reference. The value on the heap may be an object or array pointing to other
 values, and so \js{x.l} and \js{x[n]} are also value references. Although value
@@ -516,6 +547,7 @@ either $s$ or $\Gamma$. In contrast, there is a direct relation between a value
 reference and a location in the store, defined by the function 
 $addr(vRef, s, \theta)$.
 
+
 \subsubsection*{Function Closures}
 
 $$\infer[\textsc{Func}]
@@ -534,57 +566,56 @@ $$\infer[\textsc{CallAnon}]
 }$$
 
 When a function is called in JavaScript, the scope available for variables is
-the one which existed at the point of definition for the function, \textit{not}
+the one at the point of definition of the function, \textit{not}
 the point of use. It is thus insufficient to solely store the function code --
 we must also save the current scope when a function definition is encountered,
 so that this scope can be restored when the function is called. The rule
 \textsc{Func} handles this storage by converting a function expression into a
 \textit{function closure}, which contains both the function code and the
-relevant scope. The rule \textsc{CallAnon} demonstrates an example of such a
-closure at the point of use, being converted to a function body in execution
-(denoted by $\mathtt{@body\{m\}}$). Fresh heap locations are chosen for the 
+relevant scope. The rule \textsc{CallAnon} demonstrates an example of the point of use of a closure.
+It is 
+converted to an in-execution function body
+denoted by $\mathtt{@body\{m\}}$. Fresh heap locations are chosen for the 
 function parameters (including the implicit parameter \js{this}), and these
 are referenced within the inner scope.
 
-Values foo denoted within $[\![\enspace]\!]$ will never appear in
-the original code as typed by the programmer, but can only arise after a
-transition. Because of this, the type checker implementation does not need to
-be aware of such constructs -- they are only required for our proof of type
-safety.
+%Values denoted within $[\![\enspace]\!]$ will never appear in
+%the original code as typed by the programmer, but can only arise after a
+%transition. Because of this, the type checker implementation does not need to
+%be aware of such constructs -- they are only required for our proof of type
+%safety.
 
 
-\subsubsection*{The Heap}
+%\subsubsection*{The Heap}
+%
+%$$\infer[\textsc{CallBody1}]
+%{\langle \mathtt{[\![@body\{m\}, s', \theta]\!]}, s, \theta\rangle  \rightarrow
+%  \langle \mathtt{[\![@body\{m'\}, s'', \theta']\!]}, s, \theta'\rangle }
+%{ \begin{split}
+%  	& \langle\mathtt{m}, s', \theta\rangle\rightarrow\langle \mathtt{m'},s'', \theta\rangle
+%  \end{split}
+%}$$
+%
+%Concretely, $s$ is a function from variable identifiers to heap addresses, and
+%$\theta$ is a function from heap addresses to values -- which may either be
+%primitive values (such as numbers or function closures), or themselves be
+%functions from property names or numbers to heap addresses (in the case of
+%objects and arrays respectively). Many operational semantics do not distinguish
+%between the scope and the heap, combining both into a single entity normally
+%known as the store. The separation is needed here, however, because JavaScript
+%is not a \textit{pure} language. When a function is called, it may have
+%side-effects which must be recorded, but which should not affect the calling
+%scope (listing \ref{lst:sideEffects}). The only way to achieve this is to
+%separate the heap (which is modified by the function call) from the scope
+%(which is not). This is demonstrated in rule \textsc{CallBody1}, where $\theta$
+%is updated to $\theta'$, but only the scope $s'$ within the function closure is
+%modified -- not the containing scope $s$.
 
-$$\infer[\textsc{CallBody1}]
-{\langle \mathtt{[\![@body\{m\}, s', \theta]\!]}, s, \theta\rangle  \rightarrow
-  \langle \mathtt{[\![@body\{m\}, s'', \theta']\!]}, s, \theta'\rangle }
-{ \begin{split}
-  	& \mathtt{m} \not = \mathtt{return\ v;\ m''} \\
-  	& \langle\mathtt{m}, s', \theta\rangle\rightarrow\langle \mathtt{m'},s'', \theta\rangle
-  \end{split}
-}$$
-
-Concretely, $s$ is a function from variable identifiers to heap addresses, and
-$\theta$ is a function from heap addresses to values -- which may either be
-primitive values (such as numbers or function closures), or themselves be
-functions from property names or numbers to heap addresses (in the case of
-objects and arrays respectively). Many operational semantics do not distinguish
-between the scope and the heap, combining both into a single entity normally
-known as the store. The separation is needed here, however, because JavaScript
-is not a \textit{pure} language. When a function is called, it may have
-side-effects which must be recorded, but which should not affect the calling
-scope (listing \ref{lst:sideEffects}). The only way to achieve this is to
-separate the heap (which is modified by the function call) from the scope
-(which is not). This is demonstrated in rule \textsc{CallBody1}, where $\theta$
-is updated to $\theta'$, but only the scope $s'$ within the function closure is
-modified -- not the containing scope $s$.
-
-\subsection{Type Judgement}
-The second component of the specification is the type judgement, which is
-divided into typing judgements for expressions and typability judgements for
-statements. A typing judgement has the form $$\Gamma\vdash e : T\ |_C\
-\Gamma'$$ and a typability judgement has the form $$\Gamma \vdash m\ |_C\
-\Gamma'.$$
+\subsection{Type Judgement} The second component of the specification is the
+type judgement, which is divided into \textit{typing} judgements for
+expressions and \textit{typability} judgements for statements. A typing
+judgement has the form $$\Gamma\vdash \mathtt{e} : T\ |_C\ \Gamma'$$ and a typability
+judgement has the form $$\Gamma \vdash \mathtt{m}\ |_C\ \Gamma'.$$
 
 $\Gamma$ represents the type store, functioning similarly to the store from our
 operational semantics by providing a map from variable identifiers to types.
@@ -595,7 +626,7 @@ asserts that all sub-expressions of the statement are well-typed. $C$ is a set
 of constraints which must be satisfied for the type judgement to be considered
 valid. Finally, evaluating the expression may result in changes to the type store (for
 example introducing a new variable), and these changes are reflected in
-$\Gamma'$, which will be used for judging the type of subsequent expressions.
+$\Gamma'$, which will be used for judging the types of subsequent expressions.
 
 $$\infer[\textsc{PropType}]{
   \Gamma \vdash \mathtt{e.l}:T\ |_{C\cup\{\{l:T\}\succeq T_1\}}\ \Gamma_2
@@ -607,7 +638,7 @@ The structure of the inductive rules is the same as for the operational
 semantics. For example, rule \textsc{PropType} indicates that \js{e.l} only
 has a valid type if \js{e} does, and if the type of \js{e} is a subtype
 of the type $\{l: T\}$ for some $T$ (i.e.~if the type of \js{e} has at least the property
-\js{l}). Again I will focus on a few interesting cases.
+\js{l}). Again I will focus on a few interesting rules.
 
 \subsubsection*{Return}
 
@@ -637,7 +668,8 @@ $$\infer[\textsc{RetTypable4}]{
 }{
   \begin{split}
 	&\Gamma \vdash \mathtt{e}:T\ |_C\ \Gamma'\\
-	&\Gamma'[``return"] = T'
+	&\Gamma'[``return"] = T'\\
+	&T'\not=IllDefined(T'')
   \end{split}
 }$$
 $$\infer[\textsc{AnonVoid}]{
@@ -682,6 +714,27 @@ $$\infer[\textsc{NamedFun}]{
 	&T_k \neq IllDefined(T_k')
   \end{split}
 }$$
+
+When a function has multiple return statements, we need to ensure that every
+possible value returned has the same type.  This parallels the situation with
+variable assignments, where we need to ensure that each assignment to a
+particular variable has the same type.  suitable type. I thus use the same
+mechanism for return values as for variables, and include a special
+``\textit{return}" entry in the type environment. 
+
+The absence of a return statement in a function indicates a function which
+effectively returns the value \js{undefined}.  We cannot, however, simply
+initialise $\Gamma[``return"]$ to the type \texttt{undefined}, since this would
+fail to unify with the return types of later return statements.  Instead,
+$\Gamma[``return"]$ is initialised to a special type \texttt{pending} when a
+function definition is encountered. Rule \textsc{RetTypable2} handles the first
+return statement encountered by simply overwriting the \texttt{pending} entry
+in the type environment. \textsc{RetTypable4} constrains all future return
+types to be compatible with the previous one.  If $\Gamma[``return"]$ is still
+\texttt{pending} after typing the whole function body, then the function is
+typed as having return type \texttt{undefined} (rules \textsc{AnonVoid} and
+\textsc{NamedVoid})
+
 $$\infer[\textsc{IfTypable1}]{
   \Gamma\vdash\ \mathtt{if\ (e)\ \{m_1\}\ else\ \{m_2\}}\ |_{C_0\cup C_1\cup C_2\cup\{T_0=\mathtt{boolean}\}}\ \Gamma_3
 }{
@@ -713,25 +766,8 @@ $$\infer[\textsc{ForTypable}]{
   \end{split}
 }$$
 
-When a function has multiple return statements, we need to ensure that every
-possible value returned has the same type.  This parallels the situation with
-variable assignments, where we need to ensure that each assignment is of a
-suitable type. I thus use the same mechanism for return values as for
-variables, and include a special ``\textit{return}" entry in the type
-environment. The absence of a return statement in a function indicates a
-function which effectively returns the value \js{undefined}.  However we cannot
-simply initialise $\Gamma[``return"]$ to the type \texttt{undefined}, since
-later return statements are likely to have types which are not equal to
-\texttt{undefined}. Instead, $\Gamma[``return"]$ is initialised to a special
-type \texttt{pending}, and rule \textsc{RetTypable2} handles the first
-encountered return statement by simply overwriting the \texttt{pending} entry
-in the type environment with a new one. If $\Gamma[``return"]$ is still
-\texttt{pending} after typing the function body, then the function is typed as
-having return type \texttt{undefined} (rules \textsc{AnonVoid} and
-\textsc{NamedVoid})
-
 Matters are complicated slightly in the presence of non-trivial control flow.
-The function below, for example, is not typable because it may sometimes return
+The function below, for example, should not be typable because it may sometimes return
 a \texttt{number}, but sometimes it will return \texttt{undefined}.
 \begin{program}[H]
   \begin{minted}{javascript}
@@ -745,83 +781,20 @@ a \texttt{number}, but sometimes it will return \texttt{undefined}.
 
 Because there is no explicit \js{return undefined;} statement at the end of the
 function, an unsatisfiable constraint is not generated. This problem requires
-some primitive control flow analysis to solve. As part of the $merge$ operation
+some sort of control flow analysis to solve. As part of the $merge$ operation
 of rules \textsc{If}, \textsc{While} and \textsc{ForTypable}, type environment
 entries are given an ``$IllDefined$" wrapper type if they are well-defined in
 one branch but not in the other. In particular, this operation will apply to
 the \textit{return} entry. If the return type is ill-defined when a new return
-statement is encountered, the two types will be constrained, and the
-ill-defined one will be overwritten by a well-defined type
-(\textsc{RetTypable3}).  If the return type is still ill-defined after typing
-the function body, then no type judgement is applicable, and the function is
-not typable (rules \textsc{AnonFun} and \textsc{NamedFun} both require that
-$\Gamma[``return"]\neq IllDefined(T)$ for any type T).
+statement is encountered, the two types will be constrained (as for
+\textsc{RetTypable4}), and the return type will be well-defined in the outgoing
+type environment (\textsc{RetTypable3}).  If the return type is still
+ill-defined after typing the function body, then no type judgement is
+applicable (rules \textsc{AnonFun} and \textsc{NamedFun} both require that
+$\Gamma[``return"]\neq IllDefined(T)$ for any type T), and the function is
+deemed untypable.
 
 \subsubsection*{Origin Chains}
-It is very common to add properties to an object
-after its creation. Some approaches to typing JavaScript make the assumption
-that all objects have a larger `potential' type than they are created with, and
-uninitialised properties will be added during an extended initialisation
-phase~\cite{anderson05}. Analysis of JavaScript's dynamic behaviour in
-practice, however, suggests that adding properties is likely to happen at any
-point in the object's life cycle~\cite{JSBehaviour}, and so potential types are
-not a good model for dynamic objects.
-
-Instead, one must consider two separate object types -- one where the new
-property is present, and one where it is not. Listing~\ref{lst:propAdd}
-illustrates one situation in which two distinct types are needed. At the start
-of the function, \js{x} must have type $$\mathtt{\{b:\{c:\{d:\ number\}\}\}},$$
-otherwise line 3 will involve an undefined property access. At the end of the
-function, after adding the property \js{d2}, \js{x} should have type $$\mathtt{\{b:\{c:\{d:\ number, d2:\
-  boolean\}\}\}}.$$ When determining the type
-of \js{f}, we must have access to both of these types in order to construct the
-correct function type: $$\mathtt{\{b:\{c:\{d:\ number\}\}\} \rightarrow
-  \{b:\{c:\{d:\ number,\ d2:\ boolean\}\}\}}.$$
-
-Let the initial type of \js{x} be $T_x$, and let the type of \js{x} after the
-property addition be $T_x'$. It is sadly insufficient to simply replace $T_x$
-with $T_x'$ in the type store after the property addition.  The reason for this
-is the property access on line 3. This is only a valid operation if \js{x} has
-a property \js{b}, which has a property \js{c} with property \js{d}. Indeed the
-type judgement for this statement will generate constraints of the form 
-\begin{equation}
-  \begin{split}
- 	\label{eq:barC}
- 	\{b:T_b\} \succeq T_x' \\
- 	\{c:T_c\} \succeq T_b \\
- 	\{d:number\} \succeq T_c \\
-  \end{split}
-\end{equation}
-
-The problem is that these only constrain $T_x'$, and not $T_x$. $T_x$ is
-left essentially unconstrained, and \js{f} is incorrectly given the type
-$$\mathtt{(\mathtt{\{\} \rightarrow \{b:\{c:\{d:\ number,\ d2:\ boolean\}\}\}})}.$$ In order to
-correctly judge the type of this function, we need constraint~\eqref{eq:barC}
-to pass through $T_x'$ to $T_x$. I do this by attaching $T_x$ as the
-\textit{origin} of $T_x'$. I represent this by $T_x'\orig T_x$. When a
-non-root object type (i.e.~one which has an origin defined) is constrained as a
-subtype, it may either have the required properties itself, or find them
-further down the origin chain. Formally,
-\begin{equation}
-  \begin{split}
-	T_1\enspace \succeq\enspace T_2\orig T_2' \iff \exists\ & T_a, T_b\ \qdot\\
-	& T_a\cup T_b = T_1 \quad\land \\
-	& \forall \left\{l: T\right\} \in T_a \qdot (\{l: T'\}\in T_2\enspace \land \enspace T \succeq T') \quad\land \\
-	& T_b \succeq T_2'
-  \end{split}
-  \label{succeq}
-\end{equation}
-and
-\begin{equation}
-  T_1\orig T_1'\enspace \succeq \enspace T_2 \iff T_1\succeq T_2 \land T_1' \succeq T_2
-\end{equation}
-The intuition behind these formulae is to ensure that every element in the
-$T_1$ chain is present somewhere in the chain for $T_2$.  We can consider the
-properties of each object in the left hand chain separately, and can partition
-the object type $T_1$ into properties which are present directly in $T_2$, and
-properties which must be present further down the chain $T_2'$.
-
-
 \begin{program}[t]
   \centering
   \begin{minipage}[b]{0.45\linewidth}
@@ -843,19 +816,86 @@ properties which must be present further down the chain $T_2'$.
   \end{minipage}
   \caption{Property addition}\label{lst:propAdd}
 \end{program}
+It is very common in JavaScript to add properties to an object
+after its creation. Some approaches to typing JavaScript make the assumption
+that all objects have a larger `potential' type than they are created with, and
+that uninitialised properties will be added during an extended initialisation
+phase~\cite{anderson05}. Analysis of JavaScript's dynamic behaviour in
+practice, however, suggests that adding properties is likely to happen at any
+point in the object's life cycle~\cite{JSBehaviour}, and so potential types are
+not a good model for dynamic objects.
 
-This system allows the constraint to propagate along the origin chain, finally
-enforcing it on the root object. All this is clearly not necessary in the case
-of assignment to a pre-existing, rather than novel, property. It is not
+Instead, one must consider two separate object types -- one where the new
+property is present, and one where it is not. Listing~\ref{lst:propAdd}
+illustrates one situation in which two distinct types are needed. At the start
+of the function, \js{x} must have type 
+$$T_x = \mathtt{\{b:\{c:\{d:\ number\}\}\}},$$
+otherwise line 3 will involve an undefined property access. At the end of the
+function, after adding the property \js{d2}, \js{x} should have type 
+$$T_x' = \mathtt{\{b:\{c:\{d:\ number, d2:\ boolean\}\}\}}.$$
+When determining the type
+of \js{f}, we must have access to both of these types in order to construct the
+correct function type: 
+$$
+  T_x \rightarrow T_x' =
+  \mathtt{\{b:\{c:\{d:\ number\}\}\} \rightarrow
+  \{b:\{c:\{d:\ number,\ d2:\ boolean\}\}\}}.
+$$
+
+It is insufficient to simply replace $T_x$
+with $T_x'$ in the type store after the property addition on line 2.  The reason for this
+is the subsequent property access on line 3. This is only a valid operation if \js{x} has
+a property \js{b} (which has a property \js{c} with property \js{d}). Indeed the
+type judgement for this statement will generate constraints of the form 
+\begin{equation}
+  \begin{split}
+ 	\label{eq:barC}
+ 	\{b:T_b\} \succeq T_x' \\
+ 	\{c:T_c\} \succeq T_b \\
+ 	\{d:number\} \succeq T_c \\
+  \end{split}
+\end{equation}
+
+The problem is that these only constrain $T_x'$, and not $T_x$. $T_x$ is
+left essentially unconstrained, and \js{f} would be incorrectly given the type
+$$\mathtt{(\mathtt{\{\} \rightarrow \{b:\{c:\{d:\ number,\ d2:\ boolean\}\}\}})}.$$ In order to
+correctly judge the type of this function, we need constraint~\eqref{eq:barC}
+to pass through $T_x'$ to $T_x$. I do this by attaching $T_x$ as the
+\textit{origin} of $T_x'$. I represent this by $T_x'\orig T_x$. When a
+non-root object type (i.e.~one which has an origin defined) is constrained as a
+subtype, it may either have the required properties itself, or find them
+further down the origin chain. Formally,
+\begin{equation}
+  T_1\orig T_1'\enspace \succeq \enspace T_2 \iff T_1\succeq T_2 \land T_1' \succeq T_2
+\end{equation}
+and
+\begin{equation}
+  \begin{split}
+	T_1\enspace \succeq\enspace T_2\orig T_2' \iff \exists\ & T_a, T_b\ \qdot\\
+	& T_a\cup T_b = T_1 \quad\land \\
+	& \forall \left\{l: T\right\} \in T_a \qdot (\{l: T'\}\in T_2\enspace \land \enspace T \succeq T') \quad\land \\
+	& T_b \succeq T_2'.
+  \end{split}
+  \label{succeq}
+\end{equation}
+The intuition behind these formulae is to ensure that every element in the
+$T_1$ chain is present somewhere in the chain for $T_2$.  We can consider the
+properties of each object in the left hand chain separately, and can partition
+the object type $T_1$ into properties which are present directly in $T_2$, and
+properties which must be present further down the chain $T_2'$.
+This system allows constraints to propagate along the origin chain, finally
+being enforced on the root object.
+
+All this is clearly not necessary in the case
+of assignment to a pre-existing, property. It is not
 possible to determine from the expression alone, however, whether the property
-is novel or not, and so my system treats every property assignment as a
+is novel or not, and so my system treats every property assignment as 
 property creation. This introduces the possibility of conflict between the type
-of the property in $T_x$ and the type of the property in $T_x'$. I resolve this
+of an existing property in $T_x$ and the type of the property in $T_x'$. I resolve this
 by adding a special \textit{optional} constraint $\succeq_o$. This verifies
-that the novel property is constrained if it already exists, but the constraint
-is trivially satisfied if the property did not exist. Formally, the definition
-is similar to
-\ref{succeq}:
+that the property is appropriately constrained if it already exists, but the constraint
+is trivially satisfied if the property did not previously exist. Formally, the definition
+is similar to~\ref{succeq}:
 \begin{equation}
   \begin{split}
 	T_1\enspace \succeq_o\enspace T_2&\orig T_2' \iff \\
@@ -866,7 +906,7 @@ is similar to
 \end{equation}
 It would be possible to introduce some control-flow analysis to determine which 
 properties have been assigned to before, and only attach origin objects if the
-assignment is to a novel property. Since most assignments are likely to existing 
+assignment is to a novel property. Since most assignments are to existing 
 properties, this would increase performance of the compiler.
 
 $$\infer[\textsc{PropAssignType}]{
@@ -888,16 +928,19 @@ property for any chain of object value references. Note that a full object is
 created, (not simply a small object for the innermost member), and that each
 intermediate member needs to be attached to its own origin so that constraints
 at other levels are correctly passed through. \textsc{PropAssignType} does not
-allow adding properties to value references which include array types, because
+allow adding properties to value references including arrays, because
 adding a property to one object in an array will not change any of the other
-objects, and so the type of the array itself cannot be modified in this way.
+objects, and so the type of the array itself cannot be modified like this.
 
 Origin chains are largely orthogonal to the rest of the typing rules, except
 for those involving interesting control flow (i.e.~rules for \js{if},
 \js{while} and \js{for}). This is due to the possibility of a branch not being
 taken, and so we cannot be certain whether or not a certain property has been
-added. Instead, we merge together the different potential type environments,
-essentially taking the intersection of the possible types.
+added. Instead, we flatten the origin chains for each branch up until the
+shared ancestor.  The two possible types thus differ only in the ultimate
+element of the chain. The intersection of the properties of these two elements
+is taken to create a new type environment entry to be used in subsequent
+statements.
 
 \subsubsection*{Function Closures}
 $$
@@ -913,26 +956,26 @@ $$
 The typing rules for function closures are analogous to the transition rules,
 capturing the type environment, rather than the actual store, in a closure
 type. The restriction of $\gamma$'s domain is necessary to show that \js{func} will be 
-well-typed when using $s$ as scope in particular.
+well-typed when using $s$ as scope.
 
 $$\infer[\textsc{VoidBodyType}]{
   \Gamma\vdash\mathtt{[\![@body\{m\},s,\theta]\!]}:T\ |_{C\cup\{T=T_k\}}\ \Gamma
 }{
   \begin{split}
-	&\gamma\cup\{\mathbf{return}:\textrm{pending}\} \vdash \mathtt{m}\ |_C\ \gamma' \\
 	&\gamma \vdash (s, \theta) \\
+	&\gamma\cup\{\mathbf{return}:\textrm{pending}\} \vdash \mathtt{m}\ |_C\ \gamma' \\
 	&\gamma'[``return"] = T_k\\
 	&T_k \neq IllDefined(T_k')
   \end{split}
 }$$
 
-When using the closure's type environment after a function call, we must first
+When using the closure's type environment for a function call, we must first
 assert that the captured store is well-typed under this type environment
 ($\gamma \vdash (s, \theta)$). In essence, this tells us that the type
 environment $\gamma$ and the store $(s, \theta)$ agree on the types of
 variables. This is necessary for our proof of progress, which will be discussed
-further in chapter \ref{evaluation}. Note again that the expression
-$\mathtt{[\![@body\{m\},s,\theta]\!]}$ will never actually appear in the
+further in Chapter \ref{evaluation}. Note that expressions enclosed in 
+$\mathtt{[\![\ \ ]\!]}$ will never actually appear in the
 original program code, and so the type judgements for these kinds of expression
 are required for the proof of type safety, but do not appear in the executable
 type inference system.
@@ -940,12 +983,12 @@ type inference system.
 \section{Inference Implementation}
 The purpose of the implementation is to verify that the original source code is
 well-typed according to the type judgements. Once this is verified, I have
-proven that the program will not get stuck without a transition available.
+proven that the program will not get stuck without a transition available (Chapter~\ref{evaluation}).
 There are two parts to verifying this: generating constraints according to the
 typing rules defined, and solving these constraints. If the constraints are
 satisfiable, then the program is well typed. Although all that is required for
-type-safety is this satisfiability, we are also interested in finding an
-explicit type for each expression, as an aid for development tools.
+type-safety is this satisfiability, we are also interested in finding a
+canonical type for each expression, as an aid for development tools.
 
 \subsection{Constraint Generation}
 
@@ -961,8 +1004,9 @@ containing the type (if the node was an expression node), an array of
 constraints, and a modified type environment. The inferred type is also
 attached to the node, so that future tools can build on the inference
 performed. Listing~\ref{lst:arrimpl} shows the \js{check} function
-corresponding to the typing rule \textsc{V\_Arr}, which is shown in Figure~\ref{fig:arrrule}
-\begin{figure}[t]
+corresponding to the typing rule \textsc{V\_Arr}, which is shown in Listing~\ref{fig:arrrule}.
+
+\begin{listing}[H]
   $$\infer[\textsc{V\_Arr}]{
   	\Gamma\vdash\mathtt{[e_1,\, \ldots,\ e_k]}:[T]\ |_C\ \Gamma_k	
   }{ 
@@ -974,18 +1018,16 @@ corresponding to the typing rule \textsc{V\_Arr}, which is shown in Figure~\ref{
 	  &C=\bigcup_{i=1}^kC_i \cup {T \succeq T_i'}
 	\end{split}	  
   }$$
-  \label{fig:arrrule}
   \caption{Typing Rule \textsc{V\_Arr}}
-\end{figure}
-\begin{program}[t]
+  \label{fig:arrrule}
+\end{listing}
+\begin{program}[H]
   \begin{minted}[linenos,numbersep=-12pt]{javascript}
     // Rule V_Arr
-    UglifyJS.AST_Array.prototype.check = function(gamma, dynamics) {
+    UglifyJS.AST_Array.prototype.check = function(gamma) {
 
       var innerType = gamma.getFreshType();
-      var T = new ArrayType({
-        innerType: innerType.id
-      });
+
       var C = [];
       // an array's type is constrained by the elements within it
       for (var i = 0; i < this.elements.length; i++) {
@@ -999,12 +1041,16 @@ corresponding to the typing rule \textsc{V\_Arr}, which is shown in Figure~\ref{
         gamma = judgement.gamma;
       }
 
+      var T = new ArrayType({
+        innerType: innerType.id
+      });
+
       return new Judgement(T, C, gamma);
     };
   \end{minted}
   \caption{The implementation of \textsc{V\_Arr}}\label{lst:arrimpl}
 \end{program}
-
+\vfill
 
 \subsection{Constraint Solution}
 
@@ -1018,8 +1064,8 @@ This is made possible by the fact that the constraints are equations -- if
 $T_1=T_2$, then it is always possible to substitute $T_1$ for $T_2$. If a
 constraint is found which equates two different concrete types, the algorithm
 fails. A side-effect of this algorithm is finding the \textit{most general
-  unifier} for each type variable, which gives a single convenient
-representation of the type.  We have generated subtype constraints, however,
+  unifier} for each type variable, which gives a canonical
+representation of the type.  We have generated subtype rather than equality constraints, however,
 which are not so easily solved.
 
 We cannot simply use substitution in the same way for subtype constraints,
@@ -1030,7 +1076,7 @@ within an upper and lower bound.  In listing~\ref{lst:multSols}, for example,
 \js{x} must have the property \js{c}, but \js{b} and \js{a} may or may not be
 present.  
 
-\begin{program}
+\begin{program}[H]
   \begin{minted}[mathescape]{javascript}
 	x = {a:1, b:2, c:3} // $x \succeq \{a:number, b:number, c:number\}$
 	x.c++;              // $x \preceq \{c:number\}$
@@ -1041,15 +1087,15 @@ present.
 Although these problems are introduced by subtyping constraints, in practice
 they will only arise for object types. Primitive types like numbers or strings,
 for example, lack any kind of substructure and so a subtype constraint
-involving a primitive type can essentially be treated as a straight equation
+involving a primitive type can essentially be treated as an equality
 constraint. Function and array types do have substructure, but solving a
 subtype constraint for these types simply involves passing on the constraint to
 a lower level of structure. Table~\ref{tab:crc} summarises these solution
 methods. Since most types can be handled easily using substitution, it would be
 nice to find a solution for objects in and hence retain the benefits of the
-linear-time unification algorithm. 
+(linear-time) unification algorithm. 
 
-\begin{table}
+\begin{table}[H]
 \begin{center}
     \begin{tabular}{ | m{3.5cm} | m{2.5cm} | m{2.5cm} | m{3.4cm} | m{3cm} |}
     \hline
@@ -1085,12 +1131,12 @@ linear-time unification algorithm.
 
 \subsubsection*{Object Subtype Constraints} 
 Let $A$ be an abstract type, and $O$ be a concrete object type. For the
-constraint $A \preceq O$ to be satisfied, $A$ must be an object type with at
-least all the properties of $O$. If some property was present in $O$ but not in
+constraint $O \succeq A$ to be satisfied, $A$ must be an object type with at
+least all the properties of $O$. If some property were present in $O$ but not in
 $A$, then $A$ would not be a valid subtype of $O$. So for this constraint it is
 reasonable to use the substitution $[O'/A]$, where $O'$ is a clone of $O$. The
-reason we do not use $O$ directly is that later constraints may require $O'$ to
-grow, but this should not have an effect on $O$.
+reason we do not use $O$ directly is that later constraints may add more properties
+to $O'$, but these should not have an effect on $O$.
 
 For the inverse constraint, $A\succeq O$, the substitution is perhaps not so
 obvious. Although the same substitution $[O'/A]$ does satisfy the constraint,
@@ -1101,24 +1147,24 @@ type-checking is inherently conservative.  Any type checker which is sound and
 decidable must be incomplete -- that is, it will always be possible to write a
 program which is well typed but does not satisfy the type checker. The
 approximate substitution used here maintains type safety -- any program which
-satisfies it must be well typed -- at the cost of a slight reduction in
+satisfies it must be well typed -- at the cost of a reduction in
 completeness. Empirical observation through testing fragments of JavaScript has
 not revealed any `real' programs which suffer as a result of this
 approximation, however.
 
 The last case to consider is a constraint between two object types, $O_1\succeq
 O_2$. We can check whether the constraint is satisfied by inspection -- iterate
-through all properties of $O_1$ and ensure they are present in $O_2$. If all
-are present, we constrain the corresponding properties of both objects and move
-on.  If some property is missing, however, a conservative type checker must
-deem the program untypable. Although this system is provably sound, it is very
-much incomplete, and most interesting programs will fail the type checker. 
+through all properties of $O_1$ and ensure that they are present in $O_2$. If
+all are present, we create subconstraints for the corresponding properties of
+both objects and move on.  If some property is missing, however, a conservative
+type checker must deem the program untypable. Although this system is provably
+sound, it is very much incomplete, and most interesting programs will fail under it.
 
-My initial attempt to solve this involved the gradual `discovery' of new properties.
+My attempt to get around this involved the gradual `discovery' of new properties.
 In certain contexts, it would be safe to add properties to $O_2$ in order to make the
 constraint satisfiable. An example of one such context is shown in Listing~\ref{lst:discConst}.
-The types of parameters and imported variables are suitable for this kind of discovery, since 
-we do not have an initial assignment of an object, which would normally provide a reasonable
+The types of function parameters and imported variables are suitable for this kind of discovery, since 
+we do not have an initial assignment of an object which would normally provide a reasonable
 approximation of the object type. My implementation does exactly this -- when initialising a type
 for a function parameter, a \js{shouldInfer} flag is set which will allow discovery 
 of new properties when the type is involved in a constraint. After the new properties are 
@@ -1128,8 +1174,8 @@ values lacking these properties then the type checker will fail.
 \begin{program}
   \begin{minted}[mathescape]{javascript}
 	function f(x) {
-		x.foo += 1;   // $T_x \preceq\{foo:number\}$
-		return x.bar; // $T_x \preceq\{bar:T\}$
+		x.foo += 1;   // $T_x \preceq\{foo:number\}$, solved by substitution
+		return x.bar; // $T_x \preceq\{bar:T\}$, solved by discovery
 	}
   \end{minted}
   \caption{A context in which it would be safe to add the property \js{bar} to $T_x$}
@@ -1138,15 +1184,16 @@ values lacking these properties then the type checker will fail.
 
 Although this method appears to work in practice, it is not clear that the
 discovery behaviour is truly sound. Constraints are solved sequentially, then
-discarded. One constraint, say $C_1$, has the form $T\succeq T'$. Some later
-constraint might also involve $T$, say, $T\preceq X$.  I may add new properties
-to $T$ to solve this constraint -- but these additions may not be present in
-$T'$. In this case $T$ is no longer a valid supertype for $T'$, and $C_1$ is
-not satisfied. When I discard $C_1$, I have not logged the `upper bound' on the
-members allowed in $T$, and so growing through any later constraints may
-violate $C_1$ Keeping explicit track of the upper and lower bounds for object
-types may provide a more rigorous approach. These bounds could then be
-collapsed down to some particular object when required.
+discarded. One constraint, say $C_1$, may have the form $T\succeq T'$. Some
+later constraint might also involve $T$, say, $T\preceq X$.  I may add new
+properties to $T$ to solve this constraint which are not present in $T'$. In
+this case $T$ is no longer a valid supertype for $T'$, and $C_1$ is violated.
+When I discard $C_1$, I have not logged the `upper bound' on the members
+allowed in $T$, and so growing through any later constraints may violate $C_1$
+Keeping explicit track of the upper and lower bounds for object types may
+provide a more rigorous approach to solving constraints. These bounds could
+then be collapsed down to some particular type when required, and to provide a
+canonical type for the variable.
 
 \subsubsection*{Subconstraints}
 Objects, functions and arrays all have sub-structures, such that once we are
@@ -1154,9 +1201,9 @@ satisfied that two types match at a certain level, we will need to generate
 sub-constraints to ensure that the substructures also correspond to one
 another. For a constraint $O_1\succeq O_2$ between object types, this is
 simple, following on from the definition of $\succeq$. For all $\{l:T_1\}$ in
-$O_1$, we must have some $\{l:T_2\}$ in $O_2$. In this, case we simply push the
+$O_1$, we must have some $\{l:T_2\}$ in $O_2$. we can simply push the
 constraint down, generating the new constraints $T_1\succeq T_2$. Array types
-are similar.  For a constraint $[T_1]\succeq[T_2]$, we simply generate the new
+are similar: for a constraint $[T_1]\succeq[T_2]$, we simply generate the new
 constraint $T_1\succeq T_2$. Finally, functions behave in a similar way with
 regards to their return type, but are contravariant in their argument types.
 Hence for a constraint $(T_1, \ldots, T_i \rightarrow T_r) \succeq(T_1',
@@ -1167,7 +1214,7 @@ This generation of subconstraints carries with it the risk of non-termination,
 in the case where one type contains itself. Indeed, this is a very real
 possibility for JavaScript, since every object method has an implicit \js{this}
 parameter which will have the type of the object itself. The solution is to
-keep track of which types we have passed as we recursively generate the
+keep track of which types we encounter as we recursively generate
 subconstraints. If we generate a constraint involving types which we have
 already encountered, then it is skipped. The soundness of this can be proved by
 induction. A constraint near the top of the path is satisfied if all
@@ -1188,20 +1235,18 @@ a type system should exclude, since for example adding a property to an array
 may well be indicative of a bug. However, there are some indispensable
 properties of arrays and functions which can only be accessed by dereferencing
 them as objects. Chief amongst these is the \js{.length} property of an array,
-which is fairly crucial for most tasks involving arrays.
+which is crucial for most tasks involving arrays.
 
 The solution is to treat, as JavaScript does, arrays and functions as if they
 were simply objects. We can rewrite array types as object types with a special
 `\texttt{@deref}' property representing the array items' type. This then allows
-property addition and dereferencing like any other object. Since array items'
-types are covariant with the type of the array itself (as object properties
-are), we do not need to do anything different for subconstraint generation. A
-little more care is required to rewrite function types, since argument types
-are covariant, but the principle is the same. Function types are wrapped by an
-object type with a special `\texttt{@call}' property, containing the original
-function type. Constraints on the object wrapper will generate a covariant
-subconstraint on the function type, which can be handled as discussed in the
-subconstraints section above.
+reading and writing properties like any other object. Since array items' types
+are covariant with the type of the array itself (as object properties are), we
+do not need to do anything different for subconstraint generation. Function
+types are wrapped by an object type with a special `\texttt{@call}' property
+containing the original function type. Constraints on the object wrapper will
+generate a covariant subconstraint on the function type, which can be handled
+as discussed in the subconstraints section above.
 
 \section{Gradual Typing}
 
@@ -1209,22 +1254,20 @@ As previously mentioned, any static type checker must exclude some well typed
 programs.  Although this is a problem for any language, it is all the more
 likely to arise in a dynamic language like JavaScript, where the programmer is
 used to having a certain freedom of expression. A mechanism is thus needed to
-give programmers freedom to write dynamic could where convenient, while still
+give programmers freedom to write dynamic code where convenient, while still
 using a static type checker wherever possible. To allow for this, a programmer
-can annotate his program with an ``import" directive, which declares a certain
+can annotate his program with ``import" directives, which declares a certain
 variable as having dynamic behaviour. When read, we cannot rely on an imported
 variable to have any particular type, and so we must instead insert a dynamic
-type-check to ensure that its type is as what we expect.
-Listing~\ref{lst:import1} shows one situation which can only be considered safe
-\js{x} is a boolean value when it first appears, but is then a numeric value on
-the next line. Although this may seem a contrived example, a very similar
-situation could arise if \js{x} was instead used as a function, returning a
-different type of value depending on its parameters.
+type-check to ensure that its type is as we expect.
+Listing~\ref{lst:import1} shows one situation which can only be considered safe if
+\js{x} return a boolean value when it first appears, but then returns a numeric value on
+the next line. 
 \begin{program}
   \begin{minted}{javascript}
 	// jstyper import x
-	if (x) {
-	  sum = x + 5;
+	if (x()) {
+	  sum = x() + 5;
 	}
   \end{minted}
   \caption{A simple use of imported variables}\label{lst:import1}
@@ -1235,27 +1278,27 @@ whether the variable's name is in the ``imported" list. If it is, the current
 program point is recorded, and a fresh type is returned. After type checking is
 complete, this fresh type will have been substituted away, and will tell us
 what type is required at the program point. The gradual-typing compiler can
-then replace all such variables with an appropriate wrapper which will check
-that the dynamically check that the variable has the correct type before
+then replace all such variables with an appropriate wrapper which will
+dynamically check that the variable has the correct type before
 returning its value.  This wrapper acts as a kind of explicit cast for the
 variable -- from an unknown dynamic type, to some known fixed type. The wrapper
 will only return values of the specified type, regardless of the actual type of
 the dynamic variable (though it may throw an error instead of returning).
 Since the cast is type-preserving, then, the resulting code must be type-safe,
 and our guarantee that the program will not get stuck is maintained. We may yet
-generate \textit{cast} errors -- if the wrapper is given data of the incorrect type --
+generate \textit{cast} errors,
 but the well-typed portion of the program cannot be blamed for this error,
 which must have been caused by the dynamic code returning a value of the
-incorrect value. 
+incorrect type. 
 
 \begin{program}
   \begin{minted}{javascript}
 	// jstyper import x
-	var sum = 5 + (function(t) {
+	var sum = (function(t) {
 	  if (typeof t !== "number") 
 	  throw new CastError("x is not a number");
 	  return t;
-	})(x)*2;
+	})(x) + 5;
   \end{minted}
   \caption{An example primitive wrapper}\label{lst:importPrim}
 \end{program}
@@ -1266,8 +1309,8 @@ coerced from one type to another, and the error can propagate quite some
 distance through the program before being spotted. The guarantee of a visible
 cast error means that this kind of bug is much more likely to be spotted early
 in the development process. The additional safety guarantees -- that the
-non-dynamic code cannot be blamed -- also restricts the location in which it
-may have arisen, which will help locate and correct the bug much faster.
+non-dynamic code cannot be blamed -- also restricts the location in which the bug
+may have arisen, which will help locate and correct it much faster.
 
 \subsubsection*{Higher Order Casts}
 
@@ -1285,26 +1328,26 @@ And so, our wrappers for higher order types do exactly that -- they mimic the
 original function by accepting arguments, passing them on to the inner
 (dynamic) function, then finally examining the return type. If the return type
 is itself of a higher order, we once again cannot examine its type directly, so
-we instead give it another mimic wrapper before returning it. This wrapping is
-similar to the decorator pattern in object-oriented design, where the wrappers
-functionality is determined by the inner object. 
+we instead give it another mimic wrapper before returning it. 
 
 Unfortunately, by passing on parameters directly to the inner function, we are
 introducing a new potential hole in our type system. The parameters are well
 typed, but the inner function is not, so we cannot guarantee that the
 parameters are used in a type-safe manner. If the parameter is a callback
-expecting an integer, for example, the wrapped inner function could pass it a
+expecting an integer, for example, the dynamic inner function could call it with a
 string without triggering a cast error. The solution is to guard the parameters
 with a different kind of wrapper as they enter the untyped world. The guard
 will check the callback's parameters (wrapping them in a mimic if necessary),
 call the callback itself, then pass on the return value into the untyped world
-(wrapping it in a guard if necessary). 
+(wrapping it with another guard if necessary). 
+
+% table comparing guards and mimics from presentation?
 
 The implementation itself is fairly straightforward once the wrapper types 
-have been determined. The compiler generates an AST representation of function
-call to the function \texttt{mimic}, providing as parameters both a representation
-of the desired type, and the unsafe variable itself. This is used to replace the 
-variable's node in the original AST. UglifyJS then takes the modified AST and 
+have been determined. The compiler generates an AST representation of a
+call to the function \texttt{mimic}, providing as parameters 
+the desired type and the imported variable itself. This is used to replace the 
+variable's node in the original program's AST. UglifyJS then takes the modified AST and 
 performs the code generation stage of the compiler. Alongside this, I prepared
 a JavaScript file containing the implementation of the \texttt{mimic} function. 
 The function is thus called whenever the imported variable is accessed. If the
@@ -1337,7 +1380,7 @@ wrappers are created as described above.
 With this system of guards and wrappers, we control the boundary between the
 typed and untyped worlds. Unchecked data is given a mimic to ensure it is safe
 in the well-typed world, and type safe data is given a guard to ensure its
-safety is not compromised by anything in the unchecked world.
+safety is not compromised by the unchecked world.
 
 \subsubsection*{Performance}
 
@@ -1345,7 +1388,7 @@ Inserting extra dynamic checks will inevitably have an impact on the
 performance of the program. If the program makes frequent use of higher-order
 data -- and the common callback paradigm in JavaScript means this will often be
 the case -- the memory footprint of the program may be significantly increased
-by the wrappers created. An empirical analysis of these effects are included in
+by the wrappers created. An empirical analysis of these effects is included in
 Chapter~\ref{evaluation}.
 
 Although this performance cost will be disappointing, there are ways the
@@ -1371,10 +1414,16 @@ of type errors. Interpreters may in fact be able to use this knowledge to
 achieve better overall performance than the unchecked code could previously
 allow.
 
+
+
+
+
+
+
 \chapter{Evaluation}\label{evaluation}
 
 My evaluation is split along the same division as my implementation. To verify
-that the specification of the subset has the desired properties, I provide
+that my specification of the language has the desired properties, I provide
 inductive proofs of both progress and type preservation.  I also provide an
 extensive suite of tests to test the correctness of the inference
 implementation. Finally, the gradual typing compiler is evaluated with a series
@@ -1384,7 +1433,7 @@ output of a program), and to profile performance.
 \section{Evaluation of the Formal Specification}
 
 We want to show that there is always a well-defined sequence of transitions
-from the type-checked program in the language down to a single value
+from the type-checked program down to a single value
 representing the result of the computation. Firstly, we show that, if a program
 is well typed to begin with, then any transition will result in a program which
 is also well-typed. This is the proof of \textit{preservation}.  Using this, we
@@ -1402,11 +1451,11 @@ transitions exist.
 
 For this proof, we require a definition of a \textit{well-typed store}.  The
 intuition behind the definition is that a store is well-typed if all typable
-value references are well-defined within the store, and if the stored value
+value references exist within the store, and if the stored value
 itself has the same type as the value reference. We also require a definition
-of a \textit{strength} relation ($\sqsubseteq$) between type environments,
-which allows us to verify that the `output' type environment $\Gamma'$ after
-typing a statement can still make all the same judgements after a transition.
+of a \textit{strength} relation ($\sqsubseteq$) between type environments. This
+ allows us to verify that the `output' type environment $\Gamma'$ 
+can still make all the same judgements after a transition.
 
 \begin{definition}[Well-typed store]
   \begin{equation} \label{eqn:typed-store}
@@ -1422,7 +1471,7 @@ typing a statement can still make all the same judgements after a transition.
 \begin{definition}[Strength]
   \begin{equation} \label{eqn:strength}
 	\Gamma_1 \sqsubseteq \Gamma_2 \eqdef 
-	\forall id\qdot \{id:T_1\}\in\Gamma_1 \implies \exists T_2 \qdot \{id:T_2\}\in\Gamma_2 \land T_1\succeq T_2
+	\forall\{id:T_1\}\in\Gamma_1 \qdot \exists T_2 \qdot \{id:T_2\}\in\Gamma_2 \land T_1\succeq T_2
   \end{equation}
 \end{definition}
 
@@ -1444,12 +1493,13 @@ We also make use of a few useful lemmas.
 	The intersection of two types is a supertype to both types. 
 \end{lemma}
 
-The proofs of Lemmas~\ref{lm:strChain} and~\ref{lm:ext} follow from a fairly trivial induction
-over the structure of the type judgement derivations. The proof of Lemma~\ref{lm:intersect} considers the 
-two well-defined cases according to the definition of $\cap$. The base case, where $T_1$ and $T_2$ are not 
-objects, is trivial. When $T_1$ and $T_2$ are objects, we show that each property present in the intersection
-type can only have arisen if it was present in both object types, and hence that the intersection
-must be a supertype.
+The proof of Lemma~\ref{lm:strChain} follows from a fairly trivial induction
+over the structure of the type judgement derivations. The proof of
+Lemma~\ref{lm:intersect} considers the two well-defined cases according to the
+definition of $\cap$. The base case, where $T_1$ and $T_2$ are not objects, is
+trivial. When $T_1$ and $T_2$ are objects, we show that each property present
+in the intersection type can only have arisen if it was present in both object
+types, and hence that the intersection must be a supertype.
 
 We must split the proof of preservation into two parts -- a proof of
 preservation for expressions, and a proof of preservation for statements. The
@@ -1482,11 +1532,11 @@ distinguish which cases belong to which theorem below.
    	(\exists\gamma,\Gamma'',C'\qdot
     \Gamma\!\cup\!\gamma\vdash \mathtt{m'}\ |_{C'}\ \Gamma'' 
 	\enspace\land\enspace\Gamma\!\cup\!\gamma\vdash (s',\theta')
-	\enspace\land\enspace \Gamma'\sqsubseteq\Gamma'')
+	\enspace\land\enspace \Gamma'\sqsubseteq\Gamma''),
   \end{multline*} 
 
   where $C$ and $C'$ are satisfiable sets of constraints. The transition may
-  cause a change in the store, which wouldn't be reflected in $\Gamma$, so we
+  cause a change in the store which wouldn't be reflected in $\Gamma$, so we
   use the extension $\Gamma\!\cup\!\gamma$ rather than simply $\Gamma$. In the
   case that $\mathtt{m}$ is an expression, we also require that the judged
   types of $\mathtt{m}$ and $\mathtt{m'}$ are the same. We show that for all
@@ -1499,10 +1549,11 @@ distinguish which cases belong to which theorem below.
   a suitable $\gamma$ and show three things to prove $\Phi(m,s,\theta,m',s',\theta')$:
 
   \begin{gather}
-	\Gamma\!\cup\!\gamma\vdash\mathtt{m'}\ |_C'\ \Gamma'' \label{sub:type}\\
+	\Gamma\!\cup\!\gamma\vdash\mathtt{m'}\ |_{C'}\ \Gamma'' \label{sub:type}\\
 	\Gamma\!\cup\!\gamma\vdash(s',\theta') \label{sub:store} \\
 	\Gamma' \sqsubseteq \Gamma'' \label{sub:env}.
   \end{gather}
+
   For expressions, we require a slightly stronger statement for~\eqref{sub:type} -- that
   the judged type of $\mathtt{m'}$ be the same as the judged type for $\mathtt{m}$.
 	
@@ -1513,9 +1564,10 @@ distinguish which cases belong to which theorem below.
 	 \transition{m_1}{s}{\theta}{m_1'}{s'}{\theta'} 
 	}$$
 
-	In this case, the suitable $\gamma$ is the empty type environment. $m$ must
+	In this case, the suitable $\gamma$ is the empty type environment, so 
+	$\Gamma\!\cup\!\gamma=\Gamma$. $\mathtt{m}$ must
 	be typable under rule \textsc{SeqTypable}, which requires as premise that
-	each $m_1, \dots, m_i$ themselves be typable. In particular, we
+	each $\mathtt{m_1}, \dots, \mathtt{m_i}$ themselves be typable. In particular, we
 	require that 
 	$$\Gamma\vdash\mathtt{m_1}\ |_{C_1}\ \Gamma_1,$$ 
 	and using the assumption that $\Gamma\vdash(s,\theta)$ with the induction hypothesis gives us that
@@ -1524,7 +1576,7 @@ distinguish which cases belong to which theorem below.
 	\Gamma\vdash(s',\theta') \\
 	\Gamma_1\sqsubseteq\Gamma_1'.
   \end{gather*}
-  	This gives us~\eqref{sub:type} directly. Using
+  	This gives us~\eqref{sub:store} directly. Using
 	Lemma~\ref{lm:strChain}, and knowing that $\Gamma_1\vdash\mathtt{m_2}\ |_{C_2}\ \Gamma_2$
    	we can determine that 
 	\begin{gather*}
@@ -1539,7 +1591,7 @@ distinguish which cases belong to which theorem below.
 	Which gives us~\eqref{sub:env}, and satisfies all the premises for rule
 	\textsc{SeqTypable}. We can then conclude that 
 	$$\Gamma\vdash\mathtt{m_1'; \dots; m_i}\ |_{\bigcup_{k=0}^i{C_k}}\ \Gamma_i',$$
-	giving us~\eqref{sub:store}, and $\Phi(m,s,\theta,m',s',\theta')$ is satisfied.
+	giving us~\eqref{sub:type}, and $\Phi(m,s,\theta,m',s',\theta')$ is satisfied.
   
   \end{case}
 
@@ -1548,23 +1600,26 @@ distinguish which cases belong to which theorem below.
 	  \transition{if\ (true)\ \{m_1\}\ else\ \{m_2\}}{s}{\theta}{m_1}{s}{\theta}
 	}{}$$
 
-	 The only type judgement which could result in $\typable{m}$ uses rule
+	We again use $\gamma=\{\}$ here. The only type judgement which could result in $\typable{m}$ uses rule
 	\textsc{IfTypable1}. One precondition for \textsc{IfTypable1} is that
-	$$\Gamma\vdash\mathtt{e}:T\ |_{C_0}\ \Gamma_0,$$ 
+	$$\Gamma\vdash\mathtt{e}:T_0\ |_{C_0}\ \Gamma_0,$$ 
 	In fact, since $\mathtt{e} = \mathtt{true}$, it must be the case that $\Gamma=\Gamma_0$.
 	By assumption, $\Gamma\vdash(s,\theta)$, and the store is unchanged by the transition, so~\eqref{sub:store}
 	is satisfied. Another precondition of \textsc{IfTypable1} is that 
 	$$\Gamma_0\vdash\mathtt{m_1}\ |_{C_1}\ \Gamma_1.$$
-	This gives us~\eqref{sub:type} directly, and all that remains to show is that $\Gamma'\sqsubseteq \Gamma_1$ for~\eqref{sub:env}.
+	This gives us~\eqref{sub:type} directly, and all that remains to show is
+	that $\Gamma'\sqsubseteq \Gamma_1$ for~\eqref{sub:env}.
 
 	$\Gamma'=merge(\Gamma_0,\Gamma_1,\Gamma_2)$, so the elements of $\Gamma'$
 	are the intersection of the corresponding elements in $\Gamma_1$ and
 	$\Gamma_2$, and in particular 
-	$$\forall id\qdot \{id:T'\}\in\Gamma'\implies \exists T_1 \qdot \{id:T_1\}\in\Gamma_1,$$
-   	where $T' =	T_2\cap\Gamma_2(id)$. Lemma~\ref{lm:intersect} tells us that the
+	$$\forall \{id:T'\}\in\Gamma'\qdot \exists T_1 \qdot \{id:T_1\}\in\Gamma_1,$$
+   	where $T' =	T_1\cap\Gamma_2(id)$. Lemma~\ref{lm:intersect} tells us that the
 	intersection of two types is a supertype to both types. We can use this to
-	show that $T'\succeq T_1$, and hence that $\Gamma'\sqsubseteq\Gamma_1$.~\eqref{sub:env} is thus satisfied,
-	and hence $\Phi(m,s,\theta,m',s',\theta')$.
+	show that $T'\succeq T_1$, and 
+	derive the conclusion of Definition~\ref{eqn:strength}, and thus that
+	$\Gamma'\sqsubseteq\Gamma_1$.~\eqref{sub:env} is thus satisfied, and hence
+	$\Phi(m,s,\theta,m',s',\theta')$.
 
   \end{case}
 
@@ -1574,43 +1629,6 @@ distinguish which cases belong to which theorem below.
 	}{
 		(vRef, s, \theta)\in dom(addr)	
 	}$$
-
-	Syntactically, there are three rules which could have determined that
-	$\mathtt{e}$ is typable -- \textsc{AssignType}, \textsc{AssignTypeUndef} or
-	\textsc{PropAssignType}. 
-	
-	If the rule had been \textsc{AssignTypeUndef}, then $\mathtt{vRef}$ would
-	have to be of the form $\mathtt{id}$. The precondition, that $(vRef,s,
-	\theta)\in dom(addr)$, can only hold if $id\in dom(s)$. Since
-	$\Gamma\vdash(s,\theta)$ this would mean that $id\in\Gamma$, but this
-	violates a precondition of \textsc{AssignTypeUndef}, so we can rule out
-	this rule from the derivation.
-  
-	Let $\theta'=\theta\oplus\{addr(vRef,s,\theta):v\}$ in the following discussion.
-
-	\begin{subcase}[AssignType]
-	  We will use an empty $\gamma$ for this case, so $\Gamma\!\cup\!\gamma=\Gamma$.
-	  An inspection of the possible typing rules for $\mathtt{vRef}$
-	  (\textsc{IdType, PropType} or \textsc{ArrayType}), shows that there can
-	  be no difference between $\Gamma_1$ and $\Gamma$.
-	  We can then deduce~\eqref{sub:type} from the second precondition of \textsc{AssignType}:
-	  $$\Gamma\vdash\mathtt{v}:T_2\ |_{C_2}\ \Gamma_2.$$ 
-	  We can also determine that $\Gamma=\Gamma_2$, since $\mathtt{v}$ is a value, and
-	  so~\eqref{sub:env} is satisfied. By assumption, $\Gamma\vdash(s,\theta)$, so
-	   we just need to show that
-	  $\Gamma$ can handle the addition of the new heap address for~\eqref{sub:store}.
-
- 	  The scope is unchanged, and so $dom(\Gamma)\subseteq dom(s)$ remains true.
-	  We know that $\Gamma\vdash\mathtt{vRef}:T_1|_{C_1}\Gamma$ from the premise of 
-	  \textsc{AssignType}. We also know that $addr(vRef, s, \theta')$ is 
-	  well defined, and that $\theta'(addr(vRef, s, \theta')) = v$ 
-	  from the transition rule \textsc{Assign}. We've already determined
-	  that $\mathtt{v}$ has type $T_2$, and the constraints of \textsc{AssignType}
-	  give us that $T_1\succeq T_2$. Hence $\Gamma\vdash(s,\theta')$ is satisfied,
-	  and $\Phi(\mathtt{e},s,\theta,\mathtt{e'},s',\theta')$ holds.
-  	\end{subcase}
-
-	\begin{subcase}[PropAssignType]
 
 	  $$\infer[\textsc{PropAssignType}]{
   		\Gamma\vdash\mathtt{id.l_1.\cdots.l_k.l = e}:\ T\ |_C\ \Gamma_1
@@ -1626,14 +1644,50 @@ distinguish which cases belong to which theorem below.
   		\end{split}
 	  }$$
 
+	Syntactically, there are three rules which could have determined that
+	$\mathtt{e}$ is typable -- \textsc{AssignType}, \textsc{AssignTypeUndef} or
+	\textsc{PropAssignType}. 
+	
+	If the rule used was \textsc{AssignTypeUndef}, then $\mathtt{vRef}$ would
+	have to be of the form `$\mathtt{id}$'. The precondition, that $(vRef,s,
+	\theta)\in dom(addr)$, can only hold if $id\in dom(s)$. Since
+	$\Gamma\vdash(s,\theta)$ this would mean that $id\in\Gamma$. This would
+	violate a precondition of \textsc{AssignTypeUndef}, so we can eliminate
+	this rule as a possibility.
+  
+	Let $\theta'=\theta\oplus\{addr(vRef,s,\theta):v\}$ in the following discussion.
+
+	\begin{subcase}[AssignType]
+	  We will again use an empty $\gamma$ for this case.
+	  An inspection of the possible typing rules for the expression `$\mathtt{vRef}$'
+	  (\textsc{IdType, PropType} or \textsc{ArrayType}), shows that there can
+	  $\Gamma_1$ and $\Gamma$ must be equal.
+	  We can then deduce~\eqref{sub:type} from the second precondition of \textsc{AssignType}:
+	  $$\Gamma\vdash\mathtt{e'}:T_2\ |_{C_2}\ \Gamma_2.$$ 
+	  We can also determine that $\Gamma=\Gamma_2$, since $\mathtt{e'}$ is a value, and
+	  so~\eqref{sub:env} is satisfied. By assumption, $\Gamma\vdash(s,\theta)$, so
+	   we just need to show that
+	  $\Gamma$ can handle the addition of the new heap address for~\eqref{sub:store}.
+
+ 	  The scope is unchanged, and so $dom(\Gamma)\subseteq dom(s)$ remains true.
+	  We know that $\Gamma\vdash\mathtt{vRef}:T_1\ |_{C_1}\ \Gamma$ from the premise of 
+	  \textsc{AssignType}. We also know that $addr(vRef, s, \theta')$ is 
+	  well defined, and that $\theta'(addr(vRef, s, \theta')) = v$ 
+	  from the transition rule \textsc{Assign}. We've already determined
+	  that $\mathtt{v}$ has type $T_2$, and the constraints of \textsc{AssignType}
+	  give us that $T_1\succeq T_2$. Hence $\Gamma\vdash(s,\theta')$ is satisfied,
+	  and $\Phi(\mathtt{e},s,\theta,\mathtt{e'},s',\theta')$ holds.
+  	\end{subcase}
+
+	\begin{subcase}[PropAssignType]
 		The complication of this case comes from
 		the fact that the output type environment, $\Gamma_1$, is larger than the input, $\Gamma$.
 		To handle this, then, we do not use an empty $\gamma$, but instead use
 		$$\gamma=\{\textbf{id}: \{ \mathbf{l_1}: \{\cdots \{\mathbf{l_k}:\{\mathbf{l}: T'\}\orig T_k \} \cdots\} \orig T_1\}\orig T_0\}.$$
-		We can trivially show that~\eqref{sub:type} holds because $\mathtt{m'}$ is a value.
+		$\Gamma\!\cup\!\gamma=\Gamma_1$, and so~\eqref{sub:env} is trivially
+		satisfied. We can also show that~\eqref{sub:type} holds because $\mathtt{m'}$ is a value.
 		$$\Gamma\!\cup\!\gamma\vdash\mathtt{v}:T'\ |_{C'}\ \Gamma\!\cup\!\gamma$$
-		$\Gamma\!\cup\!\gamma=\Gamma_1$, and so~\eqref{sub:env} is also easily
-		satisfied. We now must show $\Gamma\!\cup\!\gamma\vdash(s,
+		We now must show that $\Gamma\!\cup\!\gamma\vdash(s,
 		\theta')$, for which we use the assumption that
 		$\Gamma\vdash(s,\theta)$. Note that
 		$dom(\Gamma)=dom(\Gamma\!\cup\!\gamma)$, since the first precondition
@@ -1643,7 +1697,8 @@ distinguish which cases belong to which theorem below.
 		$$\Gamma\!\cup\!\gamma\vdash\mathtt{id.l_1.\cdots.l_k.l}:T'\ |_\varnothing\ \Gamma\!\cup\!\gamma,$$
 		which is of the right type to satisfy the conclusion
 		of~\eqref{eqn:typed-store}, since
-		$$\theta'(addr(\mathtt{id.l_1.\cdots.l_k.l},s, \theta')) = \mathtt{v}.$$
+		$$\theta'(addr(\mathtt{id.l_1.\cdots.l_k.l},s, \theta')) = \mathtt{v},$$
+		and $\mathtt{v}$ also has type $T'$.
 		For sub-references of $\mathtt{id.l_1.\cdots.l_k.l}$ (such as $\mathtt{id.\cdots.l_i}$), we will have
 		\begin{gather*}
 		  \Gamma\!\cup\!\gamma\vdash\mathtt{id.\cdots.l_i}:\{l_{i+1}:T_{i+1}\}\orig T_i\ |_\varnothing\ \Gamma\!\cup\!\gamma \\
@@ -1665,6 +1720,7 @@ distinguish which cases belong to which theorem below.
 		Finally, for all other value references, $\gamma$ is not involved, and
 		nor is the extension to $\theta$, and so
 		$$\Gamma\vdash(s,\theta)\implies\Gamma\!\cup\!\gamma\vdash(s,\theta')$$ 
+		\eqref{sub:store} is satisfied and $\Phi(\mathtt{m},s,\theta,m',s',\theta')$ holds.
 	  
 	  \end{subcase}
 
@@ -1675,208 +1731,196 @@ distinguish which cases belong to which theorem below.
 \subsection{Proof of Progress}
 
 We will split the proof of progress along the same lines as the proof of
-preservation.
+preservation. The full case-by-case proof is outlined in Appendix~\ref{app:progress}.
+Again I discuss the interesting cases all together, without distinguishing which
+case belongs to which theorem. Note, however, the weaker condition for Theorem~\ref{mProgress},
+which allows $\mathtt{m}$ to be a return statement.
 
 \begin{theorem}[Progress for expressions]\label{expProgress} If
-  $\typed{e}{T}$ and $\Gamma \vdash (s, \theta)$ then either $e$ is a value or
-  there exist some $e',s', \theta'$ such that
+  $\typed{e}{T}$ and $\Gamma \vdash (s, \theta)$ then either $\mathtt{e}$ is a value or
+  there exist some $\mathtt{e}',s', \theta'$ such that
   $\transition{e}{s}{\theta}{e'}{s'}{\theta'}$ \end{theorem}
 \begin{theorem}[Progress for statements]\label{mProgress}
-  If $\typable{m}$ and $\Gamma \vdash (s, \theta)$ then $m$ is either a
-  value or an irreducible return statement, or there exist some $m',s', \theta'$ such that
+  If $\typable{\mathtt{m}}$ and $\Gamma \vdash (s, \theta)$ then $\mathtt{m}$ is either a
+  value or an irreducible return statement, or there exist some $\mathtt{m}',s', \theta'$ such that
   $\transition{m}{s}{\theta}{m'}{s'}{\theta'}$ 
 \end{theorem}
 
+
 \begin{proof}
-  The proof of theorem~\ref{expProgress} is by structural induction over the type judgements.
+  The proofs of Theorems~\ref{expProgress} and~\ref{mProgress} are by structural induction over the type judgements.
   Take
   \begin{multline*}
   	\indHypTwo \eqdef \\
-  	\forall s,\theta\qdot (\Gamma \vdash (s,\theta))\implies e=\mathtt{v}\ \vee\ 
- 	\exists e', s',\theta'\qdot \transition{e}{s}{\theta}{e'}{s'}{\theta'}
+  	\forall s,\theta\qdot (\Gamma \vdash (s,\theta))\implies \mathtt{e}=\mathtt{v}\ \vee\ 
+ 	\exists \mathtt{e}', s',\theta'\qdot \transition{e}{s}{\theta}{e'}{s'}{\theta'}.
+  \end{multline*}
+	For statements, take 
+  \begin{multline*}
+  	\indHyp \eqdef
+  	\forall s,\theta\qdot (\Gamma \vdash (s,\theta))\implies \\
+  	\mathtt{m}=\mathtt{v}\ \vee\ \mathtt{m}=\mathtt{return\ v; m'} \vee
+  	\exists \mathtt{m}', s',\theta'\qdot \transition{m}{s}{\theta}{m'}{s'}{\theta'}
   \end{multline*}
 
-  We show that for all $\Gamma, e, T, C, \Gamma'$, if $\typed{e}{T}$, then
-  $\indHypTwo$ is satisfied. We show this by considering the last rule used in
-  the derivation of $\typed{e}{T}$. The full case-by-case proof is outlined in
-  Appendix~\ref{app:progress}, but a few interesting cases are expanded upon
-  here. In all of the cases, we begin by considering an arbitrary store
+  We show that for all $\Gamma, \mathtt{m}, T, C, \Gamma'$, if $\typable{m}$, then
+  $\indHyp$ is satisfied. We show this by considering the last rule used in
+  the derivation of $\typable{m}$. In all of the cases, we begin by considering an arbitrary store
   $(s,\theta)$, and assuming that it is well typed under $\Gamma$. This gives
-  us the left hand side of $\indHypTwo$, and it remains to prove that
-  $e=\mathtt{v}$ or $\exists e', s',\theta' \qdot
-  \transition{e}{s}{\theta}{e'}{s'}{\theta'}$ in each case.
+  us the left hand side of $\indHyp$, and it remains to prove that
+  $m=\mathtt{v}$ or $m=\mathtt{return\ v; m'}$, or $\exists m', s',\theta'\qdot
+  \transition{m}{s}{\theta}{m'}{s'}{\theta'}$ in each case.
 
   \begin{case}[IdType]
 
-	If the derivation of the type judgement of $e$ uses \textsc{IdType} as the
-	final step, then $e$ is of the form \texttt{id}. Clearly, $e$ is not a
-	value, so we must find a transition from $\langle e, s, \theta\rangle$. The
+	Clearly, $\mathtt{e}$ is not a
+	value, so we must find a transition from $\langle \mathtt{e}, s, \theta\rangle$. The
 	only transition rule of the right form is \textsc{Deref}. The precondition
 	of \textsc{IdType} tells us that we must have $id \in dom(\Gamma)$. Using
 	the assumption that the store is well-typed, we have that
 	$dom(\Gamma)\subseteq dom(s)$, and so in particular $id \in dom(s)$. This
-	is the only precondition required for \textsc{Deref}, so $\langle e,
+	is the only precondition required for \textsc{Deref}, so $\langle \mathtt{e},
 	s,\theta \rangle$ can reduce further using this rule, and $\indHypTwo$ is
 	satisfied.
 	
   \end{case}
 
   \begin{case}[PropType]\label{proptype}
-
-	$e$ is of the form $\mathtt{e_1.l}$. For this to be a valid type
-	judgement, $\typed{e_1}{T_1}$ must hold, according to the preconditions of
-	\textsc{PropType}. From the induction hypothesis, $e_1$ must be either a
+	
+	According to the preconditions of \textsc{PropType}, we must have
+	$$\typed{e_1}{T_1}$$
+	From the induction hypothesis, $\mathtt{e_1}$ must be either a
 	value or further reducible.
 	\begin{subcase}
-	  $e_1$ is further reducible.
+	  $\mathtt{e_1}$ is further reducible.
 	  The precondition for rule \textsc{Prop1} is
-	  satisfied, and $e$ is further reducible under this rule.
+	  satisfied, and $\mathtt{e}$ is further reducible under this rule.
   	\end{subcase}
   	\begin{subcase}
-  	  $e_1$ is a value with type $T_1$.
+  	  $\mathtt{e_1}$ is a value with type $T_1$.
   	  The only value which will satisfy the constraint $\{\{l:T\}\succeq T_1\}$
-	  is an object literal containing property $l$. In this case, the rule
-	  \textsc{Prop2} is applicable to $\langle e, s, \theta\rangle$, and $e$ is
+	  is an object literal containing at least the property $l$. In this case, the rule
+	  \textsc{Prop2} is applicable to $\langle \mathtt{e}, s, \theta\rangle$, and $\mathtt{e}$ is
 	  further reducible.
   	\end{subcase}
 	In both cases, $\indHypTwo$ is satisfied.
 
   \end{case}
-
-  	\begin{case}[VoidBodyType]\label{bodytype}
-
-	  $e$ is of the form $\mathtt{[\![@body\{m\},\ s', \theta]\!]}$. The
-	  preconditions of \textsc{VoidBodyType} tell us that there must exist some
-	  $\gamma$ such that $\gamma \vdash(s', \theta)$ and $\gamma\vdash m\ |_C\
-	  \gamma'$. From theorem~\ref{mProgress}, we can deduce that $m$ is either
-	  a value, an irreducible return statement, or reduces further under the store $(s',
-	  \theta)$.
-
-	  \begin{subcase}
-	  	$m$ is a value.
-	  	In this case, $e$ is immediately of the right form to apply rule
-	  	\textsc{CallBody2}, so $e$ can reduce further using this rule.
-	  \end{subcase}
-
-	  \begin{subcase}
-	  	$m$ is an irreducible return statement.
-	  	In this case, $e$ is of the right form to apply either rule \textsc{CallBody3} or
-	  	\textsc{CallBody4} (\textsc{CallBody3} if the return statement has a
-	  	value, or \textsc{CallBody4} if it simply has the form \texttt{return; m}).
- 	  	Either way, $e$ is further reducible.
-	  \end{subcase}
-
-	  \begin{subcase}
-	  	$m$ reduces further with store s'.
-	  	In other words, $\exists m', s'', \theta'\qdot \transition{m}{s'}{\theta}{m'}{s''}{\theta'}$.
-	  	In this case, $e$ is of the right form to apply rule \textsc{CallBody3},
-	  	and the preconditions are satisfied, so $e$ reduces further. 
-	  \end{subcase}
-
-	  In all cases, $\indHypTwo$ is satisfied.
-
-  	\end{case}
+%
+%  	\begin{case}[VoidBodyType]\label{bodytype}
+%
+%	  $e$ is of the form $\mathtt{[\![@body\{m\},\ s', \theta]\!]}$. The
+%	  preconditions of \textsc{VoidBodyType} tell us that there must exist some
+%	  $\gamma$ such that $\gamma \vdash(s', \theta)$ and $\gamma\vdash m\ |_C\
+%	  \gamma'$. From theorem~\ref{mProgress}, we can deduce that $m$ is either
+%	  a value, an irreducible return statement, or reduces further under the store $(s',
+%	  \theta)$.
+%
+%	  \begin{subcase}
+%	  	$m$ is a value.
+%	  	In this case, $e$ is immediately of the right form to apply rule
+%	  	\textsc{CallBody2}, so $e$ can reduce further using this rule.
+%	  \end{subcase}
+%
+%	  \begin{subcase}
+%	  	$m$ is an irreducible return statement.
+%	  	In this case, $e$ is of the right form to apply either rule \textsc{CallBody3} or
+%	  	\textsc{CallBody4} (\textsc{CallBody3} if the return statement has a
+%	  	value, or \textsc{CallBody4} if it simply has the form \texttt{return; m}).
+% 	  	Either way, $e$ is further reducible.
+%	  \end{subcase}
+%
+%	  \begin{subcase}
+%	  	$m$ reduces further with store s'.
+%	  	In other words, $\exists m', s'', \theta'\qdot \transition{m}{s'}{\theta}{m'}{s''}{\theta'}$.
+%	  	In this case, $e$ is of the right form to apply rule \textsc{CallBody3},
+%	  	and the preconditions are satisfied, so $e$ reduces further. 
+%	  \end{subcase}
+%
+%	  In all cases, $\indHypTwo$ is satisfied.
+%
+%  	\end{case}
 
   \begin{case}[AssignType]\label{assigntype}
 
-	$e$ is of the form $\mathtt{e_0 = e_1}$, and the preconditions for \textsc{AssignType} give us that
-	$\typed{e_0}{T_0}$ and $\typed{e_1}{T_1}$. Using the
-	induction hypothesis, we can deduce that $e_0$ and $e_1$ are both either values
+	The preconditions for \textsc{AssignType} give us that
+	$$\typed{e_0}{T_0}$$ and $$\typed{e_1}{T_1}.$$
+   	Using the
+	induction hypothesis, we can deduce that $\mathtt{e_0}$ and $\mathtt{e_1}$ are both either values
 	or further reducible. Syntactically, however, $e_0$ cannot be a value, because the left
 	hand side of an assignment must be some form of \texttt{assignTarget}.
 
 	\begin{subcase}
-	  $e_0$ reduces further and is not of the form $\mathtt{vRef}$. 
-	  The precondition for rule \textsc{Assign1} is thus satisfied, and $e$
+	  $\mathtt{e_0}$ reduces further and is not of the form $\mathtt{vRef}$. 
+	  The precondition for rule \textsc{Assign1} is thus satisfied, and $\mathtt{e}$
 	  itself reduces further.
 	\end{subcase}
 
 	\begin{subcase}
-	  $e_0$ is of the form $\mathtt{vRef}$ and $e_1$ reduces further. 
-	  The precondition for rule \textsc{Assign2} is thus satisfied, and $e$
+	  $\mathtt{e_0}$ is of the form $\mathtt{vRef}$ and $\mathtt{e_1}$ reduces further. 
+	  The precondition for rule \textsc{Assign2} is thus satisfied, and $\mathtt{e}$
 	  itself reduces further.
 	\end{subcase}
 
 	\begin{subcase}
-	  $e_0$ is of the form vRef and $e_1$ is a value.
+	  $\mathtt{e_0}$ is of the form vRef and $\mathtt{e_1}$ is a value.
 	  The only rule we can use to reduce $e$ here is \textsc{Assign}. For this
-	  to be possible, we need to show that $(e_0, s, \theta) \in dom(addr)$.
-	  We have assumed that the store $(s,\theta)$ is well-typed, which tells us
-	  that, since $\typed{e_0}{T_0}$, we can deduce that $addr(e_0,s,\theta)$
-	  is indeed well-defined. Thus \textsc{Assign} is applicable, and $e$
+	  to be possible, we need to show that $(\mathtt{e_0}, s, \theta) \in dom(addr)$.
+	  We have assumed that the store $(s,\theta)$ is well-typed. Since $\mathtt{e_0}$ is typable, 
+	  we can deduce that $addr(\mathtt{e_0},s,\theta)$
+	  is indeed well-defined. Thus \textsc{Assign} is applicable, and $\mathtt{e}$
 	  reduces further.  
 	\end{subcase}
 
   \end{case}
 
-\end{proof}
-
-\begin{proof}
-
-  The proof of theorem~\ref{mProgress} is by structural induction, this time
-  over typability judgements. Take
-  \begin{multline*}
-  	\indHyp \eqdef
-  	\forall s,\theta\qdot (\Gamma \vdash (s,\theta))\implies \\
-  	m=\mathtt{v}\ \vee\ m=\mathtt{return\ v; m'} \vee
-  	\exists m', s',\theta'\qdot \transition{m}{s}{\theta}{m'}{s'}{\theta'}
-  \end{multline*}
-
-  We show that for all $\Gamma, m, C, \Gamma'$, if $\typable{m}$, then
-  $\indHyp$ is satisfied. The full case-by-case proof is again outlined in
-  Appendix~\ref{app:progress}
-  In all of the cases, we begin by considering an arbitrary store
-  $(s,\theta)$, and assuming that it is well typed under $\Gamma$. This gives
-  us the left hand side of $\indHyp$, and it remains to prove that
-  $m=\mathtt{v}$ or $m=\mathtt{return\ v; m'}$, or $\exists m', s',\theta'\qdot
-  \transition{m}{s}{\theta}{m'}{s'}{\theta'}$ in each case.
-
   \begin{case}[RetTypable4]
-  	$m$ is of the form $\mathtt{return\ e}$, and we have $\typed{e}{T}$ from
+	We have $$\typed{e}{T}$$ from
 	the preconditions of \textsc{RetTypable4}. From Theorem~\ref{expProgress},
-	we know that $e$ is either a value or reduces further.
+	we know that $\mathtt{e}$ is either a value or reduces further.
 
   	\begin{subcase}
-  	  $e$ reduces further.
-  	  The preconditions are satisfied for rule \textsc{Ret1}, so $m$ reduces
+  	  $\mathtt{e}$ reduces further.
+  	  The preconditions are satisfied for rule \textsc{Ret1}, so $\mathtt{m}$ reduces
   	  further and $\indHyp$ is satisfied.  
   	\end{subcase}
 
   	\begin{subcase}
-  	  $e$ is a value.
-  	  In this case, $m$ is of the form $\mathtt{return v; m'}$, and $\indHyp$
+  	  $\mathtt{e}$ is a value.
+  	  In this case, $\mathtt{m}$ is of the form $\mathtt{return\ v;\ m'}$, and $\indHyp$
 	  is satisfied.
 	\end{subcase}  
 
   \end{case}
 
-  \begin{case}[SeqTypable]
-
-	$m$ is of the form $m_1; \dots; m_i$, and for each $i$ we have
-	$\typable{m_i}$ from the preconditions of \textsc{SeqTypable}. Using the
-	induction hypothesis, $m_1$ in particular is either a value, a return
-	statement, or reduces further.
-
-	\begin{subcase}
-	  $m_1$ is a value.
-	  $m$ is of the right format to apply rule \textsc{Seq1}, and $m$ reduces
-	  further. 
-	\end{subcase}
-
-	\begin{subcase}
-	  $m_1$ is a return statement.
-	  In this case, $m$ itself is also an irreducible return statement, so
-	  $\indHyp$ is satisfied. 
-	\end{subcase}
-
-	\begin{subcase}
-	  $m_1$ reduces further.
-	  The preconditions are satisfied for rule \textsc{Seq2}, so $m$ reduces
-	  further and $\indHyp$ is satisfied.
-	\end{subcase}
-
-  \end{case}
+%  \begin{case}[SeqTypable]
+%
+%	$m$ is of the form $m_1; \dots; m_i$, and for each $i$ we have
+%	$\typable{m_i}$ from the preconditions of \textsc{SeqTypable}. Using the
+%	induction hypothesis, $m_1$ in particular is either a value, a return
+%	statement, or reduces further.
+%
+%	\begin{subcase}
+%	  $m_1$ is a value.
+%	  $m$ is of the right format to apply rule \textsc{Seq1}, and $m$ reduces
+%	  further. 
+%	\end{subcase}
+%
+%	\begin{subcase}
+%	  $m_1$ is a return statement.
+%	  In this case, $m$ itself is also an irreducible return statement, so
+%	  $\indHyp$ is satisfied. 
+%	\end{subcase}
+%
+%	\begin{subcase}
+%	  $m_1$ reduces further.
+%	  The preconditions are satisfied for rule \textsc{Seq2}, so $m$ reduces
+%	  further and $\indHyp$ is satisfied.
+%	\end{subcase}
+%
+%  \end{case}
 \end{proof}
+
 
 
 \section{Testing Type Inference}
@@ -1885,9 +1929,9 @@ As development progressed, a series of automatic unit tests ensured that my
 type inference implementation was producing the correct output.  The test
 specification was written using the Jasmine JavaScript testing
 framework.\footnote{http://jasmine.github.io/} The expected results for each
-test were written in a JSON file. Figure~\ref{fig:jasmine} gives an example
+test were written as JSON configuration files. Figure~\ref{fig:jasmine} gives an example
 test, expectation JSON, and Jasmine output. I produced 91 such tests along the
-course of development, verifying 391 individual types, giving me confidence
+course of development, verifying 391 individual types, and giving me confidence
 that my implementation behaves correctly.
 
 \newsavebox{\testbox}
@@ -1976,49 +2020,41 @@ I edited the source code. Using a web browser to do this enabled me to run both
 the original and the compiled code immediately, to check that the output was
 identical.
 
-\begin{figure}
-  \centering
-  \includegraphics[width=160mm]{../res/web-interface.png}
-  \caption{The web interface. Annotations are inserted as comments indicating the 
-  types of any variables which occur in the succeeding line.}
-  \label{fig:web-interface}
-\end{figure}
-
 \section{Testing and Profiling the Compiler}
 
 \subsection*{Correctness}
 
 To test the correctness of the compiler, the test procedure outlined above was
-extended. An ``executedValues" property was added to some JSON file, containing
+extended. Properties were added to some JSON files, containing
 key--value pairs indicating the expected value of different variables after
 execution of the compiled file. The compiled file should always return the same
 values as the uncompiled file, except in the case that the dynamic code
-contains a type error. In this situation, the values determined from the
-uncompiled file are clearly not reliable, so we instead merely check that the
+contains a type error. In this situation, the result of
+uncompiled file is clearly not reliable, so we instead merely check that the
 compiled code throws a cast error when executed.
 
 Few of my unit tests performed meaningful calculations, and so judging the
 correctness of these tests was not particularly enlightening. As such, I wrote
-10 more representative examples of JavaScript computing a meaningful result, in
-order to verify that the program result was unchanged. In half of these, a
-deliberate dynamic type error was inserted, such that types were coerced in the
-uncompiled code, and the original result was actually incorrect. In these 5
-tests, a CastError was correctly thrown by the \texttt{mimic} function, and the
-result in the other 5 tests was correctly calculated.
+10 more representative examples of JavaScript, in order to verify that the
+program result was unchanged. In half of these, a deliberate dynamic type error
+was inserted, such that types were coerced in the uncompiled code, and the
+original result was actually incorrect. In these 5 tests, a CastError was
+correctly thrown by the \texttt{mimic} function, and the result in the other 5
+tests was correctly calculated. Again, this gave me confidence in the correctness
+of the compiler.
 
-In addition to these, I ran my compiler on 6 tests from the SunSpider benchmark
+In addition to these, I ran my compiler on 5 tests from the SunSpider benchmark
 suite.\footnote{https://www.webkit.org/perf/sunspider/sunspider.html} The
 SunSpider suite of tests is designed to avoid `microbenchmarks', and aims to
-reflect real-world use of JavaScript. Many of the tests were therefore
+reflect real-world use of JavaScript. This made many of the tests 
 inappropriate for my purposes, since they involved manipulation of DOM objects.
 Others involved object inheritance, which I was unfortunately unable to
 implement before the end of the project, leaving me with relatively few to test
-with. The tests I selected, however, required very little modification in order
-to pass the type checker, which was a good indication that `real' JavaScript
-programmers implicitly follow a fairly static typing discipline. The main
+with. The remaining tests, however, required very little modification in order
+to pass the type checker. The main
 changes were syntactic (replacing \js{new Array(1,2,3)} with the literal
-\js{[1,2,3]}, for example). In a few cases, I left fragments untyped, because
-some language feature was unavailable. For example, my language does not
+\js{[1,2,3]}, for example). In a few cases I left fragments unchecked, because
+a language feature was unavailable. For example, my language does not
 support bitwise-shift operators, but I can replace such shifts with a call to a
 dynamic \js{shiftLeft} function, which is defined outside the typed world. I
 employed a similar procedure to support the \js{Math} object, which is built in
@@ -2026,92 +2062,112 @@ to browsers, and so the type-checker cannot simply examine the definition of
 \js{Math} to determine its type signature.
 
 Since the SunSpider tests were fairly well statically typed, there were no
-occasions for dynamic type errors to be thrown. Wrapping the \js{Math} object
-and shift operators as described above, however, had no detrimental effect on
-the results computed, and so I am confident that my gradual typing compiler is
+occasions for dynamic type errors to be thrown. With the \js{Math} object
+and shift operators wrapped as described above, the correct results were
+computed, and so I am confident that my gradual typing compiler is
 sound.
 
 \subsection*{Performance}
 
-Enclosing dynamic variables within a wrapper will inevitably incur a cost in
-terms of both speed and memory use. This is likely to be a particularly large
-problem with data of higher order type, since the contents will need
+Enclosing dynamic variables within a wrapper will inevitably incur a cost both in
+terms of speed and memory use. This is particularly likely to be a
+problem with data of higher order types, since the contents will need
 re-wrapping each time a property is read, for example. In order to evaluate the
-extent of the performance hit, I analysed the runtime performance of the 11
-gradual typing tests above (the tests containing cast Errors were obviously
-of no use here).
+extent of the performance hit, I analysed the runtime performance of the 10
+gradual typing tests above (the tests containing cast errors were obviously
+of no use here, since their execution is interrupted).
 
 The speed of the computation was an easy measurement to make -- simply time how
 long a few iterations of the test take to complete both with and without the
 inserted wrappers. To measure the memory footprint, I used a plugin for Node
-called \textit{memwatch}, which can trigger a heap dump, and calculated the
+called \textit{memwatch}\footnote{\href{http://github.com/lloyd/node-memwatch}{http://github.com/lloyd/node-memwatch}},
+to trigger heap dumps, and calculate the
 difference in usage before and after the test was run. This is not an ideal
 indication of memory use during the course of the test itself, since the
 garbage collector may have already cleaned up some of the used memory by the
-time the heap dump is triggered. Nevertheless, it provides a useful indication
-of the memory footprint.
+time the heap dump is triggered. More detailed analysis tools are not 
+commonly available for Node, however.
 
 \begin{figure}
   \parbox[c]{150mm}{\includegraphics[width=150mm]{../res/speed.pdf}}
-  \caption{Test}
+  \caption{Slowdown / Indirect Access}
   \label{fig:slowdown}
 \end{figure}
 
 Figure~\ref{fig:slowdown} shows the effect on runtime speed for each test. 
 There is a strong correlation between the number of indirect accesses
 and the slowdown factor, which lines up with what I would expect. Each time a
-property is accessed, or a function called through a guard or a mimic, we 
+property is accessed, or a function called through a wrapper, we 
 introduce some overhead. I would expect this overhead to vary in size depending 
-on the complexity of the item being retrieved -- a longer delay would be introduced
-by recreating an object than simple checking the type of a primitive. More fine-grained
+on the complexity of the item being retrieved -- a longer delay caused 
+by recreating an object than by simple checking the type of a primitive. More fine-grained
 analysis of the nature of the property accesses would reveal this, though a larger
-set of tests would be required for this to be feasible.
+set of tests would be required for this to be instructive.
 
 \begin{figure}
   \parbox[c]{150mm}{\includegraphics[width=150mm]{../res/mem1.pdf}}
-  \caption{Test}
+  \caption{Heap Usage / Indirect Access}
   \label{fig:mem1}
 \end{figure}
 \begin{figure}
   \parbox[c]{150mm}{\includegraphics[width=150mm]{../res/mem2.pdf}}
-  \caption{Test}
+  \caption{Heap Usage / Accesses per Wrapper}
   \label{fig:mem2}
 \end{figure}
 Although I expected to find the same correlation between indirect accesses and
 memory footprint, none was immediately apparent (Figure~\ref{fig:mem1}). My
 suspicion for the cause of this was the lifespan of the wrapped objects. Since
-most of the tests performs their computation in a loop, many objects are not
-referencable at the end of an iteration, and so the JavaScript garbage
+most of the tests perform their computation in a loop, many objects have no active references
+at the end of an iteration, and so the JavaScript garbage
 collector can destroy these objects before creating new ones. This replacement
-would not show up by simply comparing the heap size before and after the test
-is run. I calculated an approximate metric for the lifespan of a wrapper by
-dividing the number of wrappers created by the number of indirect accesses.
-This provides an estimate for the average number of property accesses per
-wrapper created. Since we would expect a longer-lived object to be used more
-times, we can use this as an approximate proxy for lifespan. According to this
-metric, all tests did indeed use fairly short-lived wrappers which would allow
-for the kind of optimisation discussed above. Plotting lifespan against memory
-use shows a weak correlation (Figure~\ref{fig:mem2}), which may suggest that
-using short-lived dynamic objects would limit the impact on overall memory use.
+would not be visible when simply comparing the heap size before and after the test
+is run. 
+
+I calculated an approximate metric for the lifespan of a wrapper by dividing
+the number of wrappers created by the number of indirect accesses.  This
+provides an estimate for the average number of property accesses per wrapper
+created. Since we would expect a longer-lived object to be used more times, we
+can use this as an approximate proxy for lifespan. According to this metric,
+all tests did indeed use fairly short-lived wrappers which would allow for the
+kind of garbage collector optimisation discussed above. Plotting lifespan
+against memory use shows a weak correlation (Figure~\ref{fig:mem2}), which may
+suggest that using short-lived dynamic objects would limit the impact on
+overall memory use.
 
 Although the SunSpider tests were chosen to reflect real-world usage of
-JavaScript, they do not actually present a very representative example of
-dynamically typed programming. The wrapped objects have fairly simple types (no 
+JavaScript, they present very few examples of truly dynamic behaviour.
+The wrapped objects have fairly simple types (no 
 more complex than a function between primitive types), and actually behave 
-as if they were statically typed. That such code is touted as representative of
-real JavaScript strengthens my belief that in practice most programmers obey a 
+statically. That such code is touted as representative of
+production JavaScript strengthens my belief that in practice, most programmers obey a 
 static typing discipline even when the programming language itself does not enforce it.
 If this is indeed the case, then any impact on runtime performance should be minimal,
 as few wrappers should be required.
 
+Another optimisation may be to reduce the number of wrappers created. Although a
+function may be dynamic, it may output values which are themselves static. We need to
+wrap these values in case they behave dynamically, but in reality this is a waste of 
+resources. We could avoid this situation by taking advantage of the fact that my type inference 
+system, being written in JavaScript, could actually run within the browser. Instead of re-wrapping
+function return values, it may be advantageous in some situations to perform a static analysis
+of the value and avoid the need to create a new wrapper.
+
 \chapter{Conclusions}
 
-Although statically typing a dynamically typed programming language may appear to be like
-fitting a square peg in a round hole, in practice my approach has been successful. The 
-additional safety guarantees which I have proven about such statically typed programs
-are valuable, and future integration within code intelligence tools could offer even 
-greater benefits to JavaScript developers. Some work could be done to take the project 
-further, and some ideas in this direction are included below.
+I have successfully achieved every objective set out in my original project
+proposal.  I have precisely defined operational semantics and typing judgements
+for subset of JavaScript, and my proofs of type preservation and progress
+indicate that my subset was well defined.  I have implemented a type inference
+system based on this specification, which passes every test in a suite of over
+90 of my own tests, and several `real-world' programs from the SunSpider
+benchmark suite. Finally, I have created a source-to-source compiler to
+protect the statically-typed portions of a codebase from the unchecked parts. I
+also achieved two of my three suggested extension tasks: the challenges of
+typing arrays, and of supporting the dynamic growth of objects. In carrying the
+project out, I have learned to use a range of new tools, from Ott to memwatch,
+and hugely increased my understanding of types and programming languages. Some
+work could yet be done to take the project further, and some ideas in this
+direction are included below.
 
 \section{Future work}
 
@@ -2127,19 +2183,21 @@ Support of more language features would make the inference tool immediately
 able to type a much larger set of existing JavaScript programs. One of the main
 such features is prototypal inheritance. In JavaScript, each object has a
 special \js{prototype} property, which corresponds to the object's parent in
-the inheritance chain. Property accesses may then retrieve the item from the
+the inheritance chain. Property accesses may retrieve the value from the
 object itself if present, or from the object prototype if not. I believe my 
 system of origin chains could be extended to support this method of inheritance 
 in a straightforward manner by adding the prototype object's type as the origin
 for the descendant object.
 
-Another feature which may be useful is the inclusion of limited union types.
+Another feature which may be useful is the inclusion of union types.
 Since JavaScript has no explicit mechanism for overloading, it is common for
-functions to be called with parameters of varying types. The function then
+functions to be called with parameters of variable types. The function then
 inspects the types of the arguments provided and dispatches them to the
-appropriate logic. Currently such functions would need to be excluded from the
+appropriate logic. Currently such functions are excluded by the
 static type system, but it would be possible to keep track of the parameters
 as having a union type, which could then be discharged by explicit type checks.
+This would also enable the type inference of variadic functions, which in effect
+have parameters which sometimes take the value `\js{undefined}.'
 
 \subsection{Fine-grained object modification}
 
@@ -2150,5 +2208,16 @@ to use control flow analyses to allow modification of property types, although
 in practice allowing this behaviour may negate many of the benefits of the type system, which 
 would normally interpret an attempt to change a property's type as a potential bug.
 
+\section{Final Thoughts}
+
+Although statically typing a dynamically typed programming language may appear
+to be like fitting a square peg in a round hole, in practice my approach has
+been successful. The additional safety guarantees which can be offered about
+such statically typed programs are valuable, and future integration within code
+intelligence tools could offer even greater benefits to JavaScript developers.
+The process has been instructive from start to finish, and I hope to pursue the
+ideas formed here further in future.
+
 \printbibliography{}
+
 \end{document}
