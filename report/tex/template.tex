@@ -1,23 +1,147 @@
 % Template for a Computer Science Tripos Part II project dissertation
 \documentclass[12pt,a4paper,twoside,openright]{report}
-\usepackage[pdfborder={0 0 0}]{hyperref}    % turns references into hyperlinks
-\usepackage[margin=25mm]{geometry}  % adjusts page layout
-\usepackage{graphicx}  % allows inclusion of PDF, PNG and JPG images
-\usepackage{verbatim}
-\usepackage{docmute}   % only needed to allow inclusion of proposal.tex
+\usepackage[pdfborder={0 0 0}]{hyperref}  % turns references into hyperlinks
+\usepackage[margin=25mm]{geometry} % adjusts page layout
+\usepackage{graphicx} % allows inclusion of PDF, PNG and JPG images
+\usepackage{import}
+\usepackage{docmute}  % only needed to allow inclusion of proposal.tex
+\usepackage[sorting=none,backend=bibtex]{biblatex}
 \usepackage[super]{nth}
+\usepackage{subfig}
+\usepackage{array}
+\usepackage{booktabs}
 
+% \usepackage{showkeys}
+
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{txfonts}
+\usepackage{lmodern}
+\usepackage{proof}
+\usepackage{mathtools}
+\usepackage{enumitem}
+\setlistdepth{20} % Magically makes the 'too deeply nested' error go away on some cases
+\usepackage{array}
+
+\usepackage{listings}
+\usepackage{verbatim}
+\usepackage{minted}
+\usepackage{thmtools}
+\usepackage{etoolbox}
+
+\theoremstyle{definition}
+\newtheorem{definition}[equation]{Definition}
+
+\newtheoremstyle{dotless}{\topsep}{\topsep}{\itshape}{}{\bfseries}{}{5pt plus 1pt minus 1pt}{}
+\theoremstyle{dotless}
+\newtheorem{lemma}[definition]{Lemma}
+\newtheorem{theorem}[definition]{Theorem}
+
+
+\bibliography{mybib}
 \raggedbottom
 \sloppy
 \clubpenalty1000%
 \widowpenalty1000%
 
-\renewcommand{\baselinestretch}{1.1}    % adjust line spacing to make
-                                        % more readable
+\usemintedstyle{friendly}
+\newcommand*{\js}{\mintinline{javascript}}
+\newcommand*{\orig}{\ensuremath{\!\multimapinv\!}}
 
+\usepackage{float}
+\makeatletter
+\newcommand\fs@plainruled{\def\@fs@cfont{\rmfamily}\let\@fs@capt\floatc@plain%
+  \def\@fs@pre{}%
+  \def\@fs@mid{\kern2pt\hrule\vspace\abovecaptionskip\relax}%
+  \def\@fs@post{}%
+  \let\@fs@iftopcapt\iffalse
+}
+\patchcmd{\@thm}{\trivlist}{\list{}{ \leftmargin=1.5em}}{}{}
+\patchcmd{\@endtheorem}{\endtrivlist}{\endlist}{}{}
+\makeatother
+\floatstyle{plain}
+
+\declaretheoremstyle[
+spaceabove=6pt, spacebelow=6pt,
+headfont=\normalfont\bfseries, numbered=no,
+notefont=\textsc, headpunct={\\}, notebraces={}{},
+bodyfont=\normalfont,
+postheadspace=1em
+]{casestyle}
+\declaretheoremstyle[
+spaceabove=6pt, spacebelow=3pt,
+headfont=\normalfont\bfseries,
+notefont=\scshape, headpunct={}, numbered=no,
+bodyfont=\normalfont,
+postheadspace=1em
+]{subcasestyle}
+\declaretheorem[style=casestyle]{case}
+\declaretheorem[style=subcasestyle, name=case]{subcase}
+
+\setlength\partopsep{-\topsep}
+\addtolength\partopsep{-\parskip}
+\usepackage{chngcntr}
+\newfloat{program}{thp}{lop}[chapter]
+\AtBeginDocument{\counterwithin{listing}{chapter}}
+\floatname{program}{Listing}
+\usepackage{tabu}
+\usepackage{adjustbox}
+\newcommand{\myinfer}[3]{%
+  $\infer[\footnotesize\textsc{#1}]
+  {#2}{
+	{
+	  \renewcommand{\arraystretch}{0.9}
+	  \begin{tabular}{>{$}c<{$}}
+		#3	
+	  \end{tabular}
+	}
+  }$
+}
+\newcommand{\infertable}[1]{%
+  \begin{table}[H]
+  	\centerline{
+  	  \begin{adjustbox}{max width=\linewidth,center}
+	  	\begin{tabular}{c c}
+		  #1
+	  	\end{tabular}%
+  	  \end{adjustbox}
+  	}
+  \end{table}
+}
+\usepackage{xcolor}
+\definecolor{mintedbackground}{rgb}{0.95,0.95,0.95}
+
+\newminted[jscript]{javascript}{
+bgcolor=mintedbackground,
+fontfamily=tt,
+linenos=true,
+numberblanklines=true,
+numbersep=-12pt,
+gobble=0,
+frame=leftline,
+framerule=0.4pt,
+framesep=2mm,
+funcnamehighlighting=true,
+tabsize=4,
+obeytabs=false,
+mathescape=true
+samepage=false, %with this setting you can force the list to appear on the same page
+showspaces=false,
+showtabs =false,
+texcl=false,
+}
+\renewcommand{\baselinestretch}{1.1}  % adjust line spacing to make more readable
+\newcommand{\typable}[2][ ]{\Gamma{}\vdash\mathtt{#2}\, |_C#1\:\Gamma#1'}
+\newcommand{\typed}[2]{\Gamma{}\vdash\mathtt{#1}: #2\,|_C\:\Gamma'}
+\newcommand{\transition}[6]{\langle{}\mathtt{#1},#2,#3\rangle{}\rightarrow{}\langle{}\mathtt{#4},#5,#6\rangle}
+\newcommand{\indHyp}{\Phi(\Gamma, m, C, \Gamma')}
+\newcommand{\indHypTwo}{\Psi(\Gamma, e, T, C, \Gamma')}
+\newcommand{\var}{\textbf{var}}
+\newcommand{\sub}[1]{\textsubscript{#1}}
+\newcommand\eqdef{\mathrel{\overset{\makebox[0pt]{\mbox{\normalfont\tiny def}}}{=}}}
+\newcommand\qdot{\mathbin{\scalebox{1.5}{.}}\enspace}
 \begin{document}
 
-\bibliographystyle{plain}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -50,7 +174,7 @@
 	College:            & \bf Emmanuel College                      \\
 	Project Title:      & \bf Building a Gradual Type System for JavaScript  \\
 	Examination:        & \bf Computer Science Tripos -- Part II, May 2015  \\
-	Word Count:         & \bf \input{|"detex diss.tex | tr -cd '0-9A-Za-z ' | wc -w"}\footnotemark[1] \\
+	Word Count:         & \bf \input{|"./disscount.sh"}\footnotemark[1] \\
 	Project Originator: & Christopher J.~O.~Little 			\\
 	Supervisor:         & Dr Kathryn Gray                   \\ 
   \end{tabular}
@@ -62,15 +186,32 @@
 
 
 \section*{Original Aims of the Project}
-TODO
 
+I originally aimed to define an operational semantics and typing judgement for a
+small subset of JavaScript, and to use this specification to build a working
+implementation of a type inference system for the language. Since it is impossible
+to maintain isolation from unchecked code, I also aimed to build a source-to-source
+gradual-typing compiler to inject dynamic type-checks at the boundaries of the well-typed world.
+The evaluation of the specification was to take the form of a proof of type
+preservation and a proof of progress, while the implementation would be evaluated
+through empirical testing.
 
 \section*{Work Completed}
-TODO
+
+The ultimate specification defined a language larger than originally planned,
+including arrays and, more significantly, dynamic growth of object types by
+assignment to previously undefined properties. My implementation grew
+accordingly, and I was able to test it not only using my own tests, but also on
+production JavaScript from Mozilla's SunSpider benchmark suite. All tests
+succeeded, and I proved that the language had the properties of both type
+preservation and progress.  I also developed some ideas about future
+development of the project, including the addition of object inheritance via
+prototypes.
 
 
 \section*{Special Difficulties}
 
+None.
 
 \newpage
 \section*{Declaration}
@@ -84,16 +225,23 @@ any substantial extent for a comparable purpose.
 \bigskip
 \leftline{Signed }
 
-\medskip
+\bigskip
+\bigskip
 \leftline{Date }
 
 \tableofcontents
 
 \listoffigures
 
+\listoflistings
+
 \newpage
 \section*{Acknowledgements}
-TODO
+
+I would like to thank my project supervisor, Kathy Gray, for introducing
+me to the ideas of gradual typing, and for her assistance and advice throughout.
+My thanks are also due to my Director of Studies, Jonathan Hayman, for his time
+and effort in proofreading the final draft.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % now for the chapters
@@ -103,7 +251,7 @@ TODO
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % the bibliography
 \addcontentsline{toc}{chapter}{Bibliography}
-\bibliography{bib}
+\printbibliography{}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % the appendices

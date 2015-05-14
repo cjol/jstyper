@@ -81,9 +81,9 @@ postheadspace=1em
 \setlength\partopsep{-\topsep}
 \addtolength\partopsep{-\parskip}
 \usepackage{chngcntr}
-\newfloat{program}{thp}{lop}[chapter]
-\AtBeginDocument{\counterwithin{listing}{chapter}}
-\floatname{program}{Listing}
+% \newfloat{program}{thp}{lop}[chapter]
+% \AtBeginDocument{\counterwithin{listing}{chapter}}
+% \floatname{program}{Listing}
 \usepackage{tabu}
 \usepackage{adjustbox}
 \newcommand{\myinfer}[3]{%
@@ -224,7 +224,7 @@ TypeScript allow for untypable functions using a special `any' type, which will
 never trigger a static type error. The obvious disadvantage here is that the
 static analysis can no longer make any guarantees about the soundness of the
 program, as certain parts of it have effectively not been checked.
-\begin{program}[t]
+\begin{listing}[t]
   \begin{jscript}
  	// adapted from the Prototype library
  	function serialize(val) {
@@ -240,7 +240,7 @@ program, as certain parts of it have effectively not been checked.
   \end{jscript}
   \caption{Dynamic idioms in JavaScript}
   \label{lst:dynamicIdiom}
-\end{program}
+\end{listing}
 Additionally, JavaScript code rarely operates in isolation in modern web
 applications. Even if a program passes the static type checker, some external
 piece of code may introduce a type error by, for example, passing data of the
@@ -280,7 +280,7 @@ future work.
 \begin{figure}
   \centering
   \includegraphics[width=160mm]{../res/web-interface.png}
-  \caption{The web interface to my type inference system. Annotations are inserted as comments indicating the 
+  \caption[The web interface to my type inference system]{The web interface to my type inference system. Annotations are inserted as comments indicating the 
   	types of any variables which occur in the succeeding line.}
   \label{fig:web-interface}
 \end{figure}
@@ -457,7 +457,7 @@ missing, however, the gradual typing mechanism usually allows code fragments
 relying on these features to bypass the type checker.
 
 \begin{listing}
-  \begin{lstlisting}[mathescape, escapechar=£,caption={Language Definition},label={lst:langdef}]
+  \begin{lstlisting}[mathescape, escapechar=£]
 v            ::= $b$ | $n$ | $str$ | £\textbf{undefined}£ | £\textbf{null}£
                     | £\textbf{\{}£$l_1$:$v_1$, $\dots$, $l_i$:$v_i$£\textbf{\}}£ | £\textbf{[}£$v_1$, $\dots$, $v_i$£\textbf{]}£ | £[\![£$func$, s£]\!]£
 e            ::= $v$ | $id$ | $e$ $op$ $e'$ | £\textbf{\{}£$l_1$:$e_1$, $\dots$, $l_i$:$e_i$£\textbf{\}}£ 
@@ -486,7 +486,6 @@ preOp        ::= £\textbf{-}£ | £\textbf{!}£
 assignOp     ::= £\textbf{-\,-}£ | £\textbf{++}£
   \end{lstlisting}
   \caption{Language Definition}
-\stepcounter{program}
   \label{lst:langdef}
 \end{listing}
 
@@ -523,7 +522,7 @@ rules follow an intuitive understanding of JavaScript's execution semantics --
 the result of a subexpression is used to determine the type of the enclosing exprression. A
 few points are worth further discussion, however.
 
-%\begin{program}[t]
+%\begin{listing}[t]
 %  \begin{jscript}
 %	function makeCounter(n) {
 %	  var i = n;
@@ -539,7 +538,7 @@ few points are worth further discussion, however.
 %	count(); // i is now 9, but the current scope is unchanged
 %  \end{jscript}
 %  \caption{A function call with side effects}\label{lst:sideEffects}
-%\end{program}
+%\end{listing}
 
 \subsubsection*{Assignment}
 
@@ -588,11 +587,11 @@ distinct and do not reduce down to the value itself. This is important, else we
 could end up with assignments of the form \js{5 = 6;} which make little sense.
 This simplification has the consequence of deeming some valid JavaScript
 assignments illegal, such as the following expression:
-\begin{program}[H]
+\begin{listing}[H]
   \begin{jscript}
 	(function(){ return {}; }).x = 5
   \end{jscript}
-\end{program}
+\end{listing}
 Although this is a valid JavaScript assignment according to the ECMAScript
 specification, it would be difficult to use in our operational semantics, since
 the object returned by the function has no identifier, and hence no entry in
@@ -820,7 +819,7 @@ typed as having return type \texttt{undefined} (rules \textsc{AnonVoid} and
 Matters are complicated slightly in the presence of non-trivial control flow.
 The function below, for example, should not be typable because it may sometimes return
 a \texttt{number}, but sometimes it will return \texttt{undefined}.
-\begin{program}[H]
+\begin{listing}[H]
   \begin{jscript}
 	function isPositive(x) {
 	  if (x>0) {
@@ -828,7 +827,7 @@ a \texttt{number}, but sometimes it will return \texttt{undefined}.
 	  }
 	}
   \end{jscript}
-\end{program}
+\end{listing}
 
 Because there is no explicit `\js{return undefined;}' statement at the end of the
 function, an unsatisfiable constraint is not generated. This problem requires
@@ -856,7 +855,7 @@ practice, however, suggests that adding properties is likely to happen at any
 point in the object's life cycle~\cite{JSBehaviour}, and so potential types are
 not a good model for dynamic objects.
 
-\begin{program}[t]
+\begin{listing}[t]
   \centering
   \begin{minipage}[b]{0.45\linewidth}
  	\begin{jscript}
@@ -876,7 +875,7 @@ not a good model for dynamic objects.
  	}
   \end{minipage}
   \caption{Property addition}\label{lst:propAdd}
-\end{program}
+\end{listing}
 Instead, one must consider two separate object types -- one where the new
 property is present, and one where it is not. Listing~\ref{lst:propAdd}
 illustrates one situation in which two distinct types are needed. At the start
@@ -1067,7 +1066,7 @@ corresponding to the typing rule \textsc{V\_Arr}:
 	C=\bigcup_{i=1}^kC_i \cup {T \succeq T_i'}
   }$
 }
-\begin{program}[H]
+\begin{listing}[H]
   \begin{jscript}
     // Rule V_Arr
     UglifyJS.AST_Array.prototype.check = function(gamma) {
@@ -1089,7 +1088,7 @@ corresponding to the typing rule \textsc{V\_Arr}:
     };
   \end{jscript}
   \caption{The implementation of \textsc{V\_Arr}}\label{lst:arrimpl}
-\end{program}
+\end{listing}
 
 \subsection{Constraint Solution}
 
@@ -1115,13 +1114,13 @@ within an upper and lower bound.  In listing~\ref{lst:multSols}, for example,
 \js{x} must have the property \js{c}, but \js{b} and \js{a} may or may not be
 present.  
 
-\begin{program}[H]
+\begin{listing}[H]
   \begin{jscript}
 	x = {a:1, b:2, c:3} // $x \succeq \{a:number, b:number, c:number\}$
 	x.c++;              // $x \preceq \{c:number\}$
   \end{jscript}
   \caption{An example of a program with multiple solutions}\label{lst:multSols}
-\end{program}
+\end{listing}
 
 Although these problems are introduced by subtyping constraints, in practice
 they will only arise for object types. Primitive types like numbers or strings,
@@ -1216,7 +1215,7 @@ of new properties when the type is involved in a constraint. After the new prope
 discovered, they will be reflected in the function type -- and if the function is called with 
 values lacking these properties then the type checker will fail.
 
-\begin{program}
+\begin{listing}
   \begin{jscript}
 	function f(x) {
 	  x.foo += 1;   // $T_x \preceq\{foo:number\}$, solved by substitution
@@ -1225,7 +1224,7 @@ values lacking these properties then the type checker will fail.
   \end{jscript}
   \caption{A context in which it would be safe to add the property \js{bar} to $T_x$}
   \label{lst:discConst}
-\end{program}
+\end{listing}
 
 Although this method appears to work in practice, it is not clear that the
 discovery behaviour is truly sound. Constraints are solved sequentially, then
@@ -1308,7 +1307,7 @@ type-check to ensure that its type is as we expect.
 Listing~\ref{lst:import1} shows one situation which can only be considered safe if
 \js{x} return a boolean value when it first appears, but then returns a numeric value on
 the next line. 
-\begin{program}
+\begin{listing}
   \begin{jscript}
 	// jstyper import x
 	if (x()) {
@@ -1316,7 +1315,9 @@ the next line.
 	}
   \end{jscript}
   \caption{A simple use of imported variables}\label{lst:import1}
-\end{program}
+\end{listing}
+
+\subsection{Compiler Implementation}
 
 When type-checking a variable identifier, my implementation first checks
 whether the variable's name is in the ``imported" list. If it is, the current
@@ -1336,7 +1337,7 @@ but the well-typed portion of the program cannot be blamed for this error,
 which must have been caused by the dynamic code returning a value of the
 incorrect type. 
 
-\begin{program}
+\begin{listing}
   \begin{jscript}
 	// jstyper import x
 	var sum = (function(t) {
@@ -1346,7 +1347,7 @@ incorrect type.
 	})(x) + 5;
   \end{jscript}
   \caption{An example primitive wrapper}\label{lst:importPrim}
-\end{program}
+\end{listing}
 Although it may appear that we have not gained anything by replacing type
 errors with cast errors, it must be remembered that, in JavaScript, an explicit
 type error may never be thrown. Instead, values of incorrect types are silently
@@ -1357,7 +1358,7 @@ in the development process. The additional safety guarantees -- that the
 non-dynamic code cannot be blamed -- also restricts the location in which the bug
 may have arisen, which will help locate and correct it much faster.
 
-\subsubsection*{Higher Order Casts}
+\subsection{Higher Order Casts}
 
 The wrapper for a primitive type is simple enough -- simply check the type of
 the variable and return it if it is correct. When looking at higher-order
@@ -1417,7 +1418,7 @@ typed and untyped worlds. Unchecked data is given a mimic to ensure it is safe
 in the well-typed world, and type safe data is given a guard to ensure its
 safety is not compromised by the unchecked world.
 
-\begin{program}
+\begin{listing}
   \begin{jscript}
 	var y = mimic({
 	  kind: "object",
@@ -1438,9 +1439,9 @@ safety is not compromised by the unchecked world.
   \caption{An example of the function call generated to ensure that the 
   	dynamic variable \texttt{x} has a function property \texttt{f} which returns a number.}
   \label{lst:importPrim}
-\end{program}
+\end{listing}
 
-\subsubsection*{Performance}
+\subsection{Performance}
 
 Inserting extra dynamic checks will inevitably have an impact on the
 performance of the program. If the program makes frequent use of higher-order
@@ -2173,7 +2174,7 @@ that my implementation behaves correctly.
   \subfloat[Jasmine test failure]{
   	\parbox[c]{150mm}{\includegraphics[width=150mm]{../res/jasmine-fail.png}}
   }
-  \caption{Demonstration of the testing procedure}
+  \caption[Demonstration of the testing procedure]{Demonstration of the testing procedure}
   \label{fig:jasmine}
 \end{figure}
 
@@ -2264,7 +2265,7 @@ commonly available for Node, however.
   \resizebox{150mm}{!}{
  	\import{../res/}{speed.pdf_tex}
   }
-  \caption{Slowdown / Indirect Access \\ \footnotesize{Square tests are from the SunSpider suite}}
+  \caption[Graph of Slowdown / Indirect Access]{Slowdown / Indirect Access \\ \footnotesize{Square tests are from the SunSpider suite}}
   \label{fig:slowdown}
 \end{figure}
 
@@ -2303,14 +2304,14 @@ overall memory use.
   \resizebox{150mm}{!}{
  	\import{../res/}{mem1.pdf_tex}
   }
-  \caption{Heap Usage / Indirect Access\\ \footnotesize{Square tests are from the SunSpider suite}}
+  \caption[Graph of Heap Usage / Indirect Access]{Heap Usage / Indirect Access\\ \footnotesize{Square tests are from the SunSpider suite}}
   \label{fig:mem1}
 \end{figure}
 \begin{figure}[H]
   \resizebox{150mm}{!}{
  	\import{../res/}{mem2.pdf_tex}
   }
-  \caption{Heap Usage / Accesses per Wrapper\\ \footnotesize{Square tests are from the SunSpider suite}}
+  \caption[Graph of Heap Usage / Acceses per Wrapper]{Heap Usage / Accesses per Wrapper\\ \footnotesize{Square tests are from the SunSpider suite}}
   \label{fig:mem2}
 \end{figure}
 Although the SunSpider tests were chosen to reflect real-world usage of
@@ -2397,7 +2398,5 @@ such statically typed programs are valuable, and future integration within code
 intelligence tools could offer even greater benefits to JavaScript developers.
 The process has been instructive from start to finish, and I hope to pursue the
 ideas formed here further in future.
-
-\printbibliography{}
 
 \end{document}
