@@ -262,7 +262,7 @@ generate an error (for example trying to convert a \texttt{number} to a
 preserved.
 
 In this project, I have defined a formal operational semantics and a type
-system for a subset of JavaScript, and created a proof that the system defined
+system for a subset of JavaScript, and proved that the system defined
 has the properties of \textit{progress} and \textit{type preservation}. I have
 successfully implemented type inference according to this specification in
 order to create a static type checker, and this implementation has been checked
@@ -422,15 +422,21 @@ prefers flat objects.
 
 There were three components to implement for the project -- the formal
 specification of the language; the executable type inference system itself and
-a gradual typing compiler to protect the boundaries of the typed world.  The
-language I specified was a subset of JavaScript, chosen to be expressive enough
-to represent actual JavaScript programs while being free of some of the
+a gradual typing compiler to protect the boundaries of the typed world. 
+In this chapter, I first present the language itself, and then discuss
+its formal specification. This includes a presentation of my solution to
+the challenge of type inference in the presence of dynamic property addition.
+I then discuss the practical implementation of the type inference system, 
+before moving on to an explanation of my gradual typing compiler.
+
+\section{Language Definition}
+
+The language I specified was a subset of JavaScript, chosen to be expressive
+enough to represent actual JavaScript programs while being free of some of the
 complications of implementation. For example, storage of variables was
 simplified to just a scope and a heap, without modelling the special cases of
 the global scope, nor worrying about removal of unused data by the garbage
 collector. 
-
-\section{Language Definition}
 
 The subset chosen includes primitive constants; object and array literals;
 arithmetic and logical binary and unary operators; dereferencing from and
@@ -453,42 +459,37 @@ access without control flow analyses keeping track of precisely which
 properties are well-defined at each program point. Another example is the
 concatenation of strings using \js{+}, which overloads the use of the \js{+}
 operator to represent more than one method signature. Even where a feature is
-<<<<<<< HEAD
-missing, however, the gradual typing mechanism allows code fragments
-relying on these features to bypass the type checker.
-=======
 missing, however, the gradual typing mechanism usually allows code fragments
 relying on these features to bypass the type checker. 
->>>>>>> eb5f085c13a3d789045292fd8938665529c14840
 
 \begin{listing}
   \begin{lstlisting}[mathescape, escapechar=£]
-v            ::= $b$ | $n$ | $str$ | £\textbf{undefined}£ | £\textbf{null}£
+$v$           ::= $b$ | $n$ | $str$ | £\textbf{undefined}£ | £\textbf{null}£
                     | £\textbf{\{}£$l_1$:$v_1$, $\dots$, $l_i$:$v_i$£\textbf{\}}£ | £\textbf{[}£$v_1$, $\dots$, $v_i$£\textbf{]}£ | £[\![£$func$, s£]\!]£
-e            ::= $v$ | $id$ | $e$ $op$ $e'$ | £\textbf{\{}£$l_1$:$e_1$, $\dots$, $l_i$:$e_i$£\textbf{\}}£ 
+$e$           ::= $v$ | $id$ | $e$ $op$ $e'$ | £\textbf{\{}£$l_1$:$e_1$, $\dots$, $l_i$:$e_i$£\textbf{\}}£ 
                     | £\textbf{[}£$e_1$, $\dots$ $e_i$£\textbf{]}£ | $e$£\textbf{.}£l | $e$£\textbf{[}£$e'$£\textbf{]}£ 
                     | $e$£\textbf{(}£$e_1$, $\dots$, $e_i$£\textbf{)}£ | $func$
                     | $assignTarget$ $\approx$ $e$ | $assignTarget$ $assignOp$ 
                     | $assignOp$ $assignTarget$ | $preOp$ e
-m            ::= $e$ | $m_1$; $\dots$; $m_i$ | £\textbf{var}£ $vd_1$, $\dots$ $vd_i$ 
+$m$           ::= $e$ | $m_1$; $\dots$; $m_i$ | £\textbf{var}£ $vd_1$, $\dots$ $vd_i$ 
                     | £\textbf{if}£ £\textbf{(}£$e$£\textbf{)}£ £\textbf{\{}£$m_1$£\textbf{\}}£ | £\textbf{if}£ £\textbf{(}£$e$£\textbf{) \{}£$m_1$£\textbf{\} else \{}£$m_2$£\textbf{\}}£ 
                     | £\textbf{for}£ £\textbf{(}£$e_1$; $e_2$; $e_3$£\textbf{)}£ £\textbf{\{}£$m$£\textbf{\}}£ | £\textbf{for}£ £\textbf{(}£$varDec$; $e_2$; $e_3$£\textbf{)}£ £\textbf{\{}£$m$£\textbf{\}}£ 
                     | £\textbf{while}£ £\textbf{(}£$e$£\textbf{)}£ £\textbf{\{}£$m$£\textbf{\}}£ 
                     | £\textbf{@def function}£ $id$£\textbf{(}£$x_1$, $\dots$, $x_i$£\textbf{)}£ £\textbf{\{}£$m$£\textbf{\}}£
                     | £\textbf{return}£ $e$ | £\textbf{return}£  | £\textbf{$\epsilon$}£
-func         ::= £\textbf{function}£ $id$£\textbf{(}£$x_1$, $\dots$, $x_i$£\textbf{)}£ £\textbf{\{}£ $m$ £\textbf{\}}£ 
+$func$           ::= £\textbf{function}£ $id$£\textbf{(}£$x_1$, $\dots$, $x_i$£\textbf{)}£ £\textbf{\{}£ $m$ £\textbf{\}}£ 
                     | £\textbf{function}£ £\textbf{(}£$x_1$, $\dots$, $x_i$£\textbf{)}£ £\textbf{\{}£ $m$ £\textbf{\}}£
-assignTarget ::= $vRef$ | $assignTarget$£\textbf{[}£$e$£\textbf{]}£ | $assignTarget$£\textbf{.}£l
-vRef         ::= $id$ | $vRef$£\textbf{.}£l | $vRef$£\textbf{[}£$n$£\textbf{]}£
-vd           ::= $id$ | $id$£\textbf{=}$e$£
-op           ::= $numOp$ | $cmpOp$ | $numcmpOp$ | $boolOp$
-$\approx$             ::=  £\textbf{=}£ | $numOp$£\textbf{=}£
-numOp        ::= £\textbf{+}£ | £\textbf{-}£ | £\textbf{/}£ | £\textbf{*}£ | £\textbf{\%}£
-numcmpOp     ::= £\textbf{\textless}£ | $\mathbf{\leq}$ | £\textbf{$\geq$}£ | £\textbf{\textgreater}£
-cmpOp        ::= £\textbf{===}£ | £\textbf{!==}£ | £\textbf{==}£ | £\textbf{!==}£
-boolOp       ::= £\textbf{||}£ | £\textbf{\&\&}£
-preOp        ::= £\textbf{-}£ | £\textbf{!}£
-assignOp     ::= £\textbf{-\,-}£ | £\textbf{++}£
+$assignTarget$ ::= $vRef$ | $assignTarget$£\textbf{[}£$e$£\textbf{]}£ | $assignTarget$£\textbf{.}£l
+$vRef$           ::= $id$ | $vRef$£\textbf{.}£l | $vRef$£\textbf{[}£$n$£\textbf{]}£
+$vd$           ::= $id$ | $id$£\textbf{=}$e$£
+$op$           ::= $numOp$ | $cmpOp$ | $numcmpOp$ | $boolOp$
+$\approx$           ::=  £\textbf{=}£ | $numOp$£\textbf{=}£
+$numOp$           ::= £\textbf{+}£ | £\textbf{-}£ | £\textbf{/}£ | £\textbf{*}£ | £\textbf{\%}£
+$numcmpOp\ \ \,$         ::= £\textbf{\textless}£ | $\mathbf{\leq}$ | £\textbf{$\geq$}£ | £\textbf{\textgreater}£
+$cmpOp$           ::= £\textbf{===}£ | £\textbf{!==}£ | £\textbf{==}£ | £\textbf{!==}£
+$boolOp$           ::= £\textbf{||}£ | £\textbf{\&\&}£
+$preOp$           ::= £\textbf{-}£ | £\textbf{!}£
+$assignOp\ \ \ \ \ \,$        ::= £\textbf{-\,-}£ | £\textbf{++}£
   \end{lstlisting}
   \caption{Language Definition}
   \label{lst:langdef}
@@ -496,7 +497,7 @@ assignOp     ::= £\textbf{-\,-}£ | £\textbf{++}£
 
 \section{Formal Specification}
 
-The specification of my JavaScript subset has two components -- a definition of
+The specification of my JavaScript subset has two components: a definition of
 the operational semantics, and a definition of the typing judgement used. The
 executable type inference system has the job of verifying that the initial
 program, as typed by the developer, is well-typed. If the specification is
@@ -506,7 +507,7 @@ execution of the program.
 \subsection{Operational Semantics}
 The operational semantics takes the form of 59 inductive rules
 describing all possible transitions from one step of computation to another. A
-step of computation is described by a configuration triple of the form
+state of computation is described by a configuration triple of the form
 $$\langle \mathtt{m}, s, \theta\rangle.$$ $\mathtt{m}$ is the program code remaining to be
 executed, $s$ represents the current scope (the set of variables accessible at
 this program point); and $\theta$ represents the heap, where variable values
@@ -587,7 +588,7 @@ reference (\textit{vRef}) or an expression which will reduce down to one
 on the heap. A variable identifier \js{x}, for example, is a valid value
 reference. The value on the heap may be an object or array pointing to other
 values, and so \js{x.l} and \js{x[n]} are also value references. Although value
-references share a syntactic similarity to dereferencable expressions, they are
+references share a syntactic similarity to dereference-able expressions, they are
 distinct and do not reduce down to the value itself. This is important, else we
 could end up with assignments of the form \js{5 = 6;}.
 This simplification has the consequence of deeming some valid JavaScript
@@ -897,12 +898,11 @@ T_x \rightarrow T_x' =
 \mathtt{\{b:\{c:\{d:\ number\}\}\} \rightarrow
   \{b:\{c:\{d:\ number,\ d2:\ boolean\}\}\}}.
 $$
-
-It is insufficient to simply replace $T_x$
-with $T_x'$ in the type store after the property addition on line 2.  The reason for this
-is the subsequent property access on line 3. This is only a valid operation if \js{x} has
-a property \js{b} (which has a property \js{c} with property \js{d}). Indeed the
-type judgement for this statement will generate constraints of the form 
+We cannot simply replace all occurrences of $T_x$ in the type
+environment, as this would result in the type of \js{f} becoming
+$T_x'\rightarrow T_x'$. It is also insufficient to simply set $$\Gamma'=\Gamma\cup\{x:T_x'\}$$ (which would leave other occurrences of $T_x$ in $\Gamma$
+unchanged).  The property access on line 3 will generate constraints of the
+form 
 \begin{equation}
   \begin{split}
  	\label{eq:barC}
@@ -912,7 +912,7 @@ type judgement for this statement will generate constraints of the form
   \end{split}
 \end{equation}
 
-The problem is that these only constrain $T_x'$, and not $T_x$. $T_x$ is
+The problem is that these only constrain $T_x'$. $T_x$ is
 left essentially unconstrained, and \js{f} would be incorrectly given the type
 $$\mathtt{(\mathtt{\{\} \rightarrow \{b:\{c:\{d:\ number,\ d2:\ boolean\}\}\}})}.$$ In order to
 correctly judge the type of this function, we need constraint~\eqref{eq:barC}
@@ -1038,7 +1038,7 @@ type inference system.
 
 The purpose of the implementation is to verify that the original source code is
 well-typed according to the type judgements. Once this is verified, I have
-proven that the program will not get stuck without a transition available (Chapter~\ref{evaluation}).
+proved that the program will not get stuck without a transition available (Chapter~\ref{evaluation}).
 There are two parts to verifying this: generating constraints according to the
 typing rules defined, and solving these constraints. If the constraints are
 satisfiable, then the program is well typed. Although all that is required for
@@ -1098,18 +1098,18 @@ corresponding to the typing rule \textsc{V\_Arr}:
 \subsection{Constraint Solution}
 
 Pierce~\cite{pierce} presents a unification algorithm based on Hindley and
-Milner's ideas to calculate a solution to a set of equality constraints. The
-algorithm is simple and operates in linear time in the number of constraints
-(which is itself linear with respect to the program size). It operates by
-iteratively turning constraints involving abstract type variables into
-substitutions, such that each iteration eliminates one abstract type variable.
-This is made possible by the fact that the constraints are equations -- if
-$T_1=T_2$, then it is always possible to substitute $T_1$ for $T_2$. If a
-constraint is found which equates two different concrete types, the algorithm
-fails. A side-effect of this algorithm is finding the \textit{most general
-  unifier} for each type variable, which gives a canonical
-representation of the type.  We have generated subtype rather than equality constraints, however,
-which are not so easily solved.
+Milner's ideas to calculate a solution to a set of \textit{equality}, rather
+than subtype constraints. The algorithm is simple and operates in linear time
+in the number of constraints (which is itself linear with respect to the
+program size). It operates by iteratively turning constraints involving
+abstract type variables into substitutions, such that each iteration eliminates
+one abstract type variable.  This is made possible by the fact that the
+constraints are equations -- if $T_1=T_2$, then it is always possible to
+substitute $T_1$ for $T_2$. If a constraint is found which equates two
+different concrete types, the algorithm fails. A side-effect of this algorithm
+is finding the \textit{most general unifier} for each type variable, which
+gives a canonical representation of the type.  We have generated subtype rather
+than equality constraints, however, which are not so easily solved.
 
 We cannot simply use substitution in the same way for subtype constraints,
 because the two constrained types may not be equal. Even with an algorithm to
@@ -1136,7 +1136,8 @@ subtype constraint for these types simply involves passing on the constraint to
 a lower level of structure. Table~\ref{tab:crc} summarises these solution
 methods. Since most types can be handled easily using substitution, it would be
 nice to find a solution for objects and hence retain the benefits of the
-(linear-time) unification algorithm. 
+(linear-time) unification algorithm. The following section discusses my attempt
+to do this.
 
 \begin{table}[H]
   \renewcommand{\arraystretch}{1.5}
@@ -1209,7 +1210,19 @@ both objects and move on.  If some property is missing, however, a conservative
 type checker must deem the program untypable. Although this system is provably
 sound, it is very much incomplete, and most interesting programs will fail under it.
 
-My attempt to get around this involved the gradual `discovery' of new properties.
+The implementation of a more suitable constraint solver will involve compromise
+between completeness and complexity. The results proven about the specification
+(progress and type preservation) rely on the assumption that the constraints
+generated are satisfiable, and their correctness is thus independent of the
+particular approach taken to determine their satisfiability. The practical
+approach I have taken is described below, though further investigation into its
+formal aspects may be warranted. An alternative strategy may involve keeping
+explicit track of upper and lower bounds for each type, and collapsing these
+bounds down to provide a canonical type for the variable. Preliminary
+investigation into the work of Fran\c{c}ois Pottier~\cite{pottier1998type}
+indicates that his approach may also be of use here.
+
+My implementation involves the gradual `discovery' of new properties.
 In certain contexts, it would be safe to add properties to $O_2$ in order to make the
 constraint satisfiable. An example of one such context is shown in Listing~\ref{lst:discConst}.
 The types of function parameters and imported variables are suitable for this kind of discovery, since 
@@ -1231,18 +1244,18 @@ values lacking these properties then the type checker will fail.
   \label{lst:discConst}
 \end{listing}
 
-Although this method appears to work in practice, it is not clear that the
-discovery behaviour is truly sound. Constraints are solved sequentially, then
-discarded. One constraint, say $C_1$, may have the form $T\succeq T'$. Some
-later constraint might also involve $T$, say, $T\preceq X$.  I may add new
-properties to $T$ to solve this constraint which are not present in $T'$. In
-this case $T$ is no longer a valid supertype for $T'$, and $C_1$ is violated.
-When I discard $C_1$, I have not logged the `upper bound' on the members
-allowed in $T$, and so growing through any later constraints may violate $C_1$.
-Keeping explicit track of the upper and lower bounds for object types may
-provide a more rigorous approach to solving constraints. These bounds could
-then be collapsed down to some particular type when required, and to provide a
-canonical type for the variable.
+%Although this method appears to work in practice, it is not clear that the
+%discovery behaviour is truly sound. Constraints are solved sequentially, then
+%discarded. One constraint, say $C_1$, may have the form $T\succeq T'$. Some
+%later constraint might also involve $T$, say, $T\preceq X$.  I may add new
+%properties to $T$ to solve this constraint which are not present in $T'$. In
+%this case $T$ is no longer a valid supertype for $T'$, and $C_1$ is violated.
+%When I discard $C_1$, I have not logged the `upper bound' on the members
+%allowed in $T$, and so growing through any later constraints may violate $C_1$.
+%Keeping explicit track of the upper and lower bounds for object types may
+%provide a more rigorous approach to solving constraints. These bounds could
+%then be collapsed down to some particular type when required, and to provide a
+%canonical type for the variable.
 
 \subsubsection*{Subconstraints}
 Objects, functions and arrays all have sub-structures, such that once we are
@@ -1266,7 +1279,7 @@ parameter which will have the type of the object itself. The solution is to
 keep track of which types we encounter as we recursively generate
 subconstraints. If we generate a constraint involving types which we have
 already encountered, then it is skipped. The soundness of this can be proved by
-induction. A constraint near the top of the path is satisfied if all
+contradiction. A constraint near the top of the path is satisfied if all
 subconstraints are satisfied. To prove the subconstraints are satisfied, we can
 assume by induction that the constraint itself is satisfied. If a subconstraint
 involving the same types appears later on in the path, then we can use this
@@ -1624,7 +1637,7 @@ distinguish which cases belong to which theorem below.
   possible last steps in the derivation of the transition judgement. In all
   cases, we begin by considering arbitrary $\Gamma, C$ and $\Gamma'$, and
   assuming that $\mathtt{m}$ is typable and that the store is well-typed. This leaves us to find
-  a suitable $\gamma$ and show three things to prove $\Phi(m,s,\theta,m',s',\theta')$:
+  a suitable $\gamma$ and to show the following three things to prove $\Phi(m,s,\theta,m',s',\theta')$:
 
   \begin{gather}
 	\Gamma\!\cup\!\gamma\vdash\mathtt{m'}\ |_{C'}\ \Gamma'' \label{sub:type}\\
@@ -1789,7 +1802,7 @@ $	\myinfer{IfTypable1}{
 	  We know that $\Gamma\vdash\mathtt{vRef}:T_1\ |_{C_1}\ \Gamma$ from the premise of 
 	  \textsc{AssignType}. We also know that $addr(vRef, s, \theta')$ is 
 	  well defined, and that $\theta'(addr(vRef, s, \theta')) = v$ 
-	  from the transition rule \textsc{Assign3}. We've already determined
+	  from the transition rule \textsc{Assign3}. We have already determined
 	  that $\mathtt{v}$ has type $T_2$, and the constraints of \textsc{AssignType}
 	  give us that $T_1\succeq T_2$. Hence $\Gamma\vdash(s,\theta')$ is satisfied,
 	  and $\Phi(\mathtt{e},s,\theta,\mathtt{e'},s',\theta')$ holds.
@@ -2411,11 +2424,12 @@ would normally interpret an attempt to change a property's type as a potential b
 \section{Final Thoughts}
 
 Although statically typing a dynamically typed programming language may appear
-to be like fitting a square peg in a round hole, in practice my approach has
-been successful. The additional safety guarantees which can be offered about
-such statically typed programs are valuable, and future integration within code
-intelligence tools could offer even greater benefits to JavaScript developers.
-The process has been instructive from start to finish, and I hope to pursue the
-ideas formed here further in future.
+to be like fitting a square peg in a round hole, in practice the addition of
+gradual typing wrappers has made my approach has been successful. The
+additional safety guarantees which can be offered about such statically typed
+programs are valuable, and future integration within code intelligence tools
+could offer even greater benefits to JavaScript developers.  The process has
+been instructive from start to finish, and I hope to pursue the ideas formed
+here further in future.
 
 \end{document}
