@@ -152,7 +152,7 @@ texcl=false,
 Types are a way of grouping together values which support similar operations.
 For example, \texttt{number} might be a type representing values which support
 addition and subtraction. \texttt{string} might represent a sequence of
-characters which supports concatenation, but doesn't support addition or
+characters which supports concatenation, but does not support addition or
 subtraction. A program in a language with these types cannot subtract a
 \texttt{number} from a \texttt{string}, and an attempt to do so is known as a
 \textit{type error}. We say that a language is \textit{strongly} typed if such
@@ -454,7 +454,7 @@ properties are well-defined at each program point. Another example is the
 concatenation of strings using \js{+}, which overloads the use of the \js{+}
 operator to represent more than one method signature. Even where a feature is
 missing, however, the gradual typing mechanism usually allows code fragments
-relying on these features to bypass the type checker.
+relying on these features to bypass the type checker. 
 
 \begin{listing}
   \begin{lstlisting}[mathescape, escapechar=£]
@@ -874,7 +874,7 @@ not a good model for dynamic objects.
  	  \import{../res/}{origin.pdf_tex}
  	}
   \end{minipage}
-  \caption{Property addition}\label{lst:propAdd}
+  \caption{An example property addition}\label{lst:propAdd}
 \end{listing}
 Instead, one must consider two separate object types -- one where the new
 property is present, and one where it is not. Listing~\ref{lst:propAdd}
@@ -1119,7 +1119,7 @@ present.
 	x = {a:1, b:2, c:3} // $x \succeq \{a:number, b:number, c:number\}$
 	x.c++;              // $x \preceq \{c:number\}$
   \end{jscript}
-  \caption{An example of a program with multiple solutions}\label{lst:multSols}
+  \caption{An example of a program with multiple type solutions}\label{lst:multSols}
 \end{listing}
 
 Although these problems are introduced by subtyping constraints, in practice
@@ -1222,7 +1222,7 @@ values lacking these properties then the type checker will fail.
 	  return x.bar; // $T_x \preceq\{bar:T\}$, solved by discovery
 	}
   \end{jscript}
-  \caption{A context in which it would be safe to add the property \js{bar} to $T_x$}
+  \caption{A context in which discovery of new properties is safe}
   \label{lst:discConst}
 \end{listing}
 
@@ -1387,6 +1387,15 @@ will check the callback's parameters (wrapping them in a mimic if necessary),
 call the callback itself, then pass on the return value into the untyped world
 (wrapping it with another guard if necessary). 
 
+\begin{figure}[h]
+  \centering
+  \resizebox{150mm}{!}{
+ 	\import{../res/}{wrappers.pdf_tex}
+  }
+  \caption{A visual explanation of higher-order wrappers}
+  \label{fig:wrappers}
+\end{figure}
+
 \begin{table}[h]
   \begin{tabular}{@{}lcc@{}}
 	\toprule
@@ -1436,7 +1445,7 @@ safety is not compromised by the unchecked world.
 	  }
 	}, x).f();
   \end{jscript}
-  \caption{An example of the function call generated to ensure that the 
+  \caption[An example higher order wrapper]{An example higher order wrapper. Here we ensure that the
   	dynamic variable \texttt{x} has a function property \texttt{f} which returns a number.}
   \label{lst:importPrim}
 \end{listing}
@@ -1595,7 +1604,7 @@ distinguish which cases belong to which theorem below.
   \end{multline*} 
 
   where $C$ and $C'$ are satisfiable sets of constraints. The transition may
-  cause a change in the store which wouldn't be reflected in $\Gamma$, so we
+  cause a change in the store which would not be reflected in $\Gamma$, so we
   use the extension $\Gamma\!\cup\!\gamma$ rather than simply $\Gamma$. In the
   case that $\mathtt{m}$ is an expression, we also require that the judged
   types of $\mathtt{m}$ and $\mathtt{m'}$ are the same. We show that for all
