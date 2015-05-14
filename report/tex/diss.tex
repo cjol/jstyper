@@ -1,154 +1,3 @@
-% Draft #2
-\documentclass[12pt,a4paper,twoside,openright]{report}
-\usepackage[pdfborder={0 0 0}]{hyperref}  % turns references into hyperlinks
-\usepackage[margin=25mm]{geometry} % adjusts page layout
-\usepackage{graphicx} % allows inclusion of PDF, PNG and JPG images
-\usepackage{import}
-\usepackage{docmute}  % only needed to allow inclusion of proposal.tex
-\usepackage[sorting=none,backend=bibtex]{biblatex}
-\usepackage[super]{nth}
-\usepackage{subfig}
-\usepackage{array}
-\usepackage{booktabs}
-
-\let\stdsection\section
-% \usepackage{showkeys}
-
-\usepackage{amsmath}
-\usepackage{amsthm}
-\usepackage{txfonts}
-\usepackage{lmodern}
-\usepackage{proof}
-\usepackage{mathtools}
-\usepackage{enumitem}
-\setlistdepth{20} % Magically makes the 'too deeply nested' error go away on some cases
-\usepackage{array}
-
-\usepackage{listings}
-\usepackage{verbatim}
-\usepackage{minted}
-\usepackage{thmtools}
-\usepackage{etoolbox}
-
-\theoremstyle{definition}
-\newtheorem{definition}[equation]{Definition}
-
-\newtheoremstyle{dotless}{\topsep}{\topsep}{\itshape}{}{\bfseries}{}{5pt plus 1pt minus 1pt}{}
-\theoremstyle{dotless}
-\newtheorem{lemma}[definition]{Lemma}
-\newtheorem{theorem}[definition]{Theorem}
-
-
-\bibliography{mybib}
-\raggedbottom
-\sloppy
-\clubpenalty1000%
-\widowpenalty1000%
-
-\usemintedstyle{friendly}
-\newcommand*{\js}{\mintinline{javascript}}
-\newcommand*{\orig}{\ensuremath{\!\multimapinv\!}}
-
-\usepackage{float}
-\makeatletter
-\newcommand\fs@plainruled{\def\@fs@cfont{\rmfamily}\let\@fs@capt\floatc@plain%
-  \def\@fs@pre{}%
-  \def\@fs@mid{\kern2pt\hrule\vspace\abovecaptionskip\relax}%
-  \def\@fs@post{}%
-  \let\@fs@iftopcapt\iffalse
-}
-\patchcmd{\@thm}{\trivlist}{\list{}{ \leftmargin=1.5em}}{}{}
-\patchcmd{\@endtheorem}{\endtrivlist}{\endlist}{}{}
-\makeatother
-\floatstyle{plain}
-
-\declaretheoremstyle[
-spaceabove=6pt, spacebelow=6pt,
-headfont=\normalfont\bfseries, numbered=no,
-notefont=\textsc, headpunct={\\}, notebraces={}{},
-bodyfont=\normalfont,
-postheadspace=1em
-]{casestyle}
-\declaretheoremstyle[
-spaceabove=6pt, spacebelow=3pt,
-headfont=\normalfont\bfseries,
-notefont=\scshape, headpunct={}, numbered=no,
-bodyfont=\normalfont,
-postheadspace=1em
-]{subcasestyle}
-\declaretheorem[style=casestyle]{case}
-\declaretheorem[style=subcasestyle, name=case]{subcase}
-
-\setlength\partopsep{-\topsep}
-\addtolength\partopsep{-\parskip}
-\usepackage{chngcntr}
-% \newfloat{program}{thp}{lop}[chapter]
-% \AtBeginDocument{\counterwithin{listing}{chapter}}
-% \floatname{program}{Listing}
-\usepackage{tabu}
-\usepackage{adjustbox}
-\newcommand{\myinfer}[3]{%
-  $\infer[\footnotesize\textsc{#1}]
-  {#2}{
-	{
-	  \renewcommand{\arraystretch}{0.9}
-	  \begin{tabular}{>{$}c<{$}}
-		#3	
-	  \end{tabular}
-	}
-  }$
-}
-\newcommand{\infertable}[1]{%
-  \begin{table}[H]
-  	\centerline{
-  	  \begin{adjustbox}{max width=\linewidth,center}
-	  	\begin{tabular}{c c}
-		  #1
-	  	\end{tabular}%
-  	  \end{adjustbox}
-  	}
-  \end{table}
-}
-\usepackage{xcolor}
-\definecolor{mintedbackground}{rgb}{0.95,0.95,0.95}
-
-\newminted[jscript]{javascript}{
-bgcolor=mintedbackground,
-fontfamily=tt,
-linenos=true,
-numberblanklines=true,
-numbersep=-12pt,
-gobble=0,
-frame=leftline,
-framerule=0.4pt,
-framesep=2mm,
-funcnamehighlighting=true,
-tabsize=4,
-obeytabs=false,
-mathescape=true
-samepage=false, %with this setting you can force the list to appear on the same page
-showspaces=false,
-showtabs =false,
-texcl=false,
-}
-\renewcommand{\baselinestretch}{1.1}  % adjust line spacing to make more readable
-\newcommand{\typable}[2][ ]{\Gamma{}\vdash\mathtt{#2}\, |_C#1\:\Gamma#1'}
-\newcommand{\typed}[2]{\Gamma{}\vdash\mathtt{#1}: #2\,|_C\:\Gamma'}
-\newcommand{\transition}[6]{\langle{}\mathtt{#1},#2,#3\rangle{}\rightarrow{}\langle{}\mathtt{#4},#5,#6\rangle}
-\newcommand{\indHyp}{\Phi(\Gamma, m, C, \Gamma')}
-\newcommand{\indHypTwo}{\Psi(\Gamma, e, T, C, \Gamma')}
-\newcommand{\var}{\textbf{var}}
-\newcommand{\sub}[1]{\textsubscript{#1}}
-\newcommand\eqdef{\mathrel{\overset{\makebox[0pt]{\mbox{\normalfont\tiny def}}}{=}}}
-\newcommand\qdot{\mathbin{\scalebox{1.5}{.}}\enspace}
-
-\begin{document}
-
-
-
-
-
-
 \chapter{Introduction}\label{introduction}
 
 Types are a way of grouping together values which support similar operations.
@@ -1548,6 +1397,7 @@ of a \textit{strength} relation ($\sqsubseteq$) between type environments. This
 allows us to verify that the `output' type environment $\Gamma'$ 
 can still make all the same judgements after a transition.
 
+\vspace{4mm}
 \begin{definition}[Well-typed store]
   \begin{equation} \label{eqn:typed-store}
   	\begin{split}
@@ -1566,7 +1416,9 @@ can still make all the same judgements after a transition.
   \end{equation}
 \end{definition}
 
+\vspace{4mm}
 We also make use of a few useful lemmas.
+\vspace{4mm}
 \begin{lemma}
   \label{lm:strChain}
   If $\Gamma_1 \sqsubseteq \Gamma_2$, and $\Gamma_1\vdash\mathtt{m}\ |_C\ \Gamma_1'$, 
@@ -1584,6 +1436,7 @@ We also make use of a few useful lemmas.
   The intersection of two types is a supertype to both types. 
 \end{lemma}
 
+\vspace{4mm}
 The proof of Lemma~\ref{lm:strChain} follows from a fairly trivial induction
 over the structure of the type judgement derivations. The proof of
 Lemma~\ref{lm:intersect} considers the two well-defined cases according to the
@@ -1599,6 +1452,7 @@ most interesting cases are included below. Both proofs follow the same
 structure -- considering each transition rule in turn -- and so I do not
 distinguish which cases belong to which theorem below.
 
+\vspace{4mm}
 \begin{theorem}[Type preservation for expressions]\label{expPreservation}
   If $\Gamma\vdash \mathtt{e}:T\ |_C\ \Gamma'$ and $\Gamma\vdash(s, \theta)$ and we have some
   transition $\transition{e}{s}{\theta}{e'}{s'}{\theta'}$, then some $\gamma$ can augment $\Gamma$ such that
@@ -1612,6 +1466,7 @@ distinguish which cases belong to which theorem below.
   $\Gamma'\sqsubseteq\Gamma''$.
 \end{theorem}
 
+\vspace{4mm}
 \begin{proof}
   The proof is by rule induction. Theorem~\ref{expPreservation} inducts over all
   transition rules for expressions, while Theorem~\ref{mPreservation} inducts over
@@ -1867,6 +1722,7 @@ Again I discuss the interesting cases all together, without distinguishing which
 case belongs to which theorem. Note, however, the weaker condition for Theorem~\ref{mProgress},
 which allows $\mathtt{m}$ to be a return statement.
 
+\vspace{4mm}
 \begin{theorem}[Progress for expressions]\label{expProgress} If
   $\typed{e}{T}$ and $\Gamma \vdash (s, \theta)$ then either $\mathtt{e}$ is a value or
   there exist some $\mathtt{e}',s', \theta'$ such that
@@ -1876,7 +1732,7 @@ which allows $\mathtt{m}$ to be a return statement.
   value or an irreducible return statement, or there exist some $\mathtt{m}',s', \theta'$ such that
   $\transition{m}{s}{\theta}{m'}{s'}{\theta'}$ 
 \end{theorem}
-
+\vspace{4mm}
 
 \begin{proof}
   The proofs of Theorems~\ref{expProgress} and~\ref{mProgress} are by rule induction over the type judgements.
@@ -2257,8 +2113,8 @@ SunSpider suite of tests is designed to avoid `microbenchmarks', and aims to
 reflect real-world use of JavaScript. This made many of the tests 
 inappropriate for my purposes, since they involved manipulation of DOM objects.
 Others involved object inheritance, which I was unfortunately unable to
-implement before the end of the project, leaving me with relatively few to test
-with. The remaining tests, however, required very little modification in order
+implement before the end of the project, leaving me with relatively few to
+test. The remaining tests, however, required very little modification in order
 to pass the type checker. The main
 changes were syntactic (replacing \js{new Array(1,2,3)} with the literal
 \js{[1,2,3]}, for example). In a few cases I left fragments unchecked, because
@@ -2269,11 +2125,11 @@ employed a similar procedure to support the \js{Math} object, which is built in
 to browsers, and so the type-checker cannot simply examine the definition of
 \js{Math} to determine its type signature.
 
-Since the SunSpider tests were fairly well statically typed, there were no
-occasions for dynamic type errors to be thrown. With the \js{Math} object
-and shift operators wrapped as described above, the correct results were
-computed, and so I am confident that my gradual typing compiler is
-sound.
+Since the SunSpider benchmarks are written as though statically typed, and are
+well tested to eliminate errors, there were no occasions for dynamic type
+errors to be thrown. With the \js{Math} object and shift operators wrapped as
+described above, the correct results were computed, and so I am confident that
+my gradual typing compiler is sound.
 
 \subsection*{Performance}
 
@@ -2296,7 +2152,7 @@ garbage collector may have already cleaned up some of the used memory by the
 time the heap dump is triggered. More detailed analysis tools are not 
 commonly available for Node, however.
 
-\begin{figure}[H]
+\begin{figure}[h]
   \resizebox{150mm}{!}{
  	\import{../res/}{speed.pdf_tex}
   }
@@ -2379,18 +2235,18 @@ system based on this specification, which passes every test in a suite of over
 benchmark suite. Finally, I have created a source-to-source compiler to
 protect the statically-typed portions of a codebase from the unchecked parts. I
 also achieved two of my three suggested extension tasks: the challenges of
-typing arrays, and of supporting the dynamic growth of objects. In carrying the
-project out, I have learned to use a range of new tools, from Ott to memwatch,
+typing arrays, and of supporting the dynamic growth of objects. In carrying out the
+project, I have learned to use a range of new tools, from Ott to memwatch,
 and hugely increased my understanding of types and programming languages. Some
 work could yet be done to take the project further, and some ideas in this
 direction are included below.
 
-\section{Future work}
+\section{Future Work}
 
 \subsection{Language Features}
 
 Support of more language features would make the inference tool immediately
-able to type a much larger set of existing JavaScript programs. One of the main
+able to type check a much larger set of existing JavaScript programs. One of the main
 such features is prototypal inheritance. In JavaScript, each object has a
 special \js{prototype} property, which corresponds to the object's parent in
 the inheritance chain. Property accesses may retrieve the value from the
@@ -2409,7 +2265,7 @@ as having a union type, which could then be discharged by explicit type checks.
 This would also enable the type inference of variadic functions, which in effect
 have parameters which sometimes take the value `\js{undefined}.'
 
-\subsection{Fine-grained object modification}
+\subsection{Fine-grained Object Modification}
 
 Currently I am able to handle the dynamic addition of properties to objects. 
 Although the monotonic growth of objects makes analysis easier, property deletion
@@ -2421,12 +2277,10 @@ would normally interpret an attempt to change a property's type as a potential b
 \section{Final Thoughts}
 
 Although statically typing a dynamically typed programming language may appear
-to be like fitting a square peg in a round hole, in practice the addition of
-gradual typing wrappers has made my approach has been successful. The
-additional safety guarantees which can be offered about such statically typed
-programs are valuable, and future integration within code intelligence tools
-could offer even greater benefits to JavaScript developers.  The process has
-been instructive from start to finish, and I hope to pursue the ideas formed
-here further in future.
-
-\end{document}
+analogous to fitting a square peg in a round hole, in practice the addition of
+gradual typing wrappers has made my approach successful. The additional safety
+guarantees which can be offered about such statically typed programs are
+valuable, and future integration within code intelligence tools could offer
+even greater benefits to JavaScript developers.  The process has been
+instructive from start to finish, and I hope to pursue the ideas formed here
+further in future.

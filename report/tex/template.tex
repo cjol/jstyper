@@ -10,7 +10,9 @@
 \usepackage{subfig}
 \usepackage{array}
 \usepackage{booktabs}
+\usepackage{supertabular}
 
+\usepackage[justification=centering]{caption}% or e.g. [format=hang]
 % \usepackage{showkeys}
 
 \usepackage{amsmath}
@@ -56,26 +58,27 @@
   \def\@fs@post{}%
   \let\@fs@iftopcapt\iffalse
 }
-\patchcmd{\@thm}{\trivlist}{\list{}{ \leftmargin=1.5em}}{}{}
+\patchcmd{\@thm}{\trivlist}{\list{}{ \leftmargin=1.5em\rightmargin=1.5em}}{}{}
 \patchcmd{\@endtheorem}{\endtrivlist}{\endlist}{}{}
 \makeatother
 \floatstyle{plain}
 
 \declaretheoremstyle[
 spaceabove=6pt, spacebelow=6pt,
-headfont=\normalfont\bfseries, numbered=no,
-notefont=\textsc, headpunct={\\}, notebraces={}{},
+headfont=\bfseries, numbered=no,
+notefont=\normalfont\bfseries\scshape, headpunct={\\}, notebraces={}{},
 bodyfont=\normalfont,
 postheadspace=1em
 ]{casestyle}
+\declaretheorem[style=casestyle]{case}
+
 \declaretheoremstyle[
 spaceabove=6pt, spacebelow=3pt,
-headfont=\normalfont\bfseries,
-notefont=\scshape, headpunct={}, numbered=no,
+headfont=\normalfont\bfseries\scshape,
+notefont=\normalfont\bfseries\scshape, headpunct={}, numbered=no,
 bodyfont=\normalfont,
 postheadspace=1em
 ]{subcasestyle}
-\declaretheorem[style=casestyle]{case}
 \declaretheorem[style=subcasestyle, name=case]{subcase}
 
 \setlength\partopsep{-\topsep}
@@ -84,7 +87,6 @@ postheadspace=1em
 \newfloat{program}{thp}{lop}[chapter]
 \AtBeginDocument{\counterwithin{listing}{chapter}}
 \floatname{program}{Listing}
-\usepackage{tabu}
 \usepackage{adjustbox}
 \newcommand{\myinfer}[3]{%
   $\infer[\footnotesize\textsc{#1}]
@@ -256,6 +258,27 @@ and effort in proofreading the final draft.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % the appendices
 \appendix
+
+\chapter{Full Language Specification}
+
+\input{myspec}
+\section{Grammar}
+\ottgrammar
+
+\section{Operational Semantics}
+\ottdefnreduce
+
+\section{Expression Type Judgements}
+\ottdefnexpType
+
+\section{Statement Typability Judgements}
+\ottdefntypable
+
+\chapter{Proof of Progress}\label{app:progress}
+\input{type-progress}
+
+\chapter{Proof of Type Preservation}\label{app:preservation}
+\input{type-preservation}
 
 \chapter{Project Proposal}
 

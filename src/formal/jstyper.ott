@@ -186,7 +186,7 @@ T :: 'Tval_' ::=				                {{ com Value Type }}
 	| { l1 : T1 , .. , li : Ti } ::  :: ObjType					{{ com ObjType }}
 	| T1 , ... , Ti -> Tj ::  :: FunctionType					{{ com FunctionType }}
 	| < T , G > ::  :: ClosureType								{{ com ClosureType }}
-																	{{tex [\![ [[T]], [[G]], ]\!]}}
+																	{{tex [\![ [[T]], [[G]] ]\!]}}
 	| [ T1 ]    ::  :: ArrayType								{{ com ArrayType }}
 	| G ["return"] :: :: GammaType 								{{ com GammaType }} 
 	| IllDefined ( T )  :: M:: IllDefinedType 					{{ com IllDefinedType }}
@@ -219,9 +219,9 @@ const :: 'const_' ::=
 	| > 		 ::  :: GEqConstraint 							{{ com GEqConstraint }}
 																	{{ tex \succeq }} 
 	| <c 		 ::  :: LEqCheckConstraint						{{ com LEqCheckConstraint }}
-																	{{ tex {\color{red}\preceq_c} }} 
+																	{{ tex \preceq_c }} 
 	| >c 		 ::  :: GEqCheckConstraint						{{ com GEqCheckConstraint }}
-																	{{ tex {\color{red}\succeq_c} }} 
+																	{{ tex \succeq_c }} 
 	| <o 		 ::  :: LEqOptConstraint						{{ com LEqOptConstraint }}
 																	{{ tex \preceq_o }} 
 	| >o 		 ::  :: GEqOptConstraint						{{ com GEqOptConstraint }}
@@ -337,7 +337,7 @@ Jop :: '' ::=
 		<e.l, s, h> -> <e'.l, s', h'>
 
 		----------------------- 									::   Prop2
-		< {l1: v1, .., lj: vj, l: v, l1': v1', .., lj': vj'}.l, s, h> -> <v, s', h'>
+		< {l1: v1, .., lj: vj, l: v, l1': v1', .., lj': vj'}.l, s, h> -> <v, s, h>
 
 		e != vRef
 		<e, s, h> -> <e', s', h'>
@@ -546,8 +546,9 @@ Jop :: '' ::=
 		<var vd, vd', s, h> -> <var vd; var vd', s, h>
 
 		a is fresh
+		h'=h  + {a: <function (y1,..,yi) {m}, s>}
 		------------------------------------------------- 			::   FuncDef
-		<@def function x(y1,..,yi) {m}, s, h> -> <eps, s + {x: a}, h  + {a: <function (y1,..,yi) {m}, s>}> 
+		<@def function x(y1,..,yi) {m}, s, h> -> <eps, s + {x: a}, h'> 
 
 		<e, s, h> -> <e',s',h'>
 		------------------------------------- 						:: Return1
@@ -710,9 +711,9 @@ Jop :: '' ::=
 		G  |- e.l : T   |C0 G0
 		G  |- e   : T0' |C' G'
 		G0 |- e1  : T1' |C1 G1   ---   Gi-1 |- ei : Ti' |Ci Gi
-		C' = ({T0 >c T0'} u (U j=1-i {Tj >c Tj'})) u ({Tk <c Tk'} u {T=<T0, T1, .., Ti -> Tk, g>})
+		C' = ({T0 >c T0'} u (U j=1-i {Tj >c Tj'})) u ({Tk <c Tk'} )
 		-------------------------------------------------- 			:: PropCallType
-		G |- e.l(e1,..,ei) : Tk' |(U j=0-i Cj) u C' Gi
+		G |- e.l(e1,..,ei) : Tk' |(U j=0-i Cj) u (C' u {T=<T0, T1, .., Ti -> Tk, g>}) Gi
 
 		T is fresh
 		g u {return:pending} |- m |C g'
