@@ -1,0 +1,68 @@
+%% Creator: Inkscape inkscape 0.91, www.inkscape.org
+%% PDF/EPS/PS + LaTeX output extension by Johan Engelen, 2010
+%% Accompanies image file 'wrappers.pdf' (pdf, eps, ps)
+%%
+%% To include the image in your LaTeX document, write
+%%   \input{<filename>.pdf_tex}
+%%  instead of
+%%   \includegraphics{<filename>.pdf}
+%% To scale the image, write
+%%   \def\svgwidth{<desired width>}
+%%   \input{<filename>.pdf_tex}
+%%  instead of
+%%   \includegraphics[width=<desired width>]{<filename>.pdf}
+%%
+%% Images with a different path to the parent latex file can
+%% be accessed with the `import' package (which may need to be
+%% installed) using
+%%   \usepackage{import}
+%% in the preamble, and then including the image with
+%%   \import{<path to file>}{<filename>.pdf_tex}
+%% Alternatively, one can specify
+%%   \graphicspath{{<path to file>/}}
+%% 
+%% For more information, please see info/svg-inkscape on CTAN:
+%%   http://tug.ctan.org/tex-archive/info/svg-inkscape
+%%
+\begingroup%
+  \makeatletter%
+  \providecommand\color[2][]{%
+    \errmessage{(Inkscape) Color is used for the text in Inkscape, but the package 'color.sty' is not loaded}%
+    \renewcommand\color[2][]{}%
+  }%
+  \providecommand\transparent[1]{%
+    \errmessage{(Inkscape) Transparency is used (non-zero) for the text in Inkscape, but the package 'transparent.sty' is not loaded}%
+    \renewcommand\transparent[1]{}%
+  }%
+  \providecommand\rotatebox[2]{#2}%
+  \ifx\svgwidth\undefined%
+    \setlength{\unitlength}{552.48998447bp}%
+    \ifx\svgscale\undefined%
+      \relax%
+    \else%
+      \setlength{\unitlength}{\unitlength * \real{\svgscale}}%
+    \fi%
+  \else%
+    \setlength{\unitlength}{\svgwidth}%
+  \fi%
+  \global\let\svgwidth\undefined%
+  \global\let\svgscale\undefined%
+  \makeatother%
+  \begin{picture}(1,0.3705428)%
+    \put(0.02804939,0.03767222){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\begin{minipage}{0.23037381\unitlength}\centering Mimic\end{minipage}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=1]{wrappers.pdf}}%
+    \put(-0.0423469,0.37826276){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\begin{minipage}{0.37320556\unitlength}\centering Type-safe context\end{minipage}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=2]{wrappers.pdf}}%
+    \put(0.36317824,0.37668388){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\begin{minipage}{0.37320556\unitlength}\centering Unchecked context\end{minipage}}}%
+    \put(0.43617551,0.0392511){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\begin{minipage}{0.23037381\unitlength}\centering Guard\end{minipage}}}%
+    \put(0.42865401,0.10963303){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\begin{minipage}{0.13310488\unitlength}\raggedright \end{minipage}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=3]{wrappers.pdf}}%
+    \put(0.84788979,0.20479995){\color[rgb]{0,0,0}\makebox(0,0)[lb]{\smash{Type-checked object}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=4]{wrappers.pdf}}%
+    \put(0.8478631,0.15125411){\color[rgb]{0,0,0}\makebox(0,0)[lb]{\smash{Mimic wrapper}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=5]{wrappers.pdf}}%
+    \put(0.84788109,0.09767229){\color[rgb]{0,0,0}\makebox(0,0)[lb]{\smash{Guard wrapper}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=6]{wrappers.pdf}}%
+    \put(0.84788107,0.25839919){\color[rgb]{0,0,0}\makebox(0,0)[lb]{\smash{Unchecked object}}}%
+  \end{picture}%
+\endgroup%
