@@ -151,8 +151,8 @@ texcl=false,
 
 Types are a way of grouping together values which support similar operations.
 For example, \texttt{number} might be a type representing values which support
-addition and subtraction. \texttt{string} might represent a sequence of
-characters which supports concatenation, but doesn't support addition or
+addition and subtraction. The type \texttt{string} might represent sequences of
+characters which support concatenation, but do not support addition or
 subtraction. A program in a language with these types cannot subtract a
 \texttt{number} from a \texttt{string}, and an attempt to do so is known as a
 \textit{type error}. We say that a language is \textit{strongly} typed if such
@@ -422,7 +422,7 @@ prefers flat objects.
 
 There were three components to implement for the project -- the formal
 specification of the language; the executable type inference system itself and
-a gradual typing compiler to protext the boundaries of the typed world.  The
+a gradual typing compiler to protect the boundaries of the typed world.  The
 language I specified was a subset of JavaScript, chosen to be expressive enough
 to represent actual JavaScript programs while being free of some of the
 complications of implementation. For example, storage of variables was
@@ -447,13 +447,13 @@ could be predefined for use within the system.
 Some other features were excluded which would introduce difficult problems in
 ensuring type safety.  Although I included the ability to dynamically grow an
 object by assigning to an undefined property, I excluded the ability to remove
-or change properties once defined. These features, although legal in
-JavaScript, make it difficult to reason about the type safety of a property
+or change the type of properties once defined. These features
+make it difficult to reason about the type safety of a property
 access without control flow analyses keeping track of precisely which
 properties are well-defined at each program point. Another example is the
 concatenation of strings using \js{+}, which overloads the use of the \js{+}
 operator to represent more than one method signature. Even where a feature is
-missing, however, the gradual typing mechanism usually allows code fragments
+missing, however, the gradual typing mechanism allows code fragments
 relying on these features to bypass the type checker.
 
 \begin{listing}
@@ -584,7 +584,7 @@ reference. The value on the heap may be an object or array pointing to other
 values, and so \js{x.l} and \js{x[n]} are also value references. Although value
 references share a syntactic similarity to dereferencable expressions, they are
 distinct and do not reduce down to the value itself. This is important, else we
-could end up with assignments of the form \js{5 = 6;} which make little sense.
+could end up with assignments of the form \js{5 = 6;}.
 This simplification has the consequence of deeming some valid JavaScript
 assignments illegal, such as the following expression:
 \begin{listing}[H]
@@ -732,7 +732,7 @@ of the type $\{l: T\}$ for some $T$ (i.e.~if the type of \js{e} has at least the
 When a function has multiple return statements, we need to ensure that every
 possible value returned has the same type.  This parallels the situation with
 variable assignments, where we need to ensure that each assignment to a
-particular variable has the same type.  suitable type. I thus use the same
+particular variable has the same type. I thus use the same
 mechanism for return values as for variables, and include a special
 ``\textit{return}" entry in the type environment. 
 
@@ -853,7 +853,7 @@ that uninitialised properties will be added during an extended initialisation
 phase~\cite{anderson05}. Analysis of JavaScript's dynamic behaviour in
 practice, however, suggests that adding properties is likely to happen at any
 point in the object's life cycle~\cite{JSBehaviour}, and so potential types are
-not a good model for dynamic objects.
+not a good model.
 
 \begin{listing}[t]
   \centering
@@ -1024,8 +1024,8 @@ assert that the captured store is well-typed under this type environment
 environment $\gamma$ and the store $(s, \theta)$ agree on the types of
 variables. This is necessary for our proof of progress, which will be discussed
 further in Chapter \ref{evaluation}. Note that expressions enclosed in 
-$\mathtt{[\![\ \ ]\!]}$ will never actually appear in the
-original program code, and so the type judgements for these kinds of expression
+$\mathtt{[\![\ \ ]\!]}$ will never appear in the
+original program, and so the type judgements for these kinds of expression
 are required for the proof of type safety, but do not appear in the executable
 type inference system.
 
@@ -1042,10 +1042,10 @@ canonical type for each expression, as an aid for development tools.
 
 \subsection{Constraint Generation}
 
-With the type judgements formally specified, generating constraints is a fairly
-straightforward affair.  UglifyJS parses the input code and creates an abstract
-syntax tree. Each node in the tree inherits from a base prototype object
-representing the node type.  For example, the expression \js{x.l = 5} is
+My implementation generates constraints by precisely following the rules of the
+formally specified type judgements. UglifyJS parses the input code and creates
+an abstract syntax tree. Each node in the tree inherits from a base prototype
+object representing the node type.  For example, the expression \js{x.l = 5} is
 represented by an \textit{AST\_Assign} node containing an \textit{AST\_Dot} and
 an \textit{AST\_Number} node.  I added a \js{check(gamma)} method to the
 prototype object for each node type. The parameter for the method is the type
@@ -1130,7 +1130,7 @@ constraint. Function and array types do have substructure, but solving a
 subtype constraint for these types simply involves passing on the constraint to
 a lower level of structure. Table~\ref{tab:crc} summarises these solution
 methods. Since most types can be handled easily using substitution, it would be
-nice to find a solution for objects in and hence retain the benefits of the
+nice to find a solution for objects and hence retain the benefits of the
 (linear-time) unification algorithm. 
 
 \begin{table}[H]
@@ -1233,7 +1233,7 @@ later constraint might also involve $T$, say, $T\preceq X$.  I may add new
 properties to $T$ to solve this constraint which are not present in $T'$. In
 this case $T$ is no longer a valid supertype for $T'$, and $C_1$ is violated.
 When I discard $C_1$, I have not logged the `upper bound' on the members
-allowed in $T$, and so growing through any later constraints may violate $C_1$
+allowed in $T$, and so growing through any later constraints may violate $C_1$.
 Keeping explicit track of the upper and lower bounds for object types may
 provide a more rigorous approach to solving constraints. These bounds could
 then be collapsed down to some particular type when required, and to provide a
@@ -1300,7 +1300,8 @@ likely to arise in a dynamic language like JavaScript, where the programmer is
 used to having a certain freedom of expression. A mechanism is thus needed to
 give programmers freedom to write dynamic code where convenient, while still
 using a static type checker wherever possible. To allow for this, a programmer
-can annotate his program with ``import" directives, which declares a certain
+can delineate typed portions of his code using ``\js{jstyper}" directives.
+He can then annotate his program further with ``\js{import}" directives, which declares a certain
 variable as having dynamic behaviour. When read, we cannot rely on an imported
 variable to have any particular type, and so we must instead insert a dynamic
 type-check to ensure that its type is as we expect.
@@ -1309,10 +1310,12 @@ Listing~\ref{lst:import1} shows one situation which can only be considered safe 
 the next line. 
 \begin{listing}
   \begin{jscript}
+	// jstyper start
 	// jstyper import x
 	if (x()) {
 	  sum = x() + 5;
 	}
+	// jstyper end
   \end{jscript}
   \caption{A simple use of imported variables}\label{lst:import1}
 \end{listing}
@@ -1413,10 +1416,11 @@ desired type of the variable is a primitive, then a simple type check is perform
 before returning it. If the variable is of a higher-order type, then additional
 wrappers are created as described above.
 
-With this system of guards and wrappers, we control the boundary between the
-typed and untyped worlds. Unchecked data is given a mimic to ensure it is safe
-in the well-typed world, and type safe data is given a guard to ensure its
-safety is not compromised by the unchecked world.
+This system of guards and mimic wrappers is due to
+Gray~\cite{gradGray,gray2005fine}, and allows us to control the boundary between the typed
+and untyped worlds. Unchecked data is given a mimic to ensure it is safe in the
+well-typed world, and type safe data is given a guard to ensure its safety is
+not compromised by the unchecked world.
 
 \begin{listing}
   \begin{jscript}
@@ -1503,8 +1507,7 @@ reduced down to a single value, or some further transition must exist. This is
 the proof of \textit{progress}. Thus our initial program -- which we have
 checked is well typed -- must have some transition, and the result will be
 another well-typed program, which itself must have a transition, and so on
-until the program has reduced to a single value, at which point no further
-transitions exist.
+until the program has reduced to a single value.
 
 \subsection{Proof of Preservation}
 
@@ -1581,7 +1584,9 @@ distinguish which cases belong to which theorem below.
 \end{theorem}
 
 \begin{proof}
-  Take 
+  The proof is by rule induction. Theorem~\ref{expPreservation} inducts over all
+  transition rules for expressions, while Theorem~\ref{mPreservation} inducts over
+  transition rules for statements. Take 
   \begin{multline*}
  	\Phi(m, s, \theta, m', s', \theta') \eqdef 
 	\	\forall\Gamma,C,\Gamma' \qdot
@@ -1787,7 +1792,7 @@ $	\myinfer{IfTypable1}{
 	  We now must show that $\Gamma\!\cup\!\gamma\vdash(s,
 	  \theta')$, for which we use the assumption that
 	  $\Gamma\vdash(s,\theta)$. Note that
-	  $dom(\Gamma)=dom(\Gamma\!\cup\!\gamma)$, since the first precondition
+	  $dom(\Gamma)=dom(\Gamma\cup\gamma)$, since the first precondition
 	  of \textsc{PropAssignType} requires that $id\in dom(\Gamma)$.
 
 	  For the value reference $\mathtt{id.l_1.\cdots.l_k.l}$, clearly we have that
@@ -1845,7 +1850,7 @@ which allows $\mathtt{m}$ to be a return statement.
 
 
 \begin{proof}
-  The proofs of Theorems~\ref{expProgress} and~\ref{mProgress} are by structural induction over the type judgements.
+  The proofs of Theorems~\ref{expProgress} and~\ref{mProgress} are by rule induction over the type judgements.
   Take
   \begin{multline*}
   	\indHypTwo \eqdef \\
@@ -2203,7 +2208,7 @@ key--value pairs indicating the expected value of different variables after
 execution of the compiled file. The compiled file should always return the same
 values as the uncompiled file, except in the case that the dynamic code
 contains a type error. In this situation, the result of
-uncompiled file is clearly not reliable, so we instead merely check that the
+the uncompiled file is clearly not reliable, so we instead merely check that the
 compiled code throws a cast error when executed.
 
 Few of my unit tests performed meaningful calculations, and so judging the
@@ -2245,7 +2250,7 @@ sound.
 Enclosing dynamic variables within a wrapper will inevitably incur a cost both in
 terms of speed and memory use. This is particularly likely to be a
 problem with data of higher order types, since the contents will need
-re-wrapping each time a property is read, for example. In order to evaluate the
+re-wrapping each time a property is read. In order to evaluate the
 extent of the performance hit, I analysed the runtime performance of the 10
 gradual typing tests above (the tests containing cast errors were obviously
 of no use here, since their execution is interrupted).
@@ -2337,7 +2342,7 @@ the value during program execution and avoid the need to create a new wrapper.
 
 I have successfully achieved every objective set out in my original project
 proposal.  I have precisely defined operational semantics and typing judgements
-for subset of JavaScript, and my proofs of type preservation and progress
+for a subset of JavaScript, and my proofs of type preservation and progress
 indicate that my subset was well defined.  I have implemented a type inference
 system based on this specification, which passes every test in a suite of over
 90 of my own tests, and several `real-world' programs from the SunSpider
