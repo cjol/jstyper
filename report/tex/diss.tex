@@ -11,6 +11,7 @@
 \usepackage{array}
 \usepackage{booktabs}
 
+\let\stdsection\section
 % \usepackage{showkeys}
 
 \usepackage{amsmath}
@@ -140,6 +141,7 @@ texcl=false,
 \newcommand{\sub}[1]{\textsubscript{#1}}
 \newcommand\eqdef{\mathrel{\overset{\makebox[0pt]{\mbox{\normalfont\tiny def}}}{=}}}
 \newcommand\qdot{\mathbin{\scalebox{1.5}{.}}\enspace}
+
 \begin{document}
 
 
@@ -324,17 +326,17 @@ own operational semantics.
 Carrying out any kind of static analysis on a dynamic language will result in
 false negatives, where a safe statement is incorrectly deemed unsafe. This is
 preferable to a false positive in terms of guaranteeing safe operation of the
-program, but still frustrating for the developer. It can be important,
+program, but still frustrating for the developer. It is important,
 therefore, to understand the manner in which a language is actually used. There
 is little benefit in devising solutions to the problem of typing dynamic idioms
-which are hardly ever used, and so I looked through the results of Richards,
-Lebresne, Burg and Vitek~\cite{JSBehaviour}, who have analysed the dynamic
-behaviour of real JavaScript programs in operation on the internet. It
+which are hardly ever used. Richards et al.~\cite{JSBehaviour}, present an analysis of the dynamic
+behaviour of real JavaScript programs which was helpful for this. It
 was educational to look at TypeScript~\cite{ts,understandingTS}, to learn from
 the design decisions which had been made, the solutions they had already found,
-and to fully understand the limitations of their solution. I also attended a
-talk on Flow by one of the authors, with similar ambitions.
+and to fully understand the limitations of their solution. For the same reason, I attended a
+talk on Flow by one of the authors.
 
+\newpage
 \section{Development Plan}
 
 The project consisted of four discrete tasks: designing a formal specification
@@ -409,7 +411,7 @@ format. Esprima\footnote{\href{http://esprima.org}{http://esprima.org}} is anoth
 which is marginally faster and uses the SpiderMonkey AST format standardised by
 Mozilla. Various analysis tools and code generators exist for this format, but
 I decided that the UglifyJS format was actually more useful for my purposes,
-and parse speeds was not a priority. For example, the SpiderMonkey AST has a
+and parse speed was not a priority. For example, the SpiderMonkey AST has a
 single representation of any unary expression, when in practice it can be
 useful to distinguish between prefix and suffix expressions.  Additionally,
 UglifyJS uses object inheritance to define its node types, where Esprima
@@ -495,6 +497,7 @@ $assignOp\ \ \ \ \ \,$        ::= £\textbf{-\,-}£ | £\textbf{++}£
   \label{lst:langdef}
 \end{listing}
 
+\newpage
 \section{Formal Specification}
 
 The specification of my JavaScript subset has two components: a definition of
@@ -755,6 +758,33 @@ types to be compatible with the previous one.  If $\Gamma[``return"]$ is still
 typed as having return type \texttt{undefined} (rules \textsc{AnonVoid} and
 \textsc{NamedVoid})
 
+Matters are complicated slightly in the presence of non-trivial control flow.
+The function below, for example, should not be typable because it may sometimes return
+a \texttt{number}, but sometimes it will return \texttt{undefined}.
+\begin{listing}[H]
+  \begin{jscript}
+	function isPositive(x) {
+	  if (x>0) {
+		return true;
+	  }
+	}
+  \end{jscript}
+\end{listing}
+
+Because there is no explicit `\js{return undefined;}' statement at the end of the
+function, an unsatisfiable constraint is not generated. This problem requires
+some sort of control flow analysis to solve. As part of the $merge$ operation
+of rules \textsc{If}, \textsc{While} and \textsc{ForTypable}, type environment
+entries are given an `$IllDefined$' wrapper type if they are well-defined in
+one branch but not in the other. In particular, this operation will apply to
+the \textit{return} entry. If the return type is ill-defined when a new return
+statement is encountered, the two types will be constrained (as for
+\textsc{RetTypable4}), and the return type will be well-defined in the outgoing
+type environment (\textsc{RetTypable3}).  If the return type is still
+ill-defined after typing the function body, then no type judgement is
+applicable (rules \textsc{AnonFun} and \textsc{NamedFun} both require that
+$\Gamma[``return"]\neq IllDefined(T)$ for any type $T$), and the function is
+deemed untypable.
 
 \infertable{
   $\myinfer{AnonVoid}{
@@ -822,34 +852,6 @@ typed as having return type \texttt{undefined} (rules \textsc{AnonVoid} and
 	\Gamma_4 = merge(\Gamma_1, \Gamma_3, \Gamma_1)
   }$
 }
-Matters are complicated slightly in the presence of non-trivial control flow.
-The function below, for example, should not be typable because it may sometimes return
-a \texttt{number}, but sometimes it will return \texttt{undefined}.
-\begin{listing}[H]
-  \begin{jscript}
-	function isPositive(x) {
-	  if (x>0) {
-		return true;
-	  }
-	}
-  \end{jscript}
-\end{listing}
-
-Because there is no explicit `\js{return undefined;}' statement at the end of the
-function, an unsatisfiable constraint is not generated. This problem requires
-some sort of control flow analysis to solve. As part of the $merge$ operation
-of rules \textsc{If}, \textsc{While} and \textsc{ForTypable}, type environment
-entries are given an `$IllDefined$' wrapper type if they are well-defined in
-one branch but not in the other. In particular, this operation will apply to
-the \textit{return} entry. If the return type is ill-defined when a new return
-statement is encountered, the two types will be constrained (as for
-\textsc{RetTypable4}), and the return type will be well-defined in the outgoing
-type environment (\textsc{RetTypable3}).  If the return type is still
-ill-defined after typing the function body, then no type judgement is
-applicable (rules \textsc{AnonFun} and \textsc{NamedFun} both require that
-$\Gamma[``return"]\neq IllDefined(T)$ for any type $T$), and the function is
-deemed untypable.
-
 \subsubsection*{Origin Chains}
 
 It is very common in JavaScript to add properties to an object
@@ -943,7 +945,7 @@ This system allows constraints to propagate along the origin chain, finally
 being enforced on the root object.
 
 All this is clearly not necessary in the case
-of assignment to a pre-existing, property. It is not
+of assignment to a pre-existing property. It is not
 possible to determine from the expression alone, however, whether the property
 is novel or not, and so my system treats every property assignment as 
 property creation. This introduces the possibility of conflict between the type
@@ -1051,8 +1053,8 @@ My implementation generates constraints by precisely following the rules of the
 formally specified type judgements. UglifyJS parses the input code and creates
 an abstract syntax tree. Each node in the tree inherits from a base prototype
 object representing the node type.  For example, the expression \js{x.l = 5} is
-represented by an \textit{AST\_Assign} node containing an \textit{AST\_Dot} and
-an \textit{AST\_Number} node.  I added a \js{check(gamma)} method to the
+represented by an \js{AST_Assign} node containing an \js{AST_Dot} and
+an \js{AST_Number} node.  I added a \js{check(gamma)} method to the
 prototype object for each node type. The parameter for the method is the type
 environment to use to check the node, and the method returns a judgement object
 containing the type (if the node was an expression node), an array of
@@ -1119,7 +1121,8 @@ within an upper and lower bound.  In listing~\ref{lst:multSols}, for example,
 \js{x} must have the property \js{c}, but \js{b} and \js{a} may or may not be
 present.  
 
-\begin{listing}[H]
+
+\begin{listing}[h]
   \begin{jscript}
 	x = {a:1, b:2, c:3} // $x \succeq \{a:number, b:number, c:number\}$
 	x.c++;              // $x \preceq \{c:number\}$
@@ -1310,6 +1313,7 @@ containing the original function type. Constraints on the object wrapper will
 generate a covariant subconstraint on the function type, which can be handled
 as discussed in the subconstraints section above.
 
+\newpage
 \section{Gradual Typing}
 
 As previously mentioned, any static type checker must exclude some well typed
@@ -1328,12 +1332,10 @@ Listing~\ref{lst:import1} shows one situation which can only be considered safe 
 the next line. 
 \begin{listing}
   \begin{jscript}
-	// jstyper start
 	// jstyper import x
 	if (x()) {
 	  sum = x() + 5;
 	}
-	// jstyper end
   \end{jscript}
   \caption{A simple use of imported variables}\label{lst:import1}
 \end{listing}
@@ -1397,27 +1399,7 @@ original function by accepting arguments, passing them on to the inner
 is itself of a higher order, we once again cannot examine its type directly, so
 we instead give it another mimic wrapper before returning it. 
 
-Unfortunately, by passing on parameters directly to the inner function, we are
-introducing a new potential hole in our type system. The parameters are well
-typed, but the inner function is not, so we cannot guarantee that the
-parameters are used in a type-safe manner. If the parameter is a callback
-expecting an integer, for example, the dynamic inner function could call it with a
-string without triggering a cast error. The solution is to guard the parameters
-with a different kind of wrapper as they enter the untyped world. The guard
-will check the callback's parameters (wrapping them in a mimic if necessary),
-call the callback itself, then pass on the return value into the untyped world
-(wrapping it with another guard if necessary). 
-
-\begin{figure}[h]
-  \centering
-  \resizebox{150mm}{!}{
- 	\import{../res/}{wrappers.pdf_tex}
-  }
-  \caption{A visual explanation of higher-order wrappers}
-  \label{fig:wrappers}
-\end{figure}
-
-\begin{table}[h]
+\begin{table}[b]
   \begin{tabular}{@{}lcc@{}}
 	\toprule
     & \textbf{Mimic} & \textbf{Guard}               \\ \midrule
@@ -1431,17 +1413,37 @@ call the callback itself, then pass on the return value into the untyped world
   \caption{Summary of dynamic checks}
   \label{tbl:chkSummary}
 \end{table}
-The implementation itself is fairly straightforward once the wrapper types 
-have been determined. The compiler generates an AST representation of a
-call to the function \texttt{mimic}, providing as parameters 
-the desired type and the imported variable itself. This is used to replace the 
-variable's node in the original program's AST. UglifyJS then takes the modified AST and 
-performs the code generation stage of the compiler. Alongside this, I prepared
-a JavaScript file containing the implementation of the \texttt{mimic} function. 
-The function is thus called whenever the imported variable is accessed. If the
-desired type of the variable is a primitive, then a simple type check is performed 
-before returning it. If the variable is of a higher-order type, then additional
-wrappers are created as described above.
+Unfortunately, by passing on parameters directly to the inner function, we are
+introducing a new potential hole in our type system. The parameters are well
+typed, but the inner function is not. If the parameter is a callback, we cannot guarantee that
+it will be used in a type-safe manner. The solution is to guard the callback
+with a different kind of wrapper as it enters the untyped world. The guard
+will check the callback's parameters (wrapping them in a mimic if necessary),
+call the callback itself, then pass on the return value into the untyped world
+(wrapping it with another guard if necessary). 
+
+\begin{figure}[h]
+  \centering
+  \resizebox{150mm}{!}{
+ 	\import{../res/}{wrappers.pdf_tex}
+  }
+  \caption{A visual explanation of higher-order wrappers}
+  \label{fig:wrappers}
+\end{figure}
+
+
+The implementation itself is fairly straightforward once the wrapper types have
+been determined. The compiler generates an AST representation of a call to the
+function \texttt{mimic}, providing as parameters the desired type and the
+imported variable itself. This is used to replace the variable's node in the
+original program's AST. UglifyJS then takes the modified AST and performs the
+code generation stage of the compiler. Listing~\ref{lst:importPrim} shows a
+sample result. Alongside this, I prepared a JavaScript file containing the
+implementation of the \texttt{mimic} function.  The function is thus called
+whenever the imported variable is accessed. If the desired type of the variable
+is a primitive, then a simple type check is performed before returning it. If
+the variable is of a higher-order type, then additional wrappers are created as
+described above.
 
 This system of guards and mimic wrappers is due to
 Gray~\cite{gradGray,gray2005fine}, and allows us to control the boundary between the typed
@@ -2128,6 +2130,7 @@ which allows $\mathtt{m}$ to be a return statement.
 
 
 
+\newpage
 \section{Testing Type Inference}
 
 As development progressed, a series of automatic unit tests ensured that my
@@ -2143,26 +2146,26 @@ that my implementation behaves correctly.
 \begin{lrbox}{\testbox}
   \begin{minipage}[c]{75mm}
   	\begin{minted}[]{json}
-  	  {
-   		"success": true,
-   		"types": {
-     	  "3": {
-      		"4": {
-       		  "type": "object",
-       		  "memberTypes": {
-         		"hello": "string",
-         		"myValue": {
-          		  "type": "object",
-          		  "memberTypes": {
-            		"i": "boolean"
-          		  }
-         		},
-         		"extra":"number"
-       		  }
-      		}
-     	  }
-   		}
-  	  }
+  {
+   "success": true,
+   "types": {
+     "3": {
+      "4": {
+        "type": "object",
+        "memberTypes": {
+          "hello": "string",
+          "myValue": {
+            "type": "object",
+            "memberTypes": {
+              "i": "boolean"
+            }
+          },
+          "extra":"number"
+        }
+     }
+    }
+  }
+ }
 	\end{minted}
   \end{minipage}
 \end{lrbox}
@@ -2203,7 +2206,7 @@ that my implementation behaves correctly.
 	\usebox{\testbox}
   }
 
-  \subfloat[Jasmine test failure]{
+  \subfloat[The resulting Jasmine test failure]{
   	\parbox[c]{150mm}{\includegraphics[width=150mm]{../res/jasmine-fail.png}}
   }
   \caption[Demonstration of the testing procedure]{Demonstration of the testing procedure}
@@ -2383,12 +2386,6 @@ work could yet be done to take the project further, and some ideas in this
 direction are included below.
 
 \section{Future work}
-
-\subsection{Constraint Solution}
-As indicated in chapter 3, my approach to solving constraints is not quite satisfactory. 
-Although it appears functional in practice, a more rigorous approach would ensure the
-soundness guarantees are preserved. Preliminary investigation into the work of
-Fran\c{c}ois Pottier~\cite{pottier1998type} indicates that his approach may be of use here.
 
 \subsection{Language Features}
 
