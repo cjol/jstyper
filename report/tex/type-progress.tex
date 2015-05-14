@@ -1,65 +1,12 @@
-
 % type-safety-proof.tex - Proof of progress and proof of preservation for my JavaScript subset
-\documentclass[a4paper]{article}
-
-\usepackage{times}
-\usepackage{amsmath,amssymb}
-\usepackage{fixltx2e}
-\usepackage{amsthm}
-\usepackage{thmtools}
-\usepackage{color}
-\theoremstyle{definition}
-\newtheorem{definition}{Definition}[section]
-\newtheoremstyle{dotless}{\topsep}{\topsep}{\itshape}{}{\bfseries}{}{5pt plus 1pt minus 1pt}{}
-\theoremstyle{dotless}
-\newtheorem{lemma}{Lemma}[section]
-\newtheorem{theorem}{Theorem}[section]
-\usepackage{etoolbox}
-\makeatletter
-\patchcmd{\@thm}{\trivlist}{\list{}{ \leftmargin=1.5em}}{}{}
-\patchcmd{\@endtheorem}{\endtrivlist}{\endlist}{}{}
-\makeatother
-
-\declaretheoremstyle[
-  spaceabove=6pt, spacebelow=6pt,
-  headfont=\normalfont\bfseries, numbered=no,
-  notefont=\scshape, headpunct={\\}, notebraces={}{},
-  bodyfont=\normalfont,
-  postheadspace=1em
-]{casestyle}
-\declaretheoremstyle[
-  spaceabove=6pt, spacebelow=3pt,
-  headfont=\normalfont\bfseries,
-  notefont=\scshape, headpunct={}, numbered=no,
-  bodyfont=\normalfont,
-  postheadspace=1em
-]{subcasestyle}
-\declaretheorem[style=casestyle]{case}
-\declaretheorem[style=subcasestyle, name=case]{subcase}
-
-\begin{document}
-
-\title{Proof of Type Safety}
-\author{Christopher Little}
-\maketitle
-
-\section{Progress}
-\newcommand{\typable}[2][ ]{\Gamma{}\vdash\mathtt{#2}\, |_C#1\:\Gamma#1'}
-\newcommand{\typed}[2]{\Gamma{}\vdash\mathtt{#1}: #2\,|_C\:\Gamma'}
-\newcommand{\transition}[6]{\langle{}#1,#2,#3\rangle{}\rightarrow{}\langle{}#4,#5,#6\rangle}
-\newcommand{\indHyp}{\Phi(\Gamma, m, C, \Gamma')}
-\newcommand{\indHypTwo}{\Psi(\Gamma, e, T, C, \Gamma')}
-\newcommand{\var}{\textbf{var}}
-\newcommand{\sub}[1]{\textsubscript{#1}}
-
-\begin{theorem}[Progress for expressions]\label{expProgress}
+\begin{theorem}[Progress for expressions]\label{app:expProgress}
 
   If $\typed{e}{T}$ and $\Gamma \vdash (s, \theta)$ then either e is a
   value or there exist $e',s', \theta'$ such that $\transition{e}{s}{\theta}{e'}{s'}{\theta'}$
 
 \end{theorem}
 
-\begin{proof} \label{expProgressProof}
+\begin{proof} \label{app:expProgressProof}
 
   Take 
   \begin{multline*}
@@ -74,14 +21,14 @@
   $\forall s,\theta.(\Gamma\vdash(s,\theta)\implies\dots$,
   consider in all cases an arbitrary $s$ and $\theta$ and assume that $\Gamma\vdash(s,\theta)$.
 
-  \begin{case}[V\_Num, V\_Bool, V\_String, V\_Undefined, V\_Null, V\_Closure]\label{values} 
+  \begin{case}[V\_Num, V\_Bool, V\_String, V\_Undefined, V\_Null, V\_Closure]\label{case:prog-values} 
 
 	For each of these rules, we immediately have that $e$ is a value, which
 	gives us $\indHypTwo{}$ as desired.
 
   \end{case}
 
-  \begin{case}[V\_Obj]\label{v_obj}
+  \begin{case}[V\_Obj]\label{case:prog-v_obj}
 
 	$e$ is of the form $\mathtt{\{l_1: e_1,\ \dots,\ l_k: e_k\}}$, and we have $\typed{e_i}{T}$ for $1 \leq i \leq k$.
 	We can use the induction hypothesis to determine that each $e_i$ must
@@ -99,7 +46,7 @@
 	\end{subcase}
   \end{case}
 
-  \begin{case}[V\_Arr]\label{v_arr}
+  \begin{case}[V\_Arr]\label{case:prog-v_arr}
 
 	$e$ is of the form $\mathtt{[e_1,\ \dots,\ e_i]}$, and we have $\typed{e_i}{T}$ for $1 \leq i \leq k$.
 	The proof is similar to the case for \textsc{V\_Obj}, using rule
@@ -107,7 +54,7 @@
 
   \end{case}
 
-  \begin{case}[AnonFun, AnonVoid, NamedFun, NamedVoid]\label{fun}
+  \begin{case}[AnonFun, AnonVoid, NamedFun, NamedVoid]\label{case:prog-fun}
 
 	$e$ is of the form $\mathtt{function(x_1,\ \dots,\ x_2)\{m\}}$ or
 	$\mathtt{function\ id(x_1,\ \dots,\ x_2)\{m\}}$. A transition is thus
@@ -115,7 +62,7 @@
 
   \end{case}
 
-  \begin{case}[IDType]\label{idtype}
+  \begin{case}[IDType]\label{case:prog-idtype}
 
 	$e$ is of the form $\mathtt{id}$. For this to be a valid type judgement, we
 	must have $id \in dom(\Gamma)$. Since we have assumed that the store is
@@ -125,7 +72,7 @@
 
   \end{case}
 
-  \begin{case}[PropType]\label{proptype}
+  \begin{case}[PropType]\label{case:prog-proptype}
 
 	$e$ is of the form $\mathtt{e_1.l}$. For this to be a valid type
 	judgement, $\typed{e_1}{T_1}$ must hold. From the induction
@@ -143,7 +90,7 @@
   	\end{subcase}
   \end{case}
 
-  \begin{case}[ArrayType]\label{arraytype}
+  \begin{case}[ArrayType]\label{case:prog-arraytype}
 
 	$e$ is of the form $\mathtt{e_1[e_2]}$. For this to be a valid
 	judgement, $\typed{e_1}{T_1}$ and $\typed{e_2}{T_2}$ must hold. From
@@ -175,7 +122,7 @@
 
   \end{case}
 
-  \begin{case}[CallType]\label{calltype}
+  \begin{case}[CallType]\label{case:prog-calltype}
 
   	$e$ is of the form $\mathtt{e_0(e_1,\ \dots,\ e_k)}$, and we have
   	$\typed{e_i}{T_i}$ for $0\leq i \leq k$. From our induction hypothesis,
@@ -204,7 +151,7 @@
 
   \end{case}
 
-  \begin{case}[PropCallType]\label{propcalltype}
+  \begin{case}[PropCallType]\label{case:prog-propcalltype}
 
 	Similar to case \textsc{CallType}, but using rules \textsc{PropCallNamed}
 	and \textsc{PropCallAnon} instead of \textsc{CallNamed} and
@@ -212,7 +159,7 @@
 
   \end{case}
 
-  \begin{case}[BodyType, VoidBodyType]\label{bodytype}
+  \begin{case}[BodyType, VoidBodyType]\label{case:prog-bodytype}
 
 	For both rules, $e$ is of the form $\mathtt{\langle @body\{m\},\ s', \theta\rangle}$, and for this
 	to be a valid type judgement, there must exist some $\gamma$ such that
@@ -243,7 +190,7 @@
 
   \end{case}
 
-  \begin{case}[AssignType]\label{assigntype}
+  \begin{case}[AssignType]\label{case:prog-assigntype}
 
 	$e$ is of the form $\mathtt{e_0 = e_1}$, and for this rule to be satisfied
 	we must have that $\typed{e_0}{T_0}$ and $\typed{e_1}{T_1}$. Using the
@@ -275,7 +222,7 @@
 
   \end{case}
 
-  \begin{case}[AssignTypeUndef]\label{assigntypeundef}
+  \begin{case}[AssignTypeUndef]\label{case:prog-assigntypeundef}
 
 	$e$ is of the form $\mathtt{id = e_1}$, but $id \not\in dom(\Gamma)$, so we
 	cannot simply deduce that $id \in dom(s)$. Instead, we consider both cases.
@@ -294,7 +241,7 @@
 
   \end{case}
 
-  \begin{case}[NumAssignType]\label{numassigntype}
+  \begin{case}[NumAssignType]\label{case:prog-numassigntype}
 
   	$e$ is of the form $\mathtt{e_0 numOp= e_1}$. The proof proceeds as for case
   	\textsc{AssignType} except in the final subcase. 
@@ -307,7 +254,7 @@
 
   \end{case}
 
-  \begin{case}[NumOpType, BoolOpType, CmpOpType, NumCmpOpType]\label{binoptype}
+  \begin{case}[NumOpType, BoolOpType, CmpOpType, NumCmpOpType]\label{case:prog-binoptype}
 
   	$e$ is of the form $\mathtt{e_1\ op\ e_2}$. For this to be a valid
   	judgement, $\typed{e_1}{T_1}$ and $\typed{e_1}{T_1}$ must both hold. From
@@ -337,7 +284,7 @@
 	\end{subcase}
   \end{case}
 
-  \begin{case}[NegType]\label{negtype}
+  \begin{case}[NegType]\label{case:prog-negtype}
 
 	$e$ is of the form $\mathtt{!e_1}$. For this to be a valid judgement,
 	$\typed{e_1}{T_1}$ must hold, and from the induction hypothesis $e_1$ must
@@ -357,7 +304,7 @@
 	\end{subcase}
   \end{case}
 
-  \begin{case}[PreNumType]\label{prenumtype}
+  \begin{case}[PreNumType]\label{case:prog-prenumtype}
 
 	$e$ is of the form $\mathtt{preNum\ e_1}$. For this to be a valid judgement,
 	$\typed{e_1}{T_1}$ must hold, and from the induction hypothesis $e_1$ must
@@ -405,7 +352,7 @@
 
   \end{case}
 
-  \begin{case}[PostOpType]\label{postoptype}
+  \begin{case}[PostOpType]\label{case:prog-postoptype}
 
   	Similar to the subcase of \textsc{PreNumType} where $preOp\neq-$.
 
@@ -413,7 +360,7 @@
 
 \end{proof}
 
-\begin{theorem}[Progress for Statements]\label{statProgress}
+\begin{theorem}[Progress for Statements]\label{case:prog-statProgress}
 
   If $\typable{m}$ and $\Gamma \vdash (s, \theta)$ then either m is a
   value, a return statement, or there exist $m',s', \theta'$ such that
@@ -421,7 +368,7 @@
 
 \end{theorem}
 
-\begin{proof}\label{statProgressProof}
+\begin{proof}\label{case:prog-statProgressProof}
 
   Take 
   \begin{multline*}
@@ -437,7 +384,7 @@
   $\forall s,\theta.(\Gamma\vdash(s,\theta)\implies\dots$,
   consider in all cases an arbitrary $s$ and $\theta$ and assume that $\Gamma\vdash(s,\theta)$.
 
-  \begin{case}[ExpTypable]\label{expTypable}
+  \begin{case}[ExpTypable]\label{case:prog-expTypable}
 
 	$m$ is of the form $e$. For this to be a valid type judgement, we must have
 	$\typed{e}{T}$. From Theorem~\ref{expProgress}, we know that $e$ must be a
@@ -445,7 +392,7 @@
 
   \end{case}
 
-  \begin{case}[FunDef]\label{funDef}
+  \begin{case}[FunDef]\label{case:prog-funDef}
 
 	$m$ is of the form $\mathtt{@def\ function\ id(x_1, \dots, x_i)\{m\}}$. There
 	is a transition immediately possible using rule \textsc{FuncDef}, so $\indHyp$
@@ -453,14 +400,14 @@
 
   \end{case}
 
-  \begin{case}[RetTypable1]\label{retTypable1}
+  \begin{case}[RetTypable1]\label{case:prog-retTypable1}
 
   	$m$ is of the form $\mathtt{return}$, and there is a transition immediately
   	possible using rule \textsc{Ret2}, so $\indHyp$ is satisfied. 
 
   \end{case}
 
-  \begin{case}[RetTypable2, RetTypable3, RetTypable4]\label{retTypable}
+  \begin{case}[RetTypable2, RetTypable3, RetTypable4]\label{case:prog-retTypable}
 
   	$m$ is of the form $\mathtt{return\ e}$, and we have $\typed{e}{T}$. From
   	Theorem \ref{expProgress}, we know that $e$ is either a value or reduces
@@ -480,7 +427,7 @@
 
   \end{case}
 
-  \begin{case}[SeqTypable]\label{seqtypable}
+  \begin{case}[SeqTypable]\label{case:prog-seqtypable}
 
 	$m$ is of the form $m_1; \dots; m_i$, and for each $i$ we have
 	$\typable{m_i}$. Using the induction hypothesis, $m_1$ in particular is
@@ -506,7 +453,7 @@
 
   \end{case}
 
-  \begin{case}[IfTypable]\label{iftypable}
+  \begin{case}[IfTypable]\label{case:prog-iftypable}
 
 	$m$ is of the form $\mathtt{if\ (e)\ \{m_1\}\ else\ \{m_2\}}$, and we have
 	that $\typed{e}{T}$. Using Theorem~\ref{expProgress}, we know that $e$ is
@@ -529,14 +476,14 @@
 
   \end{case}
 
-  \begin{case}[IfTypable2]\label{iftypable2}
+  \begin{case}[IfTypable2]\label{case:prog-iftypable2}
 
 	$m$ is of the form $\mathtt{if\ (e)\ \{m_1\}}$. $m$ can immediately reduce
 	further using rule \textsc{If4}, so $\indHyp$ is satisfied.
 
   \end{case}
 
-  \begin{case}[WhileTypable, ForTypable]\label{looptypable}
+  \begin{case}[WhileTypable, ForTypable]\label{case:prog-looptypable}
 
   	For both of these type judgements, $m$ is immediately of the right form to
   	reduce into an if-expression. For \textsc{WhileTypable}, the transition is
@@ -546,7 +493,7 @@
 
   \end{case}
 
-  \begin{case}[DecTypable, MultiDecTypable]\label{dectypable}
+  \begin{case}[DecTypable, MultiDecTypable]\label{case:prog-dectypable}
 
 	Similar to the case for \textsc{WhileTypable}, reducing under rules
 	\textsc{Var1} and \textsc{Var4} for \textsc{DecTypable} and
@@ -555,7 +502,7 @@
   \end{case}
 
 
-  \begin{case}[DefTypable]\label{deftypable}
+  \begin{case}[DefTypable]\label{case:prog-deftypable}
 
 	$m$ is of the form $\mathtt{var\ id=e}$, where $\typed{e}{T}$. Using
 	Theorem~\ref{expProgress}, $e$ is either a value or reduces further. 
@@ -574,86 +521,4 @@
   \end{case}
 
 \end{proof}
-\section{Misc.~Lemmas}
-\begin{lemma}\label{typeIntersect}
-  The intersection of two types is a supertype to both types.
-\end{lemma}
-\begin{proof}
-  The proof is by induction over the well-defined cases according to the
-  definition of $\cap$. Let 
-  \begin{equation*}
-	\varphi(T_1, T_2) = 
-	T_1\cap T_2 \succeq T_1
- 	\enspace \land \enspace
- 	T_1\cap T_2 \succeq T_2
-  \end{equation*}
-  \begin{case}[$T_1$ and $T_2$ are not objects, and $T_1 = T_2$]
 
-	In this base case, $T_1 \cap T_2 = T_1$, so trivially 
-	$T_1 \cap T_2 \succeq T_1$, and indeed since $T_1 = T_2$, we have 
-	$T_1 \cap T_2 \succeq T_2$.
-
-  \end{case}
-  \begin{case}[$T_1 \textrm{ and } T_2 \textrm{ are objects}$]
-
-	Let $T = T_1\cap T_2$. Each property of $T$ has the form $\{l : T_1' \cap
-	T_2' \}$, where $\{l:T_1'\}$ appears in $T_1$ or its ancestors, and
-	$\{l:T_2'\}$ appears in $T_2$ or its ancestors.
-	
-	Assuming that $\varphi$ holds for $T_1'$ and $T_2'$, then $T_1' \cap T_2'$ is a
-	supertype of both $T_1$ and $T_2$. $T$ must therefore be a supertype of
-	$T_1$ since each property of $T$ is present in $T_1$ and $T.l \succeq
-	T_1.l$. A similar process shows that $T\succeq T_2$
-
-  \end{case}
-
-\end{proof}
-
-\begin{lemma}\label{mergeEnv}
-	$merge(\Gamma_0, \Gamma_1, \Gamma_2) \sqsubseteq \Gamma_1$ and 
-	$merge(\Gamma_0, \Gamma_1, \Gamma_2) \sqsubseteq \Gamma_2$
-\end{lemma}
-\begin{proof}
-
-  The proof is again by induction, over all typing judgements, though most cases are uninteresting.
-  In all cases, let $\Gamma_m = merge(\Gamma_0, \Gamma_1, \Gamma_2)$ and begin by assuming 
-  \begin{equation}
-	\label{mergeHyp}
-	\Gamma_m \vdash \mathtt{e} : T\ |_C\ \Gamma'.
-  \end{equation}
-
-  \begin{case}[IdType]
-  	
-  	In order to satisfy~\eqref{mergeHyp}, we must have that
-  	$\Gamma_m(id) = T$. For the definition of merge to be possible, we must
-  	have that, $\Gamma_1(id)$ and $\Gamma_2(id)$ must be defined, so it is
-  	valid to claim that 
-  	\begin{equation}
-		\Gamma_1 \vdash id : T_1\ |_\varnothing\ \Gamma_1
-  	\end{equation}
-
-  	Again from the definition of merge, we have that
-  	$T=\Gamma_1(id)\cap\Gamma_2(id)$, and by Lemma~\ref{typeIntersect} we have
-  	that $T\succeq T_1$ and $T\succeq T_2$.  All that remains is to show that
-  	the result type-environments are related by $\sqsubseteq$.
-  	\textcolor{red}{How?} I guess I need to use another assumption but I can't
-  	figure out what that should be. Clearly assuming $\Gamma_m \sqsubseteq
-  	\Gamma_1$ directly as required is no good -- that's what I'm trying to
-  	prove!
-  
-  \end{case}
-  \begin{case}[V\_String]
-  	
-  	Under this type judgement, $e=\mathtt{str}$,
-  	$T=\mathtt{string}$, $C=\varnothing$, $\Gamma_m'=\Gamma_m$.  Trivially,
-  	$\Gamma_1 \vdash \mathtt{e} : T\ |_C\ \Gamma_1$, so the only thing to show
-  	is that $\Gamma_m\sqsubseteq\Gamma_1$. \textcolor{red}{Same problem}.
-  \end{case}
-
-  \begin{case}[V\_Obj]
-  \end{case}
-	All other cases are similar to V\_Obj or V\_String
-\end{proof}
-\section{Preservation}
-
-\end{document}

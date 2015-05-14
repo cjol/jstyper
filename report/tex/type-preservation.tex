@@ -1,0 +1,319 @@
+\begin{theorem}[Type preservation for expressions]\label{pres-expPreservation}
+  If $\Gamma\vdash \mathtt{e}:T\ |_C\ \Gamma'$ and $\Gamma\vdash(s, \theta)$ and we have some
+  transition $\transition{e}{s}{\theta}{e'}{s'}{\theta'}$, then some $\gamma$ can augment $\Gamma$ such that
+  $\Gamma\!\cup\!\gamma\vdash\mathtt{e'}:T\ |_C'\ \Gamma''$ and $\Gamma\!\cup\!\gamma\vdash(s,\theta)$ and
+  $\Gamma'\sqsubseteq\Gamma''$.
+\end{theorem}
+
+\begin{proof}
+  The proof is by rule induction over over all transition rules for
+  expressions. Take 
+
+  \begin{multline*}
+ 	\Phi(e, s, \theta, e', s', \theta') \eqdef 
+	\	\forall\Gamma,C,\Gamma' \qdot
+	\Gamma\vdash\mathtt{e}:T\ |_C\ \Gamma' 
+	\enspace\land\enspace\Gamma\vdash (s,\theta)
+	\implies \\
+   	(\exists\gamma,\Gamma'',C'\qdot
+    \Gamma\!\cup\!\gamma\vdash \mathtt{e'}:T\ |_{C'}\ \Gamma'' 
+	\enspace\land\enspace\Gamma\!\cup\!\gamma\vdash (s',\theta')
+	\enspace\land\enspace \Gamma'\sqsubseteq\Gamma''),
+  \end{multline*} 
+  where $C$ and $C'$ are satisfiable sets of constraints. We show that for all
+  $e, s, \theta, e', s', \theta'$, if there exists some transition
+  $\transition{e}{s}{\theta}{e'}{s'}{\theta'}$, then
+  $\Phi(m,s,\theta,m',s',\theta')$ holds. We show this by considering all
+  possible last steps in the derivation of the transition judgement. In all
+  cases, we begin by considering arbitrary $\Gamma, C$ and $\Gamma'$, and
+  assuming that $\mathtt{e}$ is typable, has type $T$, and that the store is well-typed. This leaves us to find
+  a suitable $\gamma$ and to show the following three things to prove $\Phi(e,s,\theta,e',s',\theta')$:
+
+  \begin{gather}
+	\Gamma\!\cup\!\gamma\vdash\mathtt{e'}:T\ |_{C'}\ \Gamma'' \label{pres-type1}\\
+	\Gamma\!\cup\!\gamma\vdash(s',\theta') \label{pres-store1} \\
+	\Gamma' \sqsubseteq \Gamma'' \label{pres-env1}.
+  \end{gather}
+
+  For expressions, we require a slightly stronger statement for~\eqref{pres-type1} -- that
+  the judged type of $\mathtt{m'}$ be the same as the judged type for $\mathtt{m}$.
+  I only include below a sketch of the full proof, though the results should for the
+  most part be clear.
+
+  \begin{case}[Func]
+
+	The conclusion is immediately typable by \textsc{V\_Closure} using $\gamma=\Gamma$. The domain
+	precondition is satisfied since $\Gamma\vdash(s,\theta)$, and the second by assumption.
+  \end{case}
+  \begin{case}[Obj, Arr]
+	Using the induction hypothesis, we know that $e'$ is well-typed. As a result,
+	the preconditions are satisfied for \textsc{V\_Obj} or \textsc{V\_Arr}.
+  \end{case}
+  \begin{case}[Deref, Prop2, ArrGet3, VRef]
+	$e'$ takes the form of a single value after this transition, and the store
+	is not modified. All values are typable under any type environment, and
+	so $\Phi$ holds.
+  \end{case}
+  \begin{case}[Prop1, ArrGet1, ArrGet2, Call1, Call2, CallBody1, Assign1, Assign2]
+	After the transition, $e'$ has the same form as $e$, and so 
+	is typable using the same rule and type environment after using the induction
+	hypothesis to ensure that all subexpressions are typable. We can also use 
+	the induction hypothesis on the premise of the transition rule to
+	establish that $\Gamma\vdash(s',\theta')$.
+  \end{case}
+  \begin{case}[CallNamed, CallAnon, PropCallNamed, PropCallAnon]
+	In order for the closure to be deemed typable, we must have that, for some $\gamma$
+	$$\gamma\vdash func:[\![T,\gamma]\!]\ |_C\ \gamma'$$
+	from rule \textsc{V\_Closure}. This in turn can only have been derived through 
+	one of \textsc{AnonVoid}, \textsc{AnonFun}, \textsc{NamedFun} or \textsc{NamedVoid},
+	which all require that some extension of $\gamma$ be able to type the function body.
+	This condition is all that is required for rule \textsc{FunBodyType} or \textsc{VoidBodyType},
+	which can be used to derive a type judgement for $e'$.
+
+	The type environment $\Gamma$ is not changed, and each of the additions to the store
+	involve fresh types which will not occur in $\Gamma$, and so we can still say 
+	that $\Gamma\vdash(s',\theta')$.
+  \end{case}
+  \begin{case}[CallBody2, CallBody3, CallBody4]
+	Similar to case \textsc{Deref}.
+  \end{case}
+  \begin{case}[Assign3]
+
+	Syntactically, there are three rules which could have determined that
+	$\mathtt{e}$ is typable -- \textsc{AssignType}, \textsc{AssignTypeUndef} or
+	\textsc{PropAssignType}. 
+
+	If the rule used was \textsc{AssignTypeUndef}, then $\mathtt{vRef}$ would
+	have to be of the form `$\mathtt{id}$'. The precondition, that $(vRef,s,
+	\theta)\in dom(addr)$, can only hold if $id\in dom(s)$. Since
+	$\Gamma\vdash(s,\theta)$ this would mean that $id\in\Gamma$. This would
+	violate a precondition of \textsc{AssignTypeUndef}, so we can eliminate
+	this rule as a possibility.
+
+	Let $\theta'=\theta\oplus\{addr(vRef,s,\theta):v\}$ in the following discussion.
+
+	\begin{subcase}[AssignType]
+	  We will again use an empty $\gamma$ for this case.
+	  An inspection of the possible typing rules for the expression `$\mathtt{vRef}$'
+	  (\textsc{IdType, PropType} or \textsc{ArrayType}), shows that there can
+	  $\Gamma_1$ and $\Gamma$ must be equal.
+	  We can then deduce~\eqref{pres-type1} from the second precondition of \textsc{AssignType}:
+	  $$\Gamma\vdash\mathtt{e'}:T_2\ |_{C_2}\ \Gamma_2.$$ 
+	  We can also determine that $\Gamma=\Gamma_2$, since $\mathtt{e'}$ is a value, and
+	  so~\eqref{pres-env1} is satisfied. By assumption, $\Gamma\vdash(s,\theta)$, so
+	  we just need to show that
+	  $\Gamma$ can handle the addition of the new heap address for~\eqref{pres-store1}.
+
+ 	  The scope is unchanged, and so $dom(\Gamma)\subseteq dom(s)$ remains true.
+	  We know that $\Gamma\vdash\mathtt{vRef}:T_1\ |_{C_1}\ \Gamma$ from the premise of 
+	  \textsc{AssignType}. We also know that $addr(vRef, s, \theta')$ is 
+	  well defined, and that $\theta'(addr(vRef, s, \theta')) = v$ 
+	  from the transition rule \textsc{Assign3}. We have already determined
+	  that $\mathtt{v}$ has type $T_2$, and the constraints of \textsc{AssignType}
+	  give us that $T_1\succeq T_2$. Hence $\Gamma\vdash(s,\theta')$ is satisfied,
+	  and $\Phi(\mathtt{e},s,\theta,\mathtt{e'},s',\theta')$ holds.
+  	\end{subcase}
+
+	\begin{subcase}[PropAssignType]
+	  The complication of this case comes from
+	  the fact that the output type environment, $\Gamma_1$, is larger than the input, $\Gamma$.
+	  To handle this, then, we do not use an empty $\gamma$, but instead use
+	  $$\gamma=\{\textbf{id}: \{ \mathbf{l_1}: \{\cdots \{\mathbf{l_k}:\{\mathbf{l}: T'\}\orig T_k \} \cdots\} \orig T_1\}\orig T_0\}.$$
+	  $\Gamma\!\cup\!\gamma=\Gamma_1$, and so~\eqref{pres-env1} is trivially
+	  satisfied. We can also show that~\eqref{pres-type1} holds because $\mathtt{m'}$ is a value.
+	  $$\Gamma\!\cup\!\gamma\vdash\mathtt{v}:T'\ |_{C'}\ \Gamma\!\cup\!\gamma$$
+	  We now must show that $\Gamma\!\cup\!\gamma\vdash(s,
+	  \theta')$, for which we use the assumption that
+	  $\Gamma\vdash(s,\theta)$. Note that
+	  $dom(\Gamma)=dom(\Gamma\cup\gamma)$, since the first precondition
+	  of \textsc{PropAssignType} requires that $id\in dom(\Gamma)$.
+
+	  For the value reference $\mathtt{id.l_1.\cdots.l_k.l}$, clearly we have that
+	  $$\Gamma\!\cup\!\gamma\vdash\mathtt{id.l_1.\cdots.l_k.l}:T'\ |_\varnothing\ \Gamma\!\cup\!\gamma,$$
+	  which is of the right type to satisfy the conclusion
+	  of~\eqref{eqn:typed-store1}, since
+	  $$\theta'(addr(\mathtt{id.l_1.\cdots.l_k.l},s, \theta')) = \mathtt{v},$$
+	  and $\mathtt{v}$ also has type $T'$.
+	  For sub-references of $\mathtt{id.l_1.\cdots.l_k.l}$ (such as $\mathtt{id.\cdots.l_i}$), we will have
+	  \begin{gather*}
+		\Gamma\!\cup\!\gamma\vdash\mathtt{id.\cdots.l_i}:\{l_{i+1}:T_{i+1}\}\orig T_i\ |_\varnothing\ \Gamma\!\cup\!\gamma \\
+		\theta'(addr(\mathtt{id.\cdots.l_i},s,\theta'))	= \{l_{i+1}:a_{i+1}, p_0:a_0,\cdots,p_k:a_k\} \\
+		\Gamma\!\cup\!\gamma\vdash\mathtt{\{l_{i+1}:a_{i+1}, p_0:a_0,\cdots,p_k:a_k\}} 
+		:\{l_{i+1}:T_{i+1}', p_0:T_{p_0},\cdots p_k:T_{p_k}\}\ |_\varnothing\ \Gamma\!\cup\!\gamma
+	  \end{gather*}
+	  We want to show that $\{l_{i+1}:T_{i+1}\}\orig T_i\succeq \{l_{i+1}:T_{i+1}', p_0:T_{p_0},\cdots p_k:T_{p_k}\}$, which we can 
+	  do by splitting the two parts of the origin chain on the left, and demonstrating that both
+	  are supertypes.
+
+	  Because $\Gamma\vdash(s,\theta)$, we must have that $T_i\succeq\{p_0:T_{p_0},\cdots p_k:T_{p_k}\}$, and so 
+	  $$T_i\succeq\{l_{i+1}:T_{i+1}', p_0:T_{p_0},\cdots p_k:T_{p_k}\}.$$
+	  $\{l_{i+1}:T_{i+1}\}\succeq \{l_{i+1}:T_{i+1}', p_0:T_{p_0},\cdots p_k:T_{p_k}\}$ clearly
+	  holds as long as $T_{i+1}\succeq T_{i+1}'$ does. In fact, we can show that this does hold
+	  by considering the sub-reference $\mathtt{id.\cdots.l_i.l_{i+1}}$ as an induction
+	  step, using $\mathtt{vRef}$ as the base case.
+
+	  Finally, for all other value references, $\gamma$ is not involved, and
+	  nor is the extension to $\theta$, and so
+	  $$\Gamma\vdash(s,\theta)\implies\Gamma\!\cup\!\gamma\vdash(s,\theta')$$ 
+	  \eqref{pres-store1} is satisfied and $\Phi(\mathtt{e},s,\theta,e',s',\theta')$ holds.
+
+	\end{subcase}
+  \end{case}
+
+  \begin{case}[AssignUndef]
+	Similar to the first subcase of \textsc{Assign}, except that $\gamma$ is
+	not empty - it contains the entry $\{id: T_v\}$.
+  \end{case}
+  \begin{case}[PropAdd]
+	See the second subcase of \textsc{Assign}.
+  \end{case}
+  \begin{case}[AssignTarget1, AssignTarget2, AssignTarget3]
+	In each of these cases, $e'$ is of the same form as $e$ -- both are an
+	assignment target. The same rule is able to type $e'$ as is $e$, using the
+	induction hypothesis conclusion as premise. The induction hypothesis also
+	gives us that $\Gamma\vdash(s',\theta')$.
+  \end{case}
+  \begin{case}[BinOp1, BinOp2, PreAssign, PostAssign]
+	In both cases, $e'$ is of the same form as $e$, and the type judgement for $e'$ 
+	can be derived using the same rules as $e$. The precondition for the last 
+	rule in the derivation tree is satisfied using the induction hypothesis.
+	The induction hypothesis also gives us that the new store is well-typed.
+  \end{case}
+  \begin{case}[NumOp, BoolOp, CmpOp, NumCmpOp, PreOp, BoolNeg, NumNeg, PostInc, PreInc, PostDec, PreDec]
+	In all cases $e'$ is a value, which is trivially typed by any $\Gamma$.
+	The store is unchanged, and so we still have that $\Gamma\vdash(s,\theta)$
+	by assumption.
+  \end{case}
+\end{proof}
+
+
+
+
+
+\begin{theorem}[Type preservation for statements]\label{pres-mPreservation}
+  If $\Gamma\vdash \mathtt{m}\ |_C\ \Gamma'$ and $\Gamma\vdash(s, \theta)$ and we have some
+  transition $\transition{m}{s}{\theta}{m'}{s'}{\theta'}$, then some $\gamma$ can augment $\Gamma$ such that
+  $\Gamma\!\cup\!\gamma\vdash\mathtt{m'}\ |_C'\ \Gamma''$ and $\Gamma\!\cup\!\gamma\vdash(s,\theta)$ and 
+  $\Gamma'\sqsubseteq\Gamma''$.
+\end{theorem}
+\begin{proof}
+  \begin{multline*}
+ 	\Phi(m, s, \theta, m', s', \theta') \eqdef 
+	\	\forall\Gamma,C,\Gamma' \qdot
+	\Gamma\vdash\mathtt{m}\ |_C\ \Gamma' 
+	\enspace\land\enspace\Gamma\vdash (s,\theta)
+	\implies \\
+   	(\exists\gamma,\Gamma'',C'\qdot
+    \Gamma\!\cup\!\gamma\vdash \mathtt{m'}\ |_{C'}\ \Gamma'' 
+	\enspace\land\enspace\Gamma\!\cup\!\gamma\vdash (s',\theta')
+	\enspace\land\enspace \Gamma'\sqsubseteq\Gamma''),
+  \end{multline*} 
+
+
+  \begin{case}[Seq1]
+	In order to type $e$, we must have that each of the statements $m_1,\dots,m_i$ must
+	be individually typable, which is all that is required to show that $e'$ 
+	is typable. The store is unchanged, and hence $\Gamma\vdash(s',\theta')$.
+  \end{case}
+  \begin{case}[Seq2]
+	In this case, the suitable $\gamma$ is the empty type environment, so 
+	$\Gamma\!\cup\!\gamma=\Gamma$. $\mathtt{m}$ must
+	be typable under rule \textsc{SeqTypable}, which requires as premise that
+	each $\mathtt{m_1}, \dots, \mathtt{m_i}$ themselves be typable. In particular, we
+	require that 
+	$$\Gamma\vdash\mathtt{m_1}\ |_{C_1}\ \Gamma_1,$$ 
+	and using the assumption that $\Gamma\vdash(s,\theta)$ with the induction hypothesis gives us that
+	\begin{gather*}
+	  \Gamma\vdash\mathtt{m_1'}\ |_{C}\ \Gamma_1' \\
+	  \Gamma\vdash(s',\theta') \\
+	  \Gamma_1\sqsubseteq\Gamma_1'.
+  	\end{gather*}
+  	This gives us~\eqref{pres-store1} directly. Using
+	Lemma~\ref{lm:strChain}, and knowing that $\Gamma_1\vdash\mathtt{m_2}\ |_{C_2}\ \Gamma_2$
+   	we can determine that 
+	\begin{gather*}
+	  \Gamma_1'\vdash\mathtt{m_2}\ |_{C_2}\ \Gamma_2' \\
+	  \Gamma_2\sqsubseteq\Gamma_2'.
+  	\end{gather*}
+	We can repeat this for each statement $\mathtt{m_3\dots m_i}$, eventually ending up with
+	\begin{gather*}
+	  \Gamma_{i-1}'\vdash\mathtt{m_i}\ |_{C_i}\ \Gamma_i' \\
+	  \Gamma_i\sqsubseteq\Gamma_i'
+	\end{gather*}
+	Which gives us~\eqref{pres-env1}, and satisfies all the premises for rule
+	\textsc{SeqTypable}. We can then conclude that 
+	$$\Gamma\vdash\mathtt{m_1'; \dots; m_i}\ |_{\bigcup_{k=0}^i{C_k}}\ \Gamma_i',$$
+	giving us~\eqref{pres-type1}, and $\Phi(m,s,\theta,m',s',\theta')$ is satisfied.
+
+  \end{case}
+  
+  \begin{case}[Var1, Var3]
+	$m'$ is of the form $\epsilon$, which is trivially typable by any type environment.
+	The proof that $\Gamma\vdash(s',\theta')$ is very similar to the proof for
+	the case \textsc{AssignUndef}.
+  \end{case}
+  \begin{case}[Var2, Return1, If1]
+	$m'$ has the same form as $m$, and so we can use the same rule to derive its
+	typability, using the induction hypothesis to show that $e'$ is still typable.
+	The induction hypothesis also gives us that $\Gamma\vdash(s',\theta')$.
+  \end{case}
+  \begin{case}[Var3]
+	From rule \textsc{MultiDecTypable}, we immediately have that $m'$ is still typable after
+	a transition. The store is unchanged, and so we still have that $\Gamma\vdash(s,\theta)$ 
+	from our initial assumption.
+  \end{case}
+  \begin{case}[FuncDef]
+	Similar to \textsc{Var3}.
+  \end{case}
+  \begin{case}[Return2]
+	\js{return undefined;} is immediately typable using rule \textsc{RetTypable4}. 
+	The store is unchanged, so we still have $\Gamma\vdash(s,\theta)$ from our initial
+	assumption.
+  \end{case}
+
+  \begin{case}[If2]
+
+	We again use $\gamma=\{\}$ here. The only type judgement which could result in $\typable{m}$ uses rule
+	\textsc{IfTypable1}. One precondition for \textsc{IfTypable1} is that
+	$$\Gamma\vdash\mathtt{e}:T_0\ |_{C_0}\ \Gamma_0,$$ 
+	In fact, since $\mathtt{e} = \mathtt{true}$, it must be the case that $\Gamma=\Gamma_0$.
+	By assumption, $\Gamma\vdash(s,\theta)$, and the store is unchanged by the transition, so~\eqref{pres-store1}
+	is satisfied. Another precondition of \textsc{IfTypable1} is that 
+	$$\Gamma_0\vdash\mathtt{m_1}\ |_{C_1}\ \Gamma_1.$$
+	This gives us~\eqref{pres-type1} directly, and all that remains to show is
+	that $\Gamma'\sqsubseteq \Gamma_1$ for~\eqref{pres-env1}.
+
+	$\Gamma'=merge(\Gamma_0,\Gamma_1,\Gamma_2)$, so the elements of $\Gamma'$
+	are the intersection of the corresponding elements in $\Gamma_1$ and
+	$\Gamma_2$, and in particular 
+	$$\forall \{id:T'\}\in\Gamma'\qdot \exists T_1 \qdot \{id:T_1\}\in\Gamma_1,$$
+   	where $T' =	T_1\cap\Gamma_2(id)$. Lemma~\ref{lm:intersect} tells us that the
+	intersection of two types is a supertype to both types. We can use this to
+	show that $T'\succeq T_1$, and 
+	derive the conclusion of Definition~\ref{eqn:strength}, and thus that
+	$\Gamma'\sqsubseteq\Gamma_1$.~\eqref{pres-env1} is thus satisfied, and hence
+	$\Phi(m,s,\theta,m',s',\theta')$.
+
+  \end{case}
+
+  \begin{case}[If3]
+	Similar to \textsc{If2}.
+  \end{case}
+
+  \begin{case}[If4]
+	$m'$ is immediately typable using rule \textsc{IfTypable1}, given that
+	$e$, $m_1$ and $\epsilon$ are all typable. The store is unchanged so,
+	as in the previous cases, we have that $\Gamma\vdash(s,\theta)$.
+  \end{case}
+
+  \begin{case}[While]
+	Given that $e$, $m_1$ and $\mathtt{while\ (e)\ \{m_1\}}$ are all typable by the precondition
+	of the typability judgement of $m$, we can immediately deduce that $m'$ is 
+	typable by rules \textsc{SeqTypable} and \textsc{IfTypable2}.
+  \end{case}
+
+  \begin{case}[For]
+	Similar to \textsc{While}.
+  \end{case}
+
+\end{proof}
